@@ -1,0 +1,1264 @@
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 84% 4.9%;
+
+    --primary: 234 89% 58%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 98%;
+    --secondary-foreground: 222.2 84% 4.9%;
+
+    --muted: 210 40% 98%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 98%;
+    --accent-foreground: 222.2 84% 4.9%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 234 89% 58%;
+
+    --radius: 0.75rem;
+
+    /* Enhanced brand colors for stunning light theme */
+    --brand: 234 89% 58%;
+    --brand-foreground: 0 0% 100%;
+    --brand-50: 234 100% 99%;
+    --brand-100: 234 100% 97%;
+    --brand-200: 234 100% 95%;
+    --brand-300: 234 89% 88%;
+    --brand-400: 234 89% 78%;
+    --brand-500: 234 89% 68%;
+    --brand-600: 234 89% 58%;
+    --brand-700: 234 89% 48%;
+    --brand-800: 234 89% 38%;
+    --brand-900: 234 89% 28%;
+
+    /* Beautiful gradient colors for light theme */
+    --gradient-from: 234 89% 65%;
+    --gradient-to: 270 91% 55%;
+    --gradient-via: 250 90% 60%;
+
+    /* Light theme specific colors with enhanced contrast */
+    --light-overlay: 255 255 255 / 0.95;
+    --light-glass: 255 255 255 / 0.8;
+    --light-subtle: 234 50% 99%;
+    --light-border: 214.3 31.8% 88%;
+    --light-shadow: 234 50% 90%;
+  }
+
+  .dark {
+    --background: 222 15% 7%;
+    --foreground: 210 20% 98%;
+
+    --card: 222 15% 9%;
+    --card-foreground: 210 20% 98%;
+
+    --popover: 222 15% 9%;
+    --popover-foreground: 210 20% 98%;
+
+    --primary: 234 89% 74%;
+    --primary-foreground: 222 15% 7%;
+
+    --secondary: 217 33% 15%;
+    --secondary-foreground: 210 20% 98%;
+
+    --muted: 217 33% 15%;
+    --muted-foreground: 218 11% 75%;
+
+    --accent: 217 33% 15%;
+    --accent-foreground: 210 20% 98%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 20% 98%;
+
+    --border: 217 33% 15%;
+    --input: 217 33% 15%;
+    --ring: 234 89% 74%;
+
+    --sidebar-background: 240 6% 10%;
+    --sidebar-foreground: 240 5% 96%;
+    --sidebar-primary: 224 76% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 4% 16%;
+    --sidebar-accent-foreground: 240 5% 96%;
+    --sidebar-border: 240 4% 16%;
+    --sidebar-ring: 234 89% 74%;
+
+    /* Dark theme brand colors */
+    --brand: 234 89% 74%;
+    --brand-foreground: 222 15% 7%;
+    --brand-50: 234 89% 15%;
+    --brand-100: 234 89% 18%;
+    --brand-200: 234 89% 22%;
+    --brand-300: 234 89% 30%;
+    --brand-400: 234 89% 45%;
+    --brand-500: 234 89% 74%;
+    --brand-600: 234 89% 78%;
+    --brand-700: 234 89% 82%;
+    --brand-800: 234 89% 88%;
+    --brand-900: 234 89% 92%;
+
+    /* Dark theme specific colors */
+    --light-overlay: 0 0% 0% / 0.9;
+    --light-glass: 0 0% 0% / 0.7;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 4rem;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-sans;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
+  }
+
+  /* Optimize animations for better performance */
+  *,
+  *::before,
+  *::after {
+    will-change: auto;
+  }
+}
+
+@layer utilities {
+  .container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .section-padding {
+    @apply py-8 md:py-12 lg:py-16;
+  }
+
+  .section-bottom-padding {
+     @apply pb-8 md:pb-12 lg:pb-16;
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-r from-[hsl(var(--gradient-from))] via-[hsl(var(--gradient-via))] to-[hsl(var(--gradient-to))] bg-clip-text text-transparent;
+  }
+
+  .bg-gradient-brand {
+    @apply bg-gradient-to-r from-[hsl(var(--gradient-from))] via-[hsl(var(--gradient-via))] to-[hsl(var(--gradient-to))];
+  }
+
+  /* Beautiful hero pattern background for light theme */
+  .hero-pattern {
+    background-image:
+      radial-gradient(
+        circle at 25px 25px,
+        hsl(var(--brand-400) / 0.25) 3px,
+        transparent 0
+      ),
+      radial-gradient(
+        circle at 75px 75px,
+        hsl(var(--gradient-via) / 0.2) 2px,
+        transparent 0
+      ),
+      linear-gradient(
+        135deg,
+        hsl(var(--brand-50)) 0%,
+        rgba(255, 255, 255, 0.8) 50%,
+        hsl(var(--brand-100)) 100%
+      );
+    background-size:
+      80px 80px,
+      80px 80px,
+      100% 100%;
+    background-position:
+      0 0,
+      40px 40px,
+      0 0;
+  }
+
+  .dark .hero-pattern {
+    background-image:
+      radial-gradient(
+        circle at 25px 25px,
+        hsl(var(--brand) / 0.3) 2px,
+        transparent 0
+      ),
+      radial-gradient(
+        circle at 75px 75px,
+        hsl(var(--gradient-via) / 0.2) 2px,
+        transparent 0
+      ),
+      linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+  }
+
+  /* Faster, smoother animations with GPU acceleration */
+  .animate-fade-up {
+    animation: fadeUp 0.4s ease-out forwards;
+    transform: translateZ(0);
+    will-change: transform, opacity;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+    will-change: opacity;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out forwards;
+    transform: translateZ(0);
+    will-change: transform, opacity;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-out forwards;
+    transform: translateZ(0);
+    will-change: transform, opacity;
+  }
+
+  /* Enhanced hover effects */
+  .hover-lift {
+    @apply transition-all duration-200 ease-out;
+    transform: translateZ(0);
+    will-change: transform, box-shadow;
+  }
+
+  .hover-lift:hover {
+    @apply -translate-y-1 shadow-lg;
+    transform: translateY(-4px) translateZ(0);
+  }
+
+  .hover-scale {
+    @apply transition-transform duration-150 ease-out;
+    transform: translateZ(0);
+    will-change: transform;
+  }
+
+  .hover-scale:hover {
+    transform: scale(1.03) translateZ(0);
+  }
+
+  /* Beautiful glass effects for light theme */
+  /* .glass {
+    @apply backdrop-blur-sm border;
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(234, 179, 255, 0.2);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.9),
+      0 4px 20px 0 rgba(234, 179, 255, 0.12),
+      0 1px 6px 0 rgba(0, 0, 0, 0.05);
+  } */
+
+  .glass {
+     background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.1),
+      0 4px 16px 0 rgba(0, 0, 0, 0.3);
+  }
+
+  .glass-strong {
+    @apply backdrop-blur-md border;
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(234, 179, 255, 0.25);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 1),
+      0 8px 40px 0 rgba(234, 179, 255, 0.15),
+      0 2px 12px 0 rgba(0, 0, 0, 0.08);
+  }
+
+  /* Dark theme glass effects */
+  .dark .glass {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.1),
+      0 4px 16px 0 rgba(0, 0, 0, 0.3);
+  }
+
+  .dark .glass-strong {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.15),
+      0 8px 32px 0 rgba(0, 0, 0, 0.4);
+  }
+
+  /* Enhanced text shimmer with better contrast */
+  .text-shimmer {
+    background: linear-gradient(
+      110deg,
+      hsl(var(--foreground)) 40%,
+      hsl(var(--brand)) 50%,
+      hsl(var(--gradient-to)) 55%,
+      hsl(var(--foreground)) 65%
+    );
+    background-size: 300% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer 12s ease-in-out infinite;
+    will-change: background-position;
+  }
+
+  /* Auto-resizing responsive text utilities */
+  .text-auto-xs {
+    font-size: clamp(0.75rem, 0.25vw + 0.7rem, 0.8rem);
+    line-height: 1.5;
+  }
+  .text-auto-sm {
+    font-size: clamp(0.8rem, 0.5vw + 0.75rem, 0.9rem);
+    line-height: 1.5;
+  }
+  .text-auto-base {
+    font-size: clamp(0.875rem, 0.5vw + 0.8rem, 1rem);
+    line-height: 1.6;
+  }
+  .text-auto-lg {
+    font-size: clamp(1rem, 0.75vw + 0.9rem, 1.125rem);
+    line-height: 1.6;
+  }
+  .text-auto-xl {
+    font-size: clamp(1.1rem, 1vw + 1rem, 1.25rem);
+    line-height: 1.5;
+  }
+  .text-auto-2xl {
+    font-size: clamp(1.25rem, 1.25vw + 1.125rem, 1.5rem);
+    line-height: 1.4;
+  }
+  .text-auto-3xl {
+    font-size: clamp(1.5rem, 1.5vw + 1.25rem, 1.875rem);
+    line-height: 1.3;
+  }
+  .text-auto-4xl {
+    font-size: clamp(1.875rem, 2vw + 1.5rem, 2.5rem);
+    line-height: 1.2;
+  }
+  .text-auto-5xl {
+    font-size: clamp(2.25rem, 2.5vw + 1.75rem, 3rem);
+    line-height: 1.1;
+  }
+  .text-auto-6xl {
+    font-size: clamp(2.5rem, 3vw + 2rem, 3.5rem);
+    line-height: 1;
+  }
+
+  /* Enhanced button styles with better contrast */
+  .btn-modern {
+    @apply relative overflow-hidden rounded-xl px-6 py-3 font-medium transition-all duration-200 ease-out;
+    background: linear-gradient(
+      135deg,
+      hsl(var(--brand)),
+      hsl(var(--gradient-via))
+    );
+    color: hsl(var(--brand-foreground));
+    box-shadow: 0 4px 15px hsl(var(--brand) / 0.2);
+    transform: translateZ(0);
+  }
+
+  /* Consistent card styling */
+  .card-consistent {
+    @apply bg-card border border-border/40 rounded-xl shadow-lg;
+    transition: all 0.2s ease;
+  }
+
+  .card-consistent:hover {
+    @apply shadow-xl border-border/60;
+    transform: translateY(-2px);
+  }
+
+  /* Consistent text contrast */
+  .text-high-contrast {
+    color: hsl(var(--foreground));
+    contrast: 1.2;
+  }
+
+  .text-medium-contrast {
+    color: hsl(var(--muted-foreground));
+  }
+
+  /* Consistent section styling */
+  .section-consistent {
+    @apply section-padding;
+    background: linear-gradient(
+      to bottom,
+      hsl(var(--background)) 0%,
+      hsl(var(--muted) / 0.3) 50%,
+      hsl(var(--background)) 100%
+    );
+  }
+
+  .btn-modern:hover {
+    transform: translateY(-2px) translateZ(0);
+    box-shadow: 0 8px 25px hsl(var(--brand) / 0.3);
+  }
+
+  .btn-modern:active {
+    transform: translateY(0) translateZ(0);
+  }
+
+  .btn-outline-modern {
+    @apply relative overflow-hidden rounded-xl px-6 py-3 font-medium transition-all duration-200 ease-out border-2;
+    background: hsl(var(--background));
+    border-color: hsl(var(--brand));
+    color: hsl(var(--brand));
+    box-shadow: 0 2px 10px hsl(var(--brand) / 0.1);
+    transform: translateZ(0);
+  }
+
+  .btn-outline-modern:hover {
+    background: hsl(var(--brand));
+    color: hsl(var(--brand-foreground));
+    transform: translateY(-1px) translateZ(0);
+    box-shadow: 0 6px 20px hsl(var(--brand) / 0.25);
+  }
+
+  /* Theme transition */
+  .theme-transition {
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease,
+      border-color 0.3s ease,
+      box-shadow 0.3s ease;
+  }
+
+  /* Enhanced light theme metric boxes */
+  .metric-box-light {
+    @apply dark:bg-white/10 border dark:border-white/20 rounded-2xl p-6 text-center hover-lift;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(10px);
+  }
+
+  .dark .metric-box-light {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Custom thin scrollbar styles */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  .scrollbar-thumb-brand\/30::-webkit-scrollbar-thumb {
+    background-color: rgb(99 102 241 / 0.3);
+    border-radius: 2px;
+  }
+
+  .scrollbar-track-transparent::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(99 102 241 / 0.5);
+  }
+}
+
+/* Faster keyframes with GPU acceleration */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(15px) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateZ(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -300% 0;
+  }
+  100% {
+    background-position: 300% 0;
+  }
+}
+
+/* Enhanced thinner scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-muted/50;
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--brand)),
+    hsl(var(--gradient-to))
+  );
+  @apply rounded-full;
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--brand-600)),
+    hsl(var(--gradient-to))
+  );
+  width: 5px;
+}
+
+::-webkit-scrollbar-corner {
+  @apply bg-transparent;
+}
+
+/* Better selection styling */
+::selection {
+  background: hsl(var(--brand) / 0.2);
+  color: hsl(var(--foreground));
+}
+
+::-moz-selection {
+  background: hsl(var(--brand) / 0.2);
+  color: hsl(var(--foreground));
+}
+
+/* Enhanced focus styling */
+:focus-visible {
+  @apply outline-2 outline-brand outline-offset-2 rounded;
+}
+
+/* Typography improvements */
+.font-display {
+  font-feature-settings:
+    "ss01" 1,
+    "ss02" 1,
+    "cv01" 1,
+    "cv03" 1;
+}
+
+/* Performance optimizations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Smooth scrolling for page content, but disable for page navigation */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Disable smooth scrolling for instant navigation */
+.scroll-instant {
+  scroll-behavior: auto !important;
+}
+
+/* Improved animation controls */
+.animate-on-scroll {
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.animate-on-scroll.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.animate-on-scroll:not(.visible) {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+/* Reduced motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .animate-on-scroll {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* Leaflet Map Styles */
+.leaflet-container {
+  background: transparent !important;
+  font-family: inherit !important;
+}
+
+.leaflet-control-container {
+  display: none !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid hsl(var(--border)) !important;
+}
+
+.leaflet-popup-tip {
+  background: hsl(var(--background)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+}
+
+.leaflet-popup-close-button {
+  color: hsl(var(--muted-foreground)) !important;
+  font-size: 18px !important;
+  padding: 4px !important;
+}
+
+.leaflet-popup-close-button:hover {
+  color: hsl(var(--foreground)) !important;
+  background: transparent !important;
+}
+
+.custom-div-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+.destination-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Custom map loading */
+.leaflet-tile-pane {
+  filter: brightness(1) contrast(1);
+  transition: filter 0.3s ease;
+}
+
+.dark .leaflet-tile-pane {
+  filter: brightness(0.9) contrast(1.1);
+}
+
+/* Map attribution fix */
+.leaflet-control-attribution {
+  display: none !important;
+}
+
+/* MapLibre GL JS Styles */
+.maplibregl-map {
+  font-family: inherit !important;
+}
+
+.maplibregl-ctrl-group {
+  display: none !important;
+}
+
+.maplibregl-ctrl-top-right {
+  display: none !important;
+}
+
+.maplibregl-ctrl-bottom-left {
+  display: none !important;
+}
+
+.maplibregl-ctrl-bottom-right {
+  display: none !important;
+}
+
+.maplibregl-popup-content {
+  background: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  font-family: inherit !important;
+}
+
+.maplibregl-popup-tip {
+  border-top-color: hsl(var(--background)) !important;
+}
+
+.maplibregl-popup-close-button {
+  color: hsl(var(--muted-foreground)) !important;
+  font-size: 18px !important;
+  padding: 4px !important;
+}
+
+.maplibregl-popup-close-button:hover {
+  color: hsl(var(--foreground)) !important;
+  background: transparent !important;
+}
+
+/* Custom marker animations */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+.user-location-marker {
+  cursor: pointer;
+}
+
+.destination-marker {
+  cursor: pointer;
+}
+
+/* Map canvas optimization */
+.maplibregl-canvas {
+  outline: none !important;
+}
+
+.maplibregl-canvas-container {
+  cursor: crosshair !important;
+}
+
+/* Performance optimizations */
+.maplibregl-map {
+  image-rendering: optimizeQuality;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
+
+/* Dark mode adjustments for map */
+.dark .maplibregl-popup-content {
+  background: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark .maplibregl-popup-tip {
+  border-top-color: hsl(var(--background)) !important;
+}
+
+/* Google Maps-like enhancements */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Enhanced glass effects for Google Maps style */
+.glass-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+.dark .glass-card {
+  background: rgba(0, 0, 0, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Smooth transitions for better UX */
+* {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* Better button hover effects */
+button:hover {
+  transform: translateY(-1px);
+  transition: all 0.2s ease;
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+/* Enhanced search bar styling */
+.search-container {
+  position: relative;
+}
+
+.search-container input {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.search-container input:focus {
+  background: rgba(255, 255, 255, 1);
+  transform: scale(1.02);
+}
+
+.dark .search-container input {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.dark .search-container input:focus {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+/* Enhanced marker styles */
+.user-location-marker,
+.details-marker,
+.route-marker {
+  transition: all 0.3s ease;
+}
+
+.user-location-marker:hover,
+.details-marker:hover,
+.route-marker:hover {
+  transform: scale(1.1);
+}
+
+/* Google-style floating panels */
+.floating-panel {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.12),
+    0 4px 16px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.dark .floating-panel {
+  background: rgba(0, 0, 0, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.4),
+    0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Improved scrollbar for panels */
+.panel-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.panel-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.panel-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.dark .panel-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Enhanced route visualization */
+.route-line {
+  filter: drop-shadow(0 2px 4px rgba(66, 133, 244, 0.3));
+}
+
+/* Better focus states */
+.focus-visible {
+  outline: 2px solid hsl(var(--brand)) !important;
+  outline-offset: 2px !important;
+}
+
+/* Improved loading states */
+.loading-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Enhanced mobile responsiveness */
+@media (max-width: 768px) {
+  .floating-panel {
+    border-radius: 12px;
+  }
+
+  .search-container input {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+
+/* Performance optimizations */
+.gpu-layer {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Smooth map interactions */
+.maplibregl-canvas-container canvas {
+  transition: filter 0.3s ease;
+}
+
+/* Enhanced elevation for interactive elements */
+.elevated-1 {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.elevated-2 {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.elevated-3 {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+/* Stunning Google Maps-like enhancements */
+.stunning-gradient {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.glass-ultra {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(40px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.25),
+    0 8px 16px -8px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.dark .glass-ultra {
+  background: rgba(0, 0, 0, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.5),
+    0 8px 16px -8px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Enhanced marker animations */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+@keyframes bounce-gentle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.marker-pulse {
+  animation: pulse 2s infinite ease-out;
+}
+
+.marker-bounce {
+  animation: bounce-gentle 2s infinite ease-in-out;
+}
+
+/* Beautiful button hover effects */
+.btn-hover-lift {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-hover-lift:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.btn-hover-lift:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Enhanced search bar styling */
+.search-glow {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.search-glow::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(45deg, #667eea, #764ba2, #f093fb, #f5576c);
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+  filter: blur(10px);
+}
+
+.search-glow:focus-within::before {
+  opacity: 0.3;
+}
+
+/* Beautiful panel shadows */
+.panel-shadow {
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.25),
+    0 8px 16px -8px rgba(0, 0, 0, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.dark .panel-shadow {
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.6),
+    0 8px 16px -8px rgba(0, 0, 0, 0.4),
+    0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Enhanced route visualization */
+.route-glow {
+  filter: drop-shadow(0 0 8px rgba(66, 133, 244, 0.6));
+}
+
+/* Smooth state transitions */
+.state-transition {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Beautiful gradients */
+.gradient-blue {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.gradient-purple {
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+}
+
+.gradient-sunset {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+/* Enhanced focus rings */
+.focus-ring-beautiful {
+  outline: none;
+  ring-offset: 2px;
+  ring-offset-color: white;
+  ring: 4px;
+  ring-color: rgba(66, 133, 244, 0.3);
+  ring-opacity: 0.5;
+}
+
+.dark .focus-ring-beautiful {
+  ring-offset-color: rgb(17, 24, 39);
+}
+
+/* Improved loading animations */
+.loading-dots {
+  animation: loading-dots 1.4s infinite ease-in-out both;
+}
+
+.loading-dots:nth-child(1) { animation-delay: -0.32s; }
+.loading-dots:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes loading-dots {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+/* Enhanced mobile responsiveness */
+@media (max-width: 768px) {
+  .glass-ultra {
+    backdrop-filter: blur(20px);
+  }
+
+  .btn-hover-lift:hover {
+    transform: none;
+  }
+
+  .panel-shadow {
+    box-shadow:
+      0 10px 25px -5px rgba(0, 0, 0, 0.2),
+      0 4px 8px -4px rgba(0, 0, 0, 0.05);
+  }
+}
+
+/* Beautiful text gradients */
+.text-gradient-blue {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-rainbow {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Elegant animations */
+.slide-up {
+  animation: slide-up 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-scale {
+  animation: fade-in-scale 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fade-in-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Modern card styling */
+.card-modern {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 4px 16px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-modern:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 16px 64px rgba(0, 0, 0, 0.15),
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.dark .card-modern {
+  background: rgba(0, 0, 0, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 4px 16px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.dark .card-modern:hover {
+  box-shadow:
+    0 16px 64px rgba(0, 0, 0, 0.6),
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
