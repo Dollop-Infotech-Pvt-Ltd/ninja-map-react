@@ -129,10 +129,10 @@ interface RouteInfo {
 }
 
 const mapStyles = {
-  vector: 'http://192.168.1.179:9000/styles/osm-bright/style.json',
-  dark: 'http://192.168.1.179:9000/styles/dark-matter/style.json',
-  elevated: 'http://192.168.1.179:9000/styles/3d-map/style.json',
-  klokantech: 'http://192.168.1.179:9000/styles/klokantech-basic/style.json'
+  vector: 'http://192.168.1.161:8081/styles/osm-bright/style.json',
+  dark: 'http://192.168.1.161:8081/styles/dark-matter/style.json',
+  elevated: 'http://192.168.1.161:8081/styles/3d-map/style.json',
+  klokantech: 'http://192.168.1.161:8081/styles/klokantech-basic/style.json'
 };
 
 // ESRI Satellite style definition with zoom limits
@@ -810,7 +810,7 @@ export default function Map() {
       const profile = selectedMode?.profile || 'car';
       
       const allowAlternatives = points.length === 2;
-      const base = `http://192.168.1.179:8989/route?point=${pointsParam}&profile=${profile}&locale=en&calc_points=true&debug=false&elevation=false&type=json&instructions=true&points_encoded=false`;
+      const base = `http://192.168.1.161:8002/route?point=${pointsParam}&profile=${profile}&locale=en&calc_points=true&debug=false&elevation=false&type=json&instructions=true&points_encoded=false`;
       const alt = `&ch.disable=true&algorithm=alternative_route&alternative_route.max_paths=3&alternative_route.max_weight_factor=2&alternative_route.max_share_factor=0.6`;
       const routeUrl = allowAlternatives ? `${base}${alt}` : base;
 
@@ -919,7 +919,7 @@ export default function Map() {
           const summaries = await Promise.all(
             transportModes.map(async (m) => {
               try {
-                const baseSummary = `http://192.168.1.179:8989/route?point=${pointsParam}&profile=${m.profile}&locale=en&calc_points=true&debug=false&elevation=false&type=json&instructions=false&points_encoded=false`;
+                const baseSummary = `http://192.168.1.161:8002/route?point=${pointsParam}&profile=${m.profile}&locale=en&calc_points=true&debug=false&elevation=false&type=json&instructions=false&points_encoded=false`;
                 const resp = await fetch(baseSummary);
                 if (!resp.ok) return { id: m.id, timeMs: Number.NaN, distanceM: Number.NaN };
                 const d = await resp.json();
@@ -1044,17 +1044,17 @@ export default function Map() {
     setIsSearching(true);
     
     try {
-      console.log(`http://192.168.1.179:8088/search?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1`);
+      console.log(`http://192.168.1.161:8080/search?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1`);
       
       const response = await fetch(
-        `http://192.168.1.179:8088/search?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1`
+        `http://192.168.1.161:8080/search?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1`
       );
       
       const data = await response.json();
       setSearchResults(data);
     } catch (error) {
       console.error('Search failed:', error);
-      console.log('Make sure Nominatim is running at http://192.168.1.11:8088');
+      console.log('Make sure Nominatim is running at http://192.168.1.11:8080');
       setSearchResults([]);
     } finally {
       setIsSearching(false);
@@ -1072,7 +1072,7 @@ export default function Map() {
     
     try {
       const response = await fetch(
-        `http://192.168.1.179:8088/search?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1`
+        `http://192.168.1.161:8080/search?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1`
       );
       
       const data = await response.json();
@@ -1096,7 +1096,7 @@ export default function Map() {
     
     try {
       const response = await fetch(
-        `http://192.168.1.179:8088/search?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1`
+        `http://192.168.1.161:8080/search?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1`
       );
       
       const data = await response.json();
@@ -1120,7 +1120,7 @@ export default function Map() {
     
     try {
       const response = await fetch(
-        `http://192.168.1.179:8088/search?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1`
+        `http://192.168.1.161:8080/search?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1`
       );
       
       const data = await response.json();
@@ -1319,7 +1319,7 @@ export default function Map() {
   const handleMapClick = useCallback(async (lng: number, lat: number) => {
     try {
       const response = await fetch(
-        `http://192.168.1.179:8088/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`
+        `http://192.168.1.161:8080/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`
       );
 
       const data = await response.json();
@@ -1351,7 +1351,7 @@ export default function Map() {
       }
     } catch (error) {
       console.error('Reverse geocoding failed:', error);
-      console.log('Make sure Nominatim is running at http://192.168.1.11:8088');
+      console.log('Make sure Nominatim is running at http://192.168.1.11:8080');
     }
   }, [isSelectingWaypointFromMap, addWaypoint, toast]);
 
@@ -1546,7 +1546,7 @@ export default function Map() {
       const selectedMode = transportModes.find(mode => mode.id === selectedTransport);
       const profile = selectedMode?.profile || 'car';
       
-      const optimizeUrl = `http://192.168.1.179:8989/route?point=${pointsParam}&profile=${profile}&optimize=true&locale=en&calc_points=true&debug=false&elevation=false&type=json&instructions=true&points_encoded=false`;
+      const optimizeUrl = `http://192.168.1.161:8002/route?point=${pointsParam}&profile=${profile}&optimize=true&locale=en&calc_points=true&debug=false&elevation=false&type=json&instructions=true&points_encoded=false`;
       
      
       const response = await fetch(optimizeUrl);

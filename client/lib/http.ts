@@ -1,7 +1,7 @@
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 
 // Base URL priority: Vite env -> provided IP -> fallback
-const DEFAULT_BASE_URL = "http://192.168.1.34:8081";
+const DEFAULT_BASE_URL = "http://192.168.1.93:8081";
 const BASE_URL: string = typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_API_BASE_URL
   ? (import.meta as any).env.VITE_API_BASE_URL
   : DEFAULT_BASE_URL;
