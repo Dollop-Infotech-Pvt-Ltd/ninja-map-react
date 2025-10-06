@@ -40,6 +40,7 @@ import {
 import maplibregl from 'maplibre-gl';
 import type { StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { TILE_STYLES, NOMINATIM_SEARCH_URL, NOMINATIM_REVERSE_URL, VALHALLA_ROUTE_URL, VALHALLA_OPTIMIZED_ROUTE_URL } from "@/lib/APIConstants";
 
 // Helper function to decode polyline
 function decodePolyline(encoded: string): [number, number][] {
@@ -68,6 +69,37 @@ function decodePolyline(encoded: string): [number, number][] {
     const deltaLng = ((result & 1) !== 0 ? ~(result >> 1) : (result >> 1));
     lng += deltaLng;
     coordinates.push([lng * 1e-5, lat * 1e-5]);
+  }
+  return coordinates;
+}
+
+// Polyline6 decoder for Valhalla shapes
+function decodePolyline6(encoded: string): [number, number][] {
+  const coordinates: [number, number][] = [];
+  let index = 0;
+  let lat = 0;
+  let lng = 0;
+  while (index < encoded.length) {
+    let shift = 0;
+    let result = 0;
+    let byte: number;
+    do {
+      byte = encoded.charCodeAt(index++) - 63;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20);
+    const deltaLat = (result & 1) ? ~(result >> 1) : (result >> 1);
+    lat += deltaLat;
+    shift = 0;
+    result = 0;
+    do {
+      byte = encoded.charCodeAt(index++) - 63;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20);
+    const deltaLng = (result & 1) ? ~(result >> 1) : (result >> 1);
+    lng += deltaLng;
+    coordinates.push([lng * 1e-6, lat * 1e-6]);
   }
   return coordinates;
 }
@@ -128,12 +160,7 @@ interface RouteInfo {
   totalRoutes: number;
 }
 
-const mapStyles = {
-  vector: 'http://192.168.1.161:8081/styles/osm-bright/style.json',
-  dark: 'http://192.168.1.161:8081/styles/dark-matter/style.json',
-  elevated: 'http://192.168.1.161:8081/styles/3d-map/style.json',
-  klokantech: 'http://192.168.1.161:8081/styles/klokantech-basic/style.json'
-};
+const mapStyles = TILE_STYLES;
 
 // ESRI Satellite style definition with zoom limits
 const esriSatelliteStyle: StyleSpecification = {
@@ -775,11 +802,11 @@ export default function Map() {
   const skipEndSearchRef = useRef(false);
   const skipWaypointSearchRef = useRef(false);
   
-  // Fixed transport modes with correct Graphhopper profiles
+  // Fixed transport modes with Valhalla costings
   const transportModes = [
-    { id: "car", icon: Car, label: "Car", profile: "car", color: "#4285f4" },
-    { id: "bike", icon: Bike, label: "Bike", profile: "bike", color: "#34a853" },
-    { id: "foot", icon: Navigation, label: "Walk", profile: "foot", color: "#fbbc04" },
+    { id: "car", icon: Car, label: "Car", profile: "auto", color: "#4285f4" },
+    { id: "bike", icon: Bike, label: "Bike", profile: "motorcycle", color: "#34a853" },
+    { id: "foot", icon: Navigation, label: "Walk", profile: "pedestrian", color: "#fbbc04" },
   ];
   
   // Voice navigation functions
@@ -796,7 +823,7 @@ export default function Map() {
     }
   }, [isVoiceNavigationEnabled]);
   
-  // GraphHopper routing with local service
+  // Valhalla routing with JSON body
   const calculateRoute = useCallback(async (points: RoutePoint[], modeId?: string) => {
     if (points.length < 2) return;
 
@@ -805,21 +832,25 @@ export default function Map() {
     setAvailableRoutes([]);
     setRouteGeometries([]);
     try {
-      const pointsParam = points.map(p => `${p.coordinates[0]},${p.coordinates[1]}`).join('&point=');
       const selectedMode = transportModes.find(mode => mode.id === (modeId ?? selectedTransport));
-      const profile = selectedMode?.profile || 'car';
-      
-      const allowAlternatives = points.length === 2;
-      const base = `http://192.168.1.161:8002/route?point=${pointsParam}&profile=${profile}&locale=en&calc_points=true&debug=false&elevation=false&type=json&instructions=true&points_encoded=false`;
-      const alt = `&ch.disable=true&algorithm=alternative_route&alternative_route.max_paths=3&alternative_route.max_weight_factor=2&alternative_route.max_share_factor=0.6`;
-      const routeUrl = allowAlternatives ? `${base}${alt}` : base;
+      const costing = selectedMode?.profile || 'auto';
 
-      console.log(`Calculating route with profile: ${profile}`);
-      console.log('Route URL:', routeUrl);
-      console.log('Route points:', points);
-      
-      const response = await fetch(routeUrl);
-      let data;
+      const allowAlternatives = points.length === 2;
+      const locations = points.map(p => ({ lat: p.coordinates[0], lon: p.coordinates[1], type: 'break', name: p.address }));
+
+      const body = {
+        locations,
+        costing,
+        directions_options: { units: 'kilometers' },
+        alternates: allowAlternatives ? 2 : 0
+      } as any;
+
+      console.log(`Calculating route with costing: ${costing}`);
+      console.log('Route body:', body);
+
+      const url = `${VALHALLA_ROUTE_URL}?json=${encodeURIComponent(JSON.stringify(body))}`;
+      const response = await fetch(url, { method: 'GET' });
+      let data: any;
       
       if (!response.ok) {
         let errorText = 'Unknown error';
@@ -853,79 +884,108 @@ export default function Map() {
         console.log('Route data received:', data);
       }
       
-      if (data.paths && data.paths.length > 0) {
-        // Sort routes by time (ascending) so index 0 is always fastest
-        const sortedPaths = [...data.paths].sort((a: any, b: any) => (a.time ?? Infinity) - (b.time ?? Infinity));
-        setAvailableRoutes(sortedPaths);
-        // Default to fastest
-        setSelectedRouteIndex(0);
-        const selectedRoute = sortedPaths[0];
+      const maneuversToSign = (type: number) => {
+        if (type === 8 || type === 9) return -2; // left
+        if (type === 10 || type === 11) return 2; // right
+        if (type === 15) return 4; // roundabout
+        return 0; // continue/default
+      };
 
-        // Update route info
-        setRouteInfo({
-          distance: (selectedRoute.distance / 1000).toFixed(1),
-          time: Math.round(selectedRoute.time / 60000),
-          instructions: selectedRoute.instructions || [],
-          totalRoutes: sortedPaths.length
+      const trips: any[] = [];
+      if (data?.trip) {
+        trips.push(data.trip);
+      }
+      if (Array.isArray(data?.alternates)) {
+        data.alternates.forEach((alt: any) => {
+          if (alt?.trip) trips.push(alt.trip);
         });
+      }
 
-        // Process turn-by-turn directions
-        if (selectedRoute.instructions) {
-          const steps: DirectionStep[] = selectedRoute.instructions.map((inst: any) => ({
-            instruction: inst.text || 'Continue',
-            distance: inst.distance || 0,
-            time: inst.time || 0,
-            sign: inst.sign || 0
-          }));
+      if (trips.length > 0) {
+        const routes = trips.map((trip) => {
+          const summary = trip?.summary || {};
+          const timeSec = Number(summary.time ?? 0);
+          const lengthKm = Number(summary.length ?? 0);
 
-          setDirectionSteps(steps);
+          // Collect maneuvers from all legs
+          const legs = Array.isArray(trip?.legs) ? trip.legs : [];
+          const steps: DirectionStep[] = [];
+          legs.forEach((leg: any) => {
+            const mans = Array.isArray(leg?.maneuvers) ? leg.maneuvers : [];
+            mans.forEach((m: any) => {
+              steps.push({
+                instruction: m?.instruction || 'Continue',
+                distance: typeof m?.length === 'number' ? m.length * 1000 : 0,
+                time: typeof m?.time === 'number' ? m.time * 1000 : 0,
+                sign: maneuversToSign(Number(m?.type ?? 0))
+              });
+            });
+          });
 
-          // Start voice navigation if enabled
-          if (isVoiceNavigationEnabled && steps.length > 0) {
-            speakInstruction(steps[0].instruction);
-          }
-        }
-
-        // Convert all route geometries to GeoJSON in the same sorted order
-        const geometries = sortedPaths.map((path: any) => {
-          let coordinates;
-
-          if (path.points.coordinates && Array.isArray(path.points.coordinates)) {
-            coordinates = path.points.coordinates;
-          } else if (typeof path.points === 'string') {
-            coordinates = decodePolyline(path.points).map(coord => [coord[0], coord[1]]);
-          } else if (Array.isArray(path.points)) {
-            coordinates = path.points.map((point: any) => {
-              if (Array.isArray(point) && point.length >= 2) {
-                return [point[1], point[0]];
+          // Decode geometry
+          let coords: [number, number][] = [];
+          if (typeof trip?.shape === 'string') {
+            coords = decodePolyline6(trip.shape).map(c => [c[0], c[1]]);
+          } else if (legs.length > 0) {
+            legs.forEach((leg: any) => {
+              if (typeof leg?.shape === 'string') {
+                const part = decodePolyline6(leg.shape).map((c) => [c[0], c[1]] as [number, number]);
+                coords.push(...part);
               }
-              return [point.lon || point.lng || 0, point.lat || 0];
             });
           }
 
-          return {
+          const geometry = {
             type: 'Feature',
             properties: {},
-            geometry: {
-              type: 'LineString',
-              coordinates: coordinates || []
-            }
+            geometry: { type: 'LineString', coordinates: coords as any }
+          };
+
+          return {
+            distance: lengthKm * 1000,
+            time: timeSec * 1000,
+            instructions: steps,
+            geometry
           };
         });
 
-        setRouteGeometries(geometries);
-        console.log('Route geometries set with', geometries.length, 'routes');
+        // Sort by time asc
+        routes.sort((a, b) => (a.time ?? Infinity) - (b.time ?? Infinity));
+        setAvailableRoutes(routes);
+        setSelectedRouteIndex(0);
+
+        const selected = routes[0];
+        setRouteInfo({
+          distance: (selected.distance / 1000).toFixed(1),
+          time: Math.round(selected.time / 60000),
+          instructions: selected.instructions || [],
+          totalRoutes: routes.length
+        });
+
+        setDirectionSteps(selected.instructions || []);
+        if (isVoiceNavigationEnabled && selected.instructions.length > 0) {
+          speakInstruction(selected.instructions[0].instruction);
+        }
+
+        setRouteGeometries(routes.map(r => r.geometry));
+
         try {
           const summaries = await Promise.all(
             transportModes.map(async (m) => {
               try {
-                const baseSummary = `http://192.168.1.161:8002/route?point=${pointsParam}&profile=${m.profile}&locale=en&calc_points=true&debug=false&elevation=false&type=json&instructions=false&points_encoded=false`;
-                const resp = await fetch(baseSummary);
+                const b = {
+                  locations,
+                  costing: m.profile,
+                  directions_options: { units: 'kilometers' }
+                };
+                const url2 = `${VALHALLA_ROUTE_URL}?json=${encodeURIComponent(JSON.stringify(b))}`;
+                const resp = await fetch(url2, { method: 'GET' });
                 if (!resp.ok) return { id: m.id, timeMs: Number.NaN, distanceM: Number.NaN };
                 const d = await resp.json();
-                const p = d.paths && d.paths[0];
-                if (!p) return { id: m.id, timeMs: Number.NaN, distanceM: Number.NaN };
-                return { id: m.id, timeMs: Number(p.time), distanceM: Number(p.distance) };
+                const trip = d?.trip;
+                const sum = trip?.summary;
+                if (!sum) return { id: m.id, timeMs: Number.NaN, distanceM: Number.NaN };
+                return { id: m.id, timeMs: Number(sum.time) * 1000, distanceM: Number(sum.length) * 1000 };
               } catch {
                 return { id: m.id, timeMs: Number.NaN, distanceM: Number.NaN };
               }
@@ -1044,10 +1104,10 @@ export default function Map() {
     setIsSearching(true);
     
     try {
-      console.log(`http://192.168.1.161:8080/search?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1`);
+      console.log(`${NOMINATIM_SEARCH_URL}?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1`);
       
       const response = await fetch(
-        `http://192.168.1.161:8080/search?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1`
+        `${NOMINATIM_SEARCH_URL}?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1`
       );
       
       const data = await response.json();
@@ -1072,7 +1132,7 @@ export default function Map() {
     
     try {
       const response = await fetch(
-        `http://192.168.1.161:8080/search?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1`
+        `${NOMINATIM_SEARCH_URL}?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1`
       );
       
       const data = await response.json();
@@ -1096,7 +1156,7 @@ export default function Map() {
     
     try {
       const response = await fetch(
-        `http://192.168.1.161:8080/search?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1`
+        `${NOMINATIM_SEARCH_URL}?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1`
       );
       
       const data = await response.json();
@@ -1120,7 +1180,7 @@ export default function Map() {
     
     try {
       const response = await fetch(
-        `http://192.168.1.161:8080/search?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1`
+        `${NOMINATIM_SEARCH_URL}?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1`
       );
       
       const data = await response.json();
@@ -1319,7 +1379,7 @@ export default function Map() {
   const handleMapClick = useCallback(async (lng: number, lat: number) => {
     try {
       const response = await fetch(
-        `http://192.168.1.161:8080/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`
+        `${NOMINATIM_REVERSE_URL}?format=json&lat=${lat}&lon=${lng}&addressdetails=1`
       );
 
       const data = await response.json();
@@ -1537,27 +1597,36 @@ export default function Map() {
     }
   }, [isVoiceNavigationEnabled, directionSteps, currentStepIndex, speakInstruction]);
   
-  // Optimize route
+  // Optimize route via Valhalla optimized_route
   const optimizeRoute = useCallback(async () => {
     if (routePoints.length < 2) return;
-    
+
     try {
-      const pointsParam = routePoints.map(p => `${p.coordinates[0]},${p.coordinates[1]}`).join('&point=');
+      const locations = routePoints.map(p => ({ lat: p.coordinates[0], lon: p.coordinates[1], type: 'break', name: p.address }));
       const selectedMode = transportModes.find(mode => mode.id === selectedTransport);
-      const profile = selectedMode?.profile || 'car';
-      
-      const optimizeUrl = `http://192.168.1.161:8002/route?point=${pointsParam}&profile=${profile}&optimize=true&locale=en&calc_points=true&debug=false&elevation=false&type=json&instructions=true&points_encoded=false`;
-      
-     
-      const response = await fetch(optimizeUrl);
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.paths && data.paths.length > 0) {
-          // Use the optimized route data same as calculateRoute
-          calculateRoute(routePoints);
+      const costing = selectedMode?.profile || 'auto';
+
+      const body = { locations, costing, directions_options: { units: 'kilometers' } };
+      const url = `${VALHALLA_OPTIMIZED_ROUTE_URL}?json=${encodeURIComponent(JSON.stringify(body))}`;
+      const resp = await fetch(url, { method: 'GET' });
+
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data?.trip) {
+          const newPoints = Array.isArray(data.trip.locations)
+            ? data.trip.locations.map((l: any) => ({
+                coordinates: [Number(l.lat), Number(l.lon)] as [number, number],
+                address: l.name || `${l.lat},${l.lon}`
+              }))
+            : routePoints;
+          if (newPoints.length >= 2) {
+            setRoutePoints(newPoints);
+            await calculateRoute(newPoints);
+            return;
+          }
         }
       }
+      await calculateRoute(routePoints);
     } catch (error) {
       console.error('Route optimization failed:', error);
     }
