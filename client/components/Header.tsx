@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { MapPin, Sun, Moon, Navigation, User } from "lucide-react";
 import { useAuthModal } from "@/hooks/use-auth-modal";
 import { motion } from "framer-motion";
+import { useTheme } from "@/hooks/use-theme";
 import { Button } from "@/components/ui/button";
 import AuthModals from "./AuthModals";
 import { refreshAuthToken, setAuthToken, hasAuthCookies } from "@/lib/http";
@@ -14,8 +15,8 @@ interface HeaderProps {
 
 export default function Header({ showBackButton = true }: HeaderProps) {
   const { isOpen, mode, openLogin, openSignup, closeModal } = useAuthModal();
-  const [isDark, setIsDark] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const { theme, setTheme, isDark } = useTheme();
   const [userLoggedIn, setUserLoggedIn] = useState<boolean>(() => {
     try {
       return hasAuthCookies();
@@ -26,11 +27,6 @@ export default function Header({ showBackButton = true }: HeaderProps) {
 
   useEffect(() => {
     setMounted(true);
-    const theme = localStorage.getItem("theme");
-    const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-
-    setIsDark(true);
-    document.documentElement.classList.add("dark");
 
     const checkAuth = async () => {
       // Show profile only when both accessToken and refreshToken cookies exist
@@ -73,20 +69,10 @@ export default function Header({ showBackButton = true }: HeaderProps) {
   const navigate = useNavigate();
 
   const toggleTheme = () => {
-    const newTheme = !isDark;
-    setIsDark(newTheme);
-
-    if (newTheme) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
+    // Toggle between light and dark (keep it simple)
+    const next = isDark ? 'light' : 'dark';
+    setTheme(next);
   };
-
-
-
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85">

@@ -5,18 +5,15 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 backdrop-blur-sm bg-card/90 border border-border/40 shadow-sm",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm hover:shadow-md",
-        destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm hover:shadow-md",
-        outline:
-          "border border-input bg-background/50 backdrop-blur-sm hover:bg-accent hover:text-accent-foreground shadow-sm hover:shadow-md",
-        secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-sm hover:shadow-md",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
+        default: "bg-card/90 backdrop-blur-sm text-primary hover:bg-card/95 shadow-sm hover:shadow-md",
+        destructive: "bg-card/90 backdrop-blur-sm text-destructive hover:bg-card/95 shadow-sm hover:shadow-md",
+        outline: "bg-card/90 backdrop-blur-sm border border-border text-foreground hover:bg-card/95 shadow-sm hover:shadow-md",
+        secondary: "bg-card/90 backdrop-blur-sm text-secondary hover:bg-card/95 shadow-sm hover:shadow-md",
+        ghost: "bg-card/90 backdrop-blur-sm text-foreground hover:bg-card/95",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {

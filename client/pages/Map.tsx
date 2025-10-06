@@ -14,20 +14,28 @@ import {
   Layers,
   Compass,
   Target,
-  Car, Bike,
-  Menu,
-  X, Volume2,
+  Car,
+  Bike,
+  Bus,
+  X,
+  Volume2,
   VolumeX,
   Satellite,
-  Map as MapIcon, Plus,
-  Minus, Route, Navigation2,
+  Map as MapIcon,
+  Plus,
+  Minus,
+  Route,
+  Navigation2,
   MapPinOff,
   Loader2,
   Sun,
-  Moon, ArrowUp,
+  Moon,
+  ArrowUp,
   ArrowRight,
   ArrowLeft,
-  RotateCw, Settings, Building,
+  RotateCw,
+  Settings,
+  Building,
   Coffee,
   Fuel,
   Hospital,
@@ -741,7 +749,7 @@ function MapLibreMap({
 }
 
 export default function Map() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, isDark } = useTheme();
   const toast = useEnhancedToast();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDirectionsOpen, setIsDirectionsOpen] = useState(false);
@@ -805,8 +813,10 @@ export default function Map() {
   // Fixed transport modes with Valhalla costings
   const transportModes = [
     { id: "car", icon: Car, label: "Car", profile: "auto", color: "#4285f4" },
-    { id: "bike", icon: Bike, label: "Bike", profile: "motorcycle", color: "#34a853" },
+    { id: "bike", icon: Bike, label: "Bicycle", profile: "bicycle", color: "#34a853" },
     { id: "foot", icon: Navigation, label: "Walk", profile: "pedestrian", color: "#fbbc04" },
+    { id: "bus", icon: Bus, label: "Bus", profile: "bus", color: "#8a2be2" },
+    { id: "motorcycle", icon: Car, label: "Motorcycle", profile: "motorcycle", color: "#ff6b6b" },
   ];
   
   // Voice navigation functions
@@ -1052,36 +1062,43 @@ export default function Map() {
     }
   }, [routePoints, calculateRoute]);
   
+  const LAYER_PREVIEW = "https://cdn.builder.io/api/v1/image/assets%2Fe2371b11d83c44f2b44d6a6528adf130%2Fdf529bd313c6405cabab1f313bd147b9?format=webp&width=800";
+
   const mapLayers = [
     {
       id: "vector",
       name: "OSM Bright",
       icon: MapIcon,
-      description: "Road map"
+      description: "Road map",
+      preview: LAYER_PREVIEW
     },
     {
       id: "klokantech",
       name: "Basic",
       icon: MapIcon,
-      description: "Basic style"
+      description: "Basic style",
+      preview: LAYER_PREVIEW
     },
     {
       id: "dark",
       name: "Dark",
       icon: MapIcon,
-      description: "Dark style"
+      description: "Dark style",
+      preview: LAYER_PREVIEW
     },
     {
       id: "elevated",
       name: "Elevated",
       icon: MapIcon,
-      description: "Elevated style"
+      description: "Elevated style",
+      preview: LAYER_PREVIEW
     },
     {
       id: "satellite",
       name: "Satellite",
       icon: Satellite,
-      description: "ESRI Satellite"
+      description: "ESRI Satellite",
+      preview: LAYER_PREVIEW
     }
   ];
   
@@ -1932,139 +1949,120 @@ export default function Map() {
   
   return (
     <div className="fixed inset-0 h-screen w-screen overflow-hidden bg-background">
-      {/* Compact Header */}
-      <div className="absolute top-0 left-0 right-0 z-50">
-        <div className="bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-sm">
-          <div className="flex items-center justify-between px-4 py-2">
-            {/* Left: Branding */}
-            <Link 
-              to="/" 
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground shadow-sm hover:shadow-md transform hover:scale-105 transition-all duration-200"
-            >
+      {/* Floating Search - top-left (logo left, input center, directions right) */}
+      <div className="absolute top-4 left-4 z-50 w-[min(90vw,28rem)]">
+        <div className="flex items-center gap-3">
+          <Link to="/" className="flex-shrink-0">
+            <div className="h-10 w-10 rounded-lg bg-gradient-brand text-white flex items-center justify-center shadow-sm">
               <MapPin className="h-4 w-4" />
-              <span className="text-sm font-semibold">NINja Map</span>
-            </Link>
-            
-            {/* Center: Compact Search */}
-            <div className="flex-1 max-w-md mx-4 relative">
+            </div>
+          </Link>
+
+          <div className="relative flex-1">
+            <div className="rounded-full overflow-hidden border border-border/40 bg-card/90 shadow-lg focus-within:ring-2 focus-within:ring-brand/20 transition-all duration-150">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/80 z-10" />
+
                 <Input
-                  placeholder="Search places..."
-                  className="h-10 rounded-full pl-10 pr-4 text-sm bg-card/95 border border-border/20 shadow-sm w-full"
+                  placeholder="Search places"
+                  className="h-12 w-full bg-transparent border-0 rounded-none pl-10 pr-12 text-sm"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
+
                 {isSearching && (
-                  <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-primary animate-spin" />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 z-20">
+                    <div className="h-6 w-6 bg-transparent flex items-center justify-center">
+                      <div className="h-5 w-5 rounded-full bg-card/80 border border-border/40 flex items-center justify-center shadow-sm">
+                        <Loader2 className="h-3 w-3 text-primary animate-spin" />
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
-              
-              {/* Compact Search Results - Fixed width to match input */}
-              <AnimatePresence>
-                {searchResults.length > 0 && (
-                  <>
-                    {/* Invisible overlay to capture outside clicks */}
-                    <div
-                      className="fixed inset-0 z-50"
-                      onClick={() => {
-                        setSearchResults([]);
-                        setSearchQuery("");
-                      }}
-                    />
-                    <motion.div
-                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                      className="absolute top-full left-0 mt-2 bg-card/95 border border-border rounded-lg shadow-lg z-60 overflow-hidden max-h-56 overflow-y-auto w-full"
-                      onClick={(e) => e.stopPropagation()}
-                    >
+            </div>
+
+            {/* Results dropdown anchored to input */}
+            <AnimatePresence>
+              {searchResults.length > 0 && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => { setSearchResults([]); setSearchQuery(""); }}
+                  />
+
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.09, ease: 'easeOut' }}
+                    className="absolute left-0 top-full mt-2 bg-card/95 border border-border/50 rounded-b-full rounded-t-none shadow-xl z-50 max-h-64 overflow-y-auto w-full"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     {searchResults.map((result, index) => {
                       const IconComponent = getPlaceIcon(result.type);
                       return (
                         <motion.button
                           key={result.place_id}
-                          initial={{ opacity: 0, x: -10 }}
+                          initial={{ opacity: 0, x: -6 }}
                           animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.03 }}
-                          onClick={() => {
-                            handleSearchResultClick(result);
-                            setSearchResults([]);
-                            setSearchQuery("");
-                          }}
-                          className="w-full text-left p-3 border-b border-border/20 hover:bg-accent/5 transition-colors duration-150 flex items-start gap-3"
+                          transition={{ duration: 0.06, delay: index * 0.015 }}
+                          onClick={() => { handleSearchResultClick(result); setSearchResults([]); setSearchQuery(""); }}
+                          className="w-full text-left p-3 border-b border-border/20 hover:bg-accent/10 transition-colors flex items-start gap-3"
                         >
-                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
                             <IconComponent className="h-4 w-4 text-primary" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="text-xs font-medium text-foreground line-clamp-2">
-                              {result.display_name.split(',')[0]}
-                            </div>
-                            <div className="text-xs text-muted-foreground line-clamp-2">
-                              {result.display_name.split(',').slice(1, 3).join(', ')}
-                            </div>
+                            <div className="text-xs font-medium text-foreground line-clamp-2">{result.display_name.split(',')[0]}</div>
+                            <div className="text-xs text-muted-foreground line-clamp-2">{result.display_name.split(',').slice(1, 3).join(', ')}</div>
                           </div>
                         </motion.button>
                       );
                     })}
-                    </motion.div>
-                  </>
-                )}
-              </AnimatePresence>
-            </div>
-            
-            {/* Right: Compact Controls */}
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setTheme(theme === 'dark' ? 'light' : theme === 'light' ? 'system' : 'dark')}
-                className="h-8 w-8"
-              >
-                {theme === 'dark' ? <Sun className="h-4 w-4" /> : theme === 'light' ? <Moon className="h-4 w-4" /> : <Settings className="h-4 w-4" />}
-              </Button>
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() =>
-                  setShowLayerPanel((prev) => {
-                    const next = !prev;
-                    if (next) {
-                      setIsMenuOpen(false);
-                      setIsDirectionsOpen(false);
-                    }
-                    return next;
-                  })
-                }
-                className="h-8 w-8"
-              >
-                <Layers className="h-4 w-4" />
-              </Button>
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() =>
-                  setIsMenuOpen((prev) => {
-                    const next = !prev;
-                    if (next) {
-                      setShowLayerPanel(false);
-                      setIsDirectionsOpen(false);
-                    }
-                    return next;
-                  })
-                }
-                className="h-8 w-8"
-              >
-                <Menu className="h-4 w-4" />
-              </Button>
-            </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Directions button as sibling to input */}
+          <div className="flex-shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => { setIsDirectionsOpen(true); setShowLayerPanel(false); }}
+              className="h-10 w-10 backdrop-blur-sm bg-card/60 border border-border/40 rounded-full shadow-sm p-1 flex items-center justify-center transition"
+              title="Directions"
+            >
+              <Route className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>
-      
+
+      {/* Theme Toggle - top-right */}
+      <div className="absolute top-4 right-4 z-50">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setTheme(isDark ? 'light' : 'dark')}
+          className="h-9 w-9 backdrop-blur-sm bg-card/60 border border-border/40 rounded-full shadow-sm flex items-center justify-center transition"
+        >
+          <motion.div
+            initial={false}
+            animate={{ rotate: isDark ? 180 : 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+          >
+            {isDark ? (
+              <Sun className="h-4 w-4 text-yellow-500" />
+            ) : (
+              <Moon className="h-4 w-4 text-muted-foreground" />
+            )}
+          </motion.div>
+        </Button>
+      </div>
+
       {/* Compact Location Details Overlay */}
       <AnimatePresence>
         {markerDetails && !isDirectionsOpen && (
@@ -2106,7 +2104,7 @@ export default function Map() {
                     size="sm"
                     className="flex-1 h-8 text-xs"
                   >
-                    <Navigation className="h-3 w-3 mr-1" />
+                    <Route className="h-3 w-3 mr-1" />
                     Directions
                   </Button>
                   <Button
@@ -2123,7 +2121,7 @@ export default function Map() {
                     size="sm"
                     className="h-8 w-8 p-0"
                   >
-                    <Target className="h-3 w-3" />
+                    <MapPin className="h-3 w-3" />
                   </Button>
                 </div>
               </div>
@@ -2132,93 +2130,18 @@ export default function Map() {
         )}
       </AnimatePresence>
       
-      {/* Menu Overlay */}
-      <AnimatePresence>
-        {isMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="absolute top-14 right-4 z-50"
-          >
-            <div className="bg-popover/95 backdrop-blur-xl border border-border rounded-lg shadow-lg p-4 w-64">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold">Quick Actions</h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="h-6 w-6 p-0"
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-              
-              <div className="space-y-2">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start h-8 text-xs"
-                  onClick={getUserLocation}
-                >
-                  <Target className="h-3 w-3 mr-2" />
-                  My Location
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start h-8 text-xs"
-                  onClick={() => {
-                    setIsDirectionsOpen(true);
-                    setIsMenuOpen(false);
-                  }}
-                >
-                  <Navigation className="h-3 w-3 mr-2" />
-                  Directions
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start h-8 text-xs"
-                  onClick={clearAll}
-                >
-                  <MapPinOff className="h-3 w-3 mr-2" />
-                  Clear Map
-                </Button>
-              </div>
-              
-              <div className="mt-4">
-                <h4 className="text-xs font-medium text-muted-foreground mb-2">Quick Search</h4>
-                <div className="grid grid-cols-2 gap-1">
-                  {quickPlaces.slice(0, 6).map((place) => (
-                    <Button
-                      key={place.name}
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setSearchQuery(place.query);
-                        setIsMenuOpen(false);
-                      }}
-                      className="h-8 justify-start text-xs p-2"
-                    >
-                      <place.icon className="h-3 w-3 mr-1" />
-                      {place.name}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
       
       {/* Directions Overlay */}
       <AnimatePresence>
         {isDirectionsOpen && (
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
+            initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="absolute top-14 left-4 z-50"
+            exit={{ opacity: 0, x: -8 }}
+            transition={{ duration: 0.09, ease: 'easeOut' }}
+            className="absolute top-20 left-4 z-50"
           >
-            <div className="bg-card/95 backdrop-blur-xl border border-border rounded-lg shadow-lg p-4 w-128 max-h-[calc(100vh-5rem)] overflow-y-auto">
+            <div className="bg-popover/95 backdrop-blur-xl border border-border rounded-3xl shadow-2xl p-4 w-128 max-h-[calc(100vh-5rem)] overflow-y-auto ring-1 ring-border/30">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-semibold">Directions</h3>
                 <Button
@@ -2240,20 +2163,20 @@ export default function Map() {
                   <div className="flex-1">
                     <div className="flex items-center gap-1">
                       <Button
-                        variant={useCurrentLocation ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setUseCurrentLocation(!useCurrentLocation)}
-                        className="h-6 text-xs px-2"
-                      >
-                        <Target className="h-3 w-3 mr-1" />
-                        Current
-                      </Button>
+                      variant={useCurrentLocation ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setUseCurrentLocation(!useCurrentLocation)}
+                      className="h-7 text-xs px-3 rounded-full flex items-center gap-1"
+                    >
+                      <Target className="h-3 w-3 mr-1" />
+                      Current
+                    </Button>
                       <span className="text-xs text-muted-foreground">or</span>
                     </div>
                     <div className="relative mt-1">
                       <UnifiedInput
                         placeholder="Enter start point"
-                        className="pl-10 pr-4 text-sm rounded-lg bg-popover/80"
+                        className="pl-10 pr-4 text-sm rounded-full bg-popover/80"
                         value={fromLocation}
                         onChange={(val: string) => setFromLocation(val)}
                         disabled={useCurrentLocation}
@@ -2273,7 +2196,7 @@ export default function Map() {
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="mt-1 bg-popover border border-border rounded-lg shadow-lg overflow-hidden max-h-40 overflow-y-auto z-50"
+                      className="mt-1 bg-popover border border-border rounded-xl shadow-lg overflow-hidden max-h-40 overflow-y-auto z-50"
                     >
                       {startPointResults.map((result, index) => {
                         const IconComponent = getPlaceIcon(result.type || result.category || '');
@@ -2312,7 +2235,7 @@ export default function Map() {
                       initial={{ opacity: 0, y: -6 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -6 }}
-                      className="mt-1 bg-popover border border-border rounded-lg shadow-lg overflow-hidden z-50"
+                      className="mt-1 bg-popover border border-border rounded-xl shadow-lg overflow-hidden z-50"
                     >
                       <div className="w-full text-left p-2 border-b border-border/30 flex items-center gap-2">
                         <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -2341,7 +2264,7 @@ export default function Map() {
                     <div className="relative">
                       <UnifiedInput
                         placeholder="Enter destination"
-                        className="pl-10 pr-4 text-sm rounded-lg bg-popover/80"
+                        className="pl-10 pr-4 text-sm rounded-full bg-popover/80"
                         value={toLocation}
                         onChange={(val: string) => setToLocation(val)}
                         icon={Search}
@@ -2360,7 +2283,7 @@ export default function Map() {
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="mt-1 bg-popover border border-border rounded-lg shadow-lg overflow-hidden max-h-40 overflow-y-auto z-50"
+                      className="mt-1 bg-popover border border-border rounded-xl shadow-lg overflow-hidden max-h-40 overflow-y-auto z-50"
                     >
                       {endPointResults.map((result, index) => {
                         const IconComponent = getPlaceIcon(result.type || result.category || '');
@@ -2399,7 +2322,7 @@ export default function Map() {
                       initial={{ opacity: 0, y: -6 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -6 }}
-                      className="mt-1 bg-popover border border-border rounded-lg shadow-lg overflow-hidden z-50"
+                      className="mt-1 bg-popover border border-border rounded-xl shadow-lg overflow-hidden z-50"
                     >
                       <div className="w-full text-left p-2 border-b border-border/30 flex items-center gap-2">
                         <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -2430,7 +2353,7 @@ export default function Map() {
                         <div className="flex-1">
                           <UnifiedInput
                             placeholder={`Waypoint ${index + 1}`}
-                            className="pl-10 pr-4 text-sm rounded-lg bg-popover/80"
+                            className="pl-10 pr-4 text-sm rounded-full bg-popover/80"
                             value={waypoint.display_name}
                             onChange={(val: string) => setWaypoints(prev => prev.map((w, i) => i === index ? { ...w, display_name: val } : w))}
                             icon={Search}
@@ -2451,7 +2374,7 @@ export default function Map() {
                             </Button>
 
                             <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => { setIsSelectingWaypointFromMap(true); toast?.info?.('Select waypoint', 'Click on the map to pick a waypoint.'); }} title="Pick from map">
-                              <Target className="h-4 w-4" />
+                              <MapPin className="h-4 w-4" />
                             </Button>
 
                             <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => removeWaypoint(index)} title="Remove">
@@ -2477,7 +2400,7 @@ export default function Map() {
                       <div className="relative">
                         <UnifiedInput
                           placeholder="Add waypoint"
-                          className="pl-10 pr-4 text-sm rounded-lg bg-popover/80"
+                          className="pl-10 pr-4 text-sm rounded-full bg-popover/80"
                           value={waypointSearchQuery}
                           onChange={(val: string) => setWaypointSearchQuery(val)}
                           icon={Search}
@@ -2511,7 +2434,7 @@ export default function Map() {
                           setWaypointSearchResults([]);
                           setIsSelectingWaypointFromMap(false);
                         }}
-                        className="h-8 w-8 rounded-lg bg-muted/10 hover:bg-muted/20 flex items-center justify-center text-muted-foreground border border-border/20"
+                        className="h-8 w-8 rounded-xl bg-muted/10 hover:bg-muted/20 flex items-center justify-center text-muted-foreground border border-border/20"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -2525,7 +2448,7 @@ export default function Map() {
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="mt-1 bg-popover border border-border rounded-lg shadow-lg overflow-hidden max-h-40 overflow-y-auto z-50"
+                        className="mt-1 bg-popover border border-border rounded-xl shadow-lg overflow-hidden max-h-40 overflow-y-auto z-50"
                       >
                         {waypointSearchResults.map((result, index) => {
                           const IconComponent = getPlaceIcon(result.type || result.category || '');
@@ -2705,7 +2628,7 @@ export default function Map() {
                       size="sm"
                       className="flex-1 h-8 text-xs"
                     >
-                      <Navigation className="h-3 w-3 mr-1" />
+                      <Route className="h-3 w-3 mr-1" />
                       Start Navigation
                     </Button>
                     {/* <Button
@@ -2758,96 +2681,108 @@ export default function Map() {
         )}
       </AnimatePresence>
       
+      {/* Layers Button */}
+      <div className="absolute bottom-4 left-4 z-50">
+        <Button
+          variant="ghost"
+          onClick={() => setShowLayerPanel((prev) => { const next = !prev; if (next) setIsDirectionsOpen(false); return next; })}
+          className="h-10 w-10 backdrop-blur-sm bg-card/60 border border-border/40 rounded-full shadow-sm p-1 flex items-center justify-center transition"
+          title="Map style"
+        >
+          {showLayerPanel ? <X className="h-5 w-5" /> : <Layers className="h-5 w-5" />}
+        </Button>
+      </div>
+
       {/* Layer Selection Overlay */}
       <AnimatePresence>
         {showLayerPanel && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="absolute top-14 right-4 z-50"
+          initial={{ opacity: 0, y: 6, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 6, scale: 0.98 }}
+          transition={{ duration: 0.09, ease: 'easeOut' }}
+          className="absolute bottom-16 left-4 z-50 origin-bottom-left"
           >
-            <div className="bg-popover/95 backdrop-blur-xl border border-border rounded-lg shadow-lg p-4 w-48">
-              <h3 className="text-sm font-semibold mb-3">Map Style</h3>
-              <div className="space-y-2">
+            <div className="bg-popover/95 backdrop-blur-xl border border-border rounded-2xl shadow-md p-3 w-64 origin-bottom-left overflow-hidden">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold">Map styles</h3>
+                <Button variant="ghost" size="sm" onClick={() => setShowLayerPanel(false)} className="h-7 w-7 p-0">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="flex flex-col gap-2 py-1">
                 {mapLayers.map((layer) => (
-                  <Button
+                  <button
                     key={layer.id}
-                    variant={mapLayer === layer.id ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => {
-                      setMapLayer(layer.id);
-                      setShowLayerPanel(false);
-                    }}
-                    className="w-full justify-start h-8 text-xs"
-                  >
-                    <layer.icon className="h-3 w-3 mr-2" />
-                    {layer.name}
-                  </Button>
+                    onClick={() => { setMapLayer(layer.id); setShowLayerPanel(false); }}
+                    className={`w-full flex items-center gap-3 p-2 rounded-lg transition-all ${mapLayer===layer.id ? 'bg-primary/10 border border-primary/50 shadow-sm' : 'bg-popover/60 border border-border/50 hover:bg-popover/80'}`}>
+                    <div className="w-12 h-8 bg-muted/10 rounded-md overflow-hidden flex items-center justify-center flex-shrink-0">
+                      <img src={layer.preview || '/placeholder.svg'} alt={`${layer.name} preview`} className="h-full w-full object-cover" onError={(e)=>{(e.target as HTMLImageElement).src='/placeholder.svg'}} />
+                    </div>
+
+                    <div className="flex-1 text-left min-w-0">
+                      <div className="font-medium text-sm text-foreground truncate">{layer.name}</div>
+                      <div className="text-xs text-muted-foreground truncate">{layer.description}</div>
+                    </div>
+
+                    {mapLayer===layer.id && <div className="text-xs text-primary">Selected</div>}
+                  </button>
                 ))}
               </div>
+
+              <div className="mt-2 text-xs text-muted-foreground">Preview of available base layers</div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
       
-      {/* Compact Floating Controls */}
-      <div className="absolute bottom-4 right-4 flex flex-col gap-2 z-50">
-        {/* Zoom Controls */}
-        <div className="bg-card/95 backdrop-blur-xl rounded-lg shadow-sm border-2 border-border/60 overflow-hidden flex flex-row items-center">
-          <Button
-            variant="ghost"
-            onClick={zoomIn}
-            className="h-6 w-6 rounded-none border-r-2 border-border/60"
-          >
-            <Plus className="h-3 w-3" />
+      {/* Floating Controls - bottom-right */}
+      <div className="absolute bottom-4 right-4 z-50 flex flex-col gap-3 items-end">
+        <div className="flex flex-col gap-2">
+          <Button variant="ghost" onClick={zoomIn} className="h-10 w-10 backdrop-blur-sm bg-card/60 border border-border/40 rounded-full shadow-sm p-1 flex items-center justify-center hover:scale-105 transition">
+            <Plus className="h-4 w-4" />
           </Button>
-          <Button
-            variant="ghost"
-            onClick={zoomOut}
-            className="h-6 w-6 rounded-none"
-          >
-            <Minus className="h-3 w-3" />
+          <Button variant="ghost" onClick={zoomOut} className="h-10 w-10 backdrop-blur-sm bg-card/60 border border-border/40 rounded-full shadow-sm p-1 flex items-center justify-center hover:scale-105 transition">
+            <Minus className="h-4 w-4" />
           </Button>
         </div>
-        
-        {/* 3D View Button */}
-        <Button
-          variant="ghost"
-          onClick={toggle3DView}
-          className="h-8 w-8 bg-card/95 backdrop-blur-xl rounded-lg shadow-sm border border-border/50"
-          title={is3DView ? "Switch to 2D View" : "Switch to 3D View"}
-        >
-          <Box className="h-4 w-4" />
-        </Button>
-        
-        {/* Reset View Button */}
-        <Button
-          variant="ghost"
-          onClick={resetMapView}
-          className="h-8 w-8 bg-card/95 backdrop-blur-xl rounded-lg shadow-sm border border-border/50"
-          title="Reset Map View"
-        >
-          <RotateCw className="h-4 w-4" />
-        </Button>
-        
-        {/* Compass + My Location */}
-        <div className="flex items-center gap-2">
+
+        <div className="flex flex-col gap-2">
           <Button
             variant="ghost"
             onClick={resetNorth}
-            className="h-8 w-8 bg-card/95 backdrop-blur-xl rounded-lg shadow-sm border border-border/50"
+            className="h-10 w-10 backdrop-blur-sm bg-card/60 border border-border/40 rounded-full shadow-sm p-1 flex items-center justify-center hover:shadow-lg transition"
             title="Reset North"
           >
             <Compass className="h-4 w-4 transition-transform duration-200" style={{ transform: `rotate(${mapBearing}deg)` }} />
           </Button>
+
           <Button
             variant="ghost"
             onClick={getUserLocation}
-            className="h-8 w-8 bg-card/95 backdrop-blur-xl rounded-lg shadow-sm border border-border/50"
+            className="h-10 w-10 backdrop-blur-sm bg-card/60 border border-border/40 rounded-full shadow-sm p-1 flex items-center justify-center hover:shadow-lg transition"
             title="My location"
           >
             <Target className="h-4 w-4" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            onClick={toggle3DView}
+            className="h-10 w-10 backdrop-blur-sm bg-card/60 border border-border/40 rounded-full shadow-sm p-1 flex items-center justify-center hover:shadow-lg transition"
+            title={is3DView ? "Switch to 2D" : "Switch to 3D"}
+          >
+            <Box className="h-4 w-4" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            onClick={resetMapView}
+            className="h-10 w-10 backdrop-blur-sm bg-card/60 border border-border/40 rounded-full shadow-sm p-1 flex items-center justify-center hover:shadow-lg transition"
+            title="Reset view"
+          >
+            <RotateCw className="h-4 w-4" />
           </Button>
         </div>
       </div>
@@ -2867,9 +2802,10 @@ export default function Map() {
       <AnimatePresence>
         {isNavigating && routeInfo && (
           <motion.div
-            initial={{ y: -50, opacity: 0 }}
+            initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -50, opacity: 0 }}
+            exit={{ y: -20, opacity: 0 }}
+            transition={{ duration: 0.12, ease: 'easeOut' }}
             className="absolute top-14 left-4 right-4 z-40"
           >
             <div className="bg-primary text-primary-foreground p-3 rounded-lg shadow-lg backdrop-blur-xl mx-auto max-w-md">
@@ -2898,7 +2834,7 @@ export default function Map() {
       </AnimatePresence>
       
       {/* Main Map Container */}
-      <div className="absolute inset-0 pt-12 w-full h-full">
+      <div className="absolute inset-0 w-full h-full">
         <MapLibreMap
           onMapLoad={setMap}
           userLocation={userLocation}
