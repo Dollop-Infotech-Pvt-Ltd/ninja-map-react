@@ -16,7 +16,7 @@ import {
   Target,
   Car,
   Bike,
-  Bus,
+
   X,
   Volume2,
   VolumeX,
@@ -43,7 +43,8 @@ import {
   ShoppingBag,
   Utensils,
   Box,
-  AlertTriangle
+  AlertTriangle,
+  Mountain
 } from "lucide-react";
 import maplibregl from 'maplibre-gl';
 import type { StyleSpecification } from 'maplibre-gl';
@@ -159,12 +160,13 @@ interface DirectionStep {
   distance: number;
   time: number;
   sign: number;
+  coordinates?: [number, number];
 }
 
 interface RouteInfo {
   distance: string;
   time: number;
-  instructions: any[];
+  instructions: DirectionStep[];
   totalRoutes: number;
 }
 
@@ -241,6 +243,7 @@ function MapLibreMap({
   mapLayer,
   onMapClick,
   centerPoint,
+  instructionPoint,
   onRouteClick
 }: {
   onMapLoad: (map: maplibregl.Map) => void;
@@ -254,6 +257,7 @@ function MapLibreMap({
   mapLayer: string;
   onMapClick: (lng: number, lat: number) => void;
   centerPoint: [number, number] | null;
+  instructionPoint: [number, number] | null;
   onRouteClick: (index: number) => void;
 }) {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -263,6 +267,7 @@ function MapLibreMap({
   const routeMarkers = useRef<maplibregl.Marker[]>([]);
   const routeLayers = useRef<{id: string, source: string}[]>([]);
   const currentStyleId = useRef<string | null>(null);
+  const instructionMarker = useRef<maplibregl.Marker | null>(null);
 
   // Initialize map
   useEffect(() => {
@@ -360,6 +365,10 @@ function MapLibreMap({
       if (map.current) {
         try {
           console.log('Cleaning up map...');
+          if (instructionMarker.current) {
+            instructionMarker.current.remove();
+            instructionMarker.current = null;
+          }
           // Remove map instance
           map.current.remove();
         } catch (error) {
@@ -452,6 +461,42 @@ function MapLibreMap({
       }
     }
   }, [centerPoint]);
+
+  useEffect(() => {
+    if (!map.current) return;
+    if (instructionPoint) {
+      if (!instructionMarker.current) {
+        const el = document.createElement('div');
+        el.innerHTML = `
+          <div style="
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(66, 133, 244, 0.18);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 0 6px rgba(66, 133, 244, 0.08);
+          ">
+            <div style="
+              width: 12px;
+              height: 12px;
+              border-radius: 50%;
+              background: #4285f4;
+              box-shadow: 0 0 12px rgba(66, 133, 244, 0.45);
+            "></div>
+          </div>
+        `;
+        instructionMarker.current = new maplibregl.Marker({ element: el, anchor: 'center' });
+      }
+      instructionMarker.current
+        .setLngLat([instructionPoint[1], instructionPoint[0]])
+        .addTo(map.current);
+    } else if (instructionMarker.current) {
+      instructionMarker.current.remove();
+      instructionMarker.current = null;
+    }
+  }, [instructionPoint]);
 
   // User location marker
   useEffect(() => {
@@ -723,7 +768,7 @@ function MapLibreMap({
           const bounds = new maplibregl.LngLatBounds();
           selected.geometry.coordinates.forEach(([lng, lat]: [number, number]) => bounds.extend([lng, lat]));
           map.current.fitBounds(bounds, {
-            padding: isDirectionsOpen ? { top: 80, right: 80, bottom: 80, left: 560 } : 100,
+            padding: isDirectionsOpen ? { top: 80, right: 80, bottom: 80, left: 500 } : 100,
             duration: 900
           });
         } else if (routePoints.length > 1) {
@@ -773,6 +818,9 @@ export default function Map() {
   const [routeGeometries, setRouteGeometries] = useState<any[]>([]);
   const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
   const [directionSteps, setDirectionSteps] = useState<DirectionStep[]>([]);
+  const [isRouteStepsVisible, setIsRouteStepsVisible] = useState(false);
+  const [activeInstructionIndex, setActiveInstructionIndex] = useState<number | null>(null);
+  const [activeInstructionLocation, setActiveInstructionLocation] = useState<[number, number] | null>(null);
   const [map, setMap] = useState<maplibregl.Map | null>(null);
   const [centerPoint, setCenterPoint] = useState<[number, number] | null>(null);
   const [fromLocation, setFromLocation] = useState("");
@@ -786,7 +834,7 @@ export default function Map() {
   const [isEndPointSearching, setIsEndPointSearching] = useState(false);
   const [selectedStartPoint, setSelectedStartPoint] = useState<SearchResult | null>(null);
   const [selectedEndPoint, setSelectedEndPoint] = useState<SearchResult | null>(null);
-  const [useCurrentLocation, setUseCurrentLocation] = useState(true);
+  const [useCurrentLocation, setUseCurrentLocation] = useState(false);
   const [is3DView, setIs3DView] = useState(false);
   const [mapBearing, setMapBearing] = useState(0);
   const [waypoints, setWaypoints] = useState<SearchResult[]>([]);
@@ -794,6 +842,42 @@ export default function Map() {
   const [waypointSearchQuery, setWaypointSearchQuery] = useState("");
   const [waypointSearchResults, setWaypointSearchResults] = useState<SearchResult[]>([]);
   const [isWaypointSearching, setIsWaypointSearching] = useState(false);
+
+  // Drag-and-drop state for reordering waypoints
+  const dragIndexRef = useRef<number | null>(null);
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+  const handleWaypointDragStart = useCallback((index: number, e: React.DragEvent) => {
+    dragIndexRef.current = index;
+    setDraggingIndex(index);
+    try {
+      e.dataTransfer.setData('text/plain', String(index));
+      e.dataTransfer.effectAllowed = 'move';
+    } catch (err) {}
+  }, []);
+  const handleWaypointDragOver = useCallback((index: number, e: React.DragEvent) => {
+    e.preventDefault();
+    // allow drop
+    e.dataTransfer.dropEffect = 'move';
+  }, []);
+  const handleWaypointDrop = useCallback((index: number, e: React.DragEvent) => {
+    e.preventDefault();
+    const from = dragIndexRef.current ?? Number(e.dataTransfer.getData('text/plain'));
+    const to = index;
+    if (from != null && !Number.isNaN(from) && to != null && from !== to) {
+      setWaypoints(prev => {
+        const next = [...prev];
+        const [moved] = next.splice(from, 1);
+        next.splice(to, 0, moved);
+        return next;
+      });
+    }
+    dragIndexRef.current = null;
+    setDraggingIndex(null);
+  }, []);
+  const handleWaypointDragEnd = useCallback(() => {
+    dragIndexRef.current = null;
+    setDraggingIndex(null);
+  }, []);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isRouting, setIsRouting] = useState(false);
   const [routeError, setRouteError] = useState<string | null>(null);
@@ -810,12 +894,11 @@ export default function Map() {
   const skipEndSearchRef = useRef(false);
   const skipWaypointSearchRef = useRef(false);
   
-  // Fixed transport modes with Valhalla costings
+  // Fixed transport modes with Valhalla costings (no bus option)
   const transportModes = [
     { id: "car", icon: Car, label: "Car", profile: "auto", color: "#4285f4" },
     { id: "bike", icon: Bike, label: "Bicycle", profile: "bicycle", color: "#34a853" },
     { id: "foot", icon: Navigation, label: "Walk", profile: "pedestrian", color: "#fbbc04" },
-    { id: "bus", icon: Bus, label: "Bus", profile: "bus", color: "#8a2be2" },
     { id: "motorcycle", icon: Car, label: "Motorcycle", profile: "motorcycle", color: "#ff6b6b" },
   ];
   
@@ -917,33 +1000,42 @@ export default function Map() {
           const timeSec = Number(summary.time ?? 0);
           const lengthKm = Number(summary.length ?? 0);
 
-          // Collect maneuvers from all legs
           const legs = Array.isArray(trip?.legs) ? trip.legs : [];
+
+          let coords: [number, number][] = [];
+          if (typeof trip?.shape === 'string') {
+            coords = decodePolyline6(trip.shape).map((c) => [c[0], c[1]]);
+          } else if (legs.length > 0) {
+            legs.forEach((leg: any) => {
+              if (typeof leg?.shape === 'string') {
+                const decoded = decodePolyline6(leg.shape).map((c) => [c[0], c[1]] as [number, number]);
+                coords.push(...decoded);
+              }
+            });
+          }
+
           const steps: DirectionStep[] = [];
           legs.forEach((leg: any) => {
             const mans = Array.isArray(leg?.maneuvers) ? leg.maneuvers : [];
             mans.forEach((m: any) => {
+              const beginIndexRaw = typeof m?.begin_shape_index === 'number' ? m.begin_shape_index : null;
+              const beginIndex = beginIndexRaw != null && coords.length > 0
+                ? Math.min(Math.max(beginIndexRaw, 0), coords.length - 1)
+                : null;
+              let coord = beginIndex != null ? coords[beginIndex] : coords[0];
+              if ((!coord || coord.length < 2) && typeof m?.lon === 'number' && typeof m?.lat === 'number') {
+                coord = [Number(m.lon), Number(m.lat)];
+              }
+
               steps.push({
                 instruction: m?.instruction || 'Continue',
                 distance: typeof m?.length === 'number' ? m.length * 1000 : 0,
                 time: typeof m?.time === 'number' ? m.time * 1000 : 0,
-                sign: maneuversToSign(Number(m?.type ?? 0))
+                sign: maneuversToSign(Number(m?.type ?? 0)),
+                coordinates: coord ? [coord[1], coord[0]] : undefined
               });
             });
           });
-
-          // Decode geometry
-          let coords: [number, number][] = [];
-          if (typeof trip?.shape === 'string') {
-            coords = decodePolyline6(trip.shape).map(c => [c[0], c[1]]);
-          } else if (legs.length > 0) {
-            legs.forEach((leg: any) => {
-              if (typeof leg?.shape === 'string') {
-                const part = decodePolyline6(leg.shape).map((c) => [c[0], c[1]] as [number, number]);
-                coords.push(...part);
-              }
-            });
-          }
 
           const geometry = {
             type: 'Feature',
@@ -965,16 +1057,21 @@ export default function Map() {
         setSelectedRouteIndex(0);
 
         const selected = routes[0];
+        const steps = (selected.instructions || []) as DirectionStep[];
         setRouteInfo({
           distance: (selected.distance / 1000).toFixed(1),
           time: Math.round(selected.time / 60000),
-          instructions: selected.instructions || [],
+          instructions: steps,
           totalRoutes: routes.length
         });
 
-        setDirectionSteps(selected.instructions || []);
-        if (isVoiceNavigationEnabled && selected.instructions.length > 0) {
-          speakInstruction(selected.instructions[0].instruction);
+        setDirectionSteps(steps);
+        setIsRouteStepsVisible(false);
+        setActiveInstructionIndex(null);
+        setActiveInstructionLocation(null);
+        setCurrentStepIndex(0);
+        if (isVoiceNavigationEnabled && steps.length > 0) {
+          speakInstruction(steps[0].instruction);
         }
 
         setRouteGeometries(routes.map(r => r.geometry));
@@ -1062,43 +1159,149 @@ export default function Map() {
     }
   }, [routePoints, calculateRoute]);
   
-  const LAYER_PREVIEW = "https://cdn.builder.io/api/v1/image/assets%2Fe2371b11d83c44f2b44d6a6528adf130%2Fdf529bd313c6405cabab1f313bd147b9?format=webp&width=800";
 
-  const mapLayers = [
+
+const mapLayers = [
     {
       id: "vector",
       name: "OSM Bright",
       icon: MapIcon,
       description: "Road map",
-      preview: LAYER_PREVIEW
+      preview: (
+        <svg viewBox="0 0 120 100" className="w-full h-full">
+          <rect width="120" height="100" fill="#f4f3f0"/>
+          {/* Streets */}
+          <path d="M0 30 L120 30" stroke="#ffffff" strokeWidth="4"/>
+          <path d="M0 50 L120 50" stroke="#ffffff" strokeWidth="3"/>
+          <path d="M0 70 L120 70" stroke="#ffffff" strokeWidth="2"/>
+          <path d="M40 0 L40 100" stroke="#ffffff" strokeWidth="3"/>
+          <path d="M80 0 L80 100" stroke="#ffffff" strokeWidth="2"/>
+          {/* Buildings */}
+          <rect x="10" y="10" width="20" height="15" fill="#e8e4db"/>
+          <rect x="50" y="35" width="15" height="10" fill="#e8e4db"/>
+          <rect x="85" y="55" width="25" height="20" fill="#e8e4db"/>
+          <rect x="15" y="75" width="18" height="18" fill="#e8e4db"/>
+          {/* Park */}
+          <circle cx="95" cy="20" r="12" fill="#c8e6c9"/>
+        </svg>
+      )
     },
     {
       id: "klokantech",
       name: "Basic",
-      icon: MapIcon,
+      icon: Layers,
       description: "Basic style",
-      preview: LAYER_PREVIEW
+      preview: (
+        <svg viewBox="0 0 120 100" className="w-full h-full">
+          <rect width="120" height="100" fill="#ffffff"/>
+          {/* Streets - minimal */}
+          <path d="M0 30 L120 30" stroke="#cccccc" strokeWidth="2"/>
+          <path d="M0 50 L120 50" stroke="#cccccc" strokeWidth="1.5"/>
+          <path d="M0 70 L120 70" stroke="#cccccc" strokeWidth="1"/>
+          <path d="M40 0 L40 100" stroke="#cccccc" strokeWidth="1.5"/>
+          <path d="M80 0 L80 100" stroke="#cccccc" strokeWidth="1"/>
+          {/* Buildings - outline only */}
+          <rect x="10" y="10" width="20" height="15" fill="none" stroke="#999999" strokeWidth="1"/>
+          <rect x="50" y="35" width="15" height="10" fill="none" stroke="#999999" strokeWidth="1"/>
+          <rect x="85" y="55" width="25" height="20" fill="none" stroke="#999999" strokeWidth="1"/>
+          <rect x="15" y="75" width="18" height="18" fill="none" stroke="#999999" strokeWidth="1"/>
+          {/* Labels simulation */}
+          <text x="20" y="95" fontSize="6" fill="#666666">Street</text>
+        </svg>
+      )
     },
     {
       id: "dark",
       name: "Dark",
-      icon: MapIcon,
+      icon: Moon,
       description: "Dark style",
-      preview: LAYER_PREVIEW
+      preview: (
+        <svg viewBox="0 0 120 100" className="w-full h-full">
+          <rect width="120" height="100" fill="#1a1a1a"/>
+          {/* Streets - light on dark */}
+          <path d="M0 30 L120 30" stroke="#3a3a3a" strokeWidth="4"/>
+          <path d="M0 50 L120 50" stroke="#3a3a3a" strokeWidth="3"/>
+          <path d="M0 70 L120 70" stroke="#3a3a3a" strokeWidth="2"/>
+          <path d="M40 0 L40 100" stroke="#3a3a3a" strokeWidth="3"/>
+          <path d="M80 0 L80 100" stroke="#3a3a3a" strokeWidth="2"/>
+          {/* Buildings */}
+          <rect x="10" y="10" width="20" height="15" fill="#2d2d2d"/>
+          <rect x="50" y="35" width="15" height="10" fill="#2d2d2d"/>
+          <rect x="85" y="55" width="25" height="20" fill="#2d2d2d"/>
+          <rect x="15" y="75" width="18" height="18" fill="#2d2d2d"/>
+          {/* Park - darker green */}
+          <circle cx="95" cy="20" r="12" fill="#1a3a1a"/>
+          {/* Highlight lines */}
+          <path d="M0 30 L120 30" stroke="#4a90e2" strokeWidth="0.5" opacity="0.5"/>
+        </svg>
+      )
     },
     {
       id: "elevated",
       name: "Elevated",
-      icon: MapIcon,
+      icon: Mountain,
       description: "Elevated style",
-      preview: LAYER_PREVIEW
+      preview: (
+        <svg viewBox="0 0 120 100" className="w-full h-full">
+          <defs>
+            <linearGradient id="terrain" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#e8f5e9"/>
+              <stop offset="40%" stopColor="#dcedc8"/>
+              <stop offset="70%" stopColor="#c5e1a5"/>
+              <stop offset="100%" stopColor="#aed581"/>
+            </linearGradient>
+          </defs>
+          <rect width="120" height="100" fill="url(#terrain)"/>
+          {/* Contour lines */}
+          <path d="M0 20 Q30 18 60 20 T120 20" stroke="#81c784" strokeWidth="1" fill="none" opacity="0.6"/>
+          <path d="M0 40 Q30 38 60 40 T120 40" stroke="#66bb6a" strokeWidth="1" fill="none" opacity="0.6"/>
+          <path d="M0 60 Q30 58 60 60 T120 60" stroke="#4caf50" strokeWidth="1" fill="none" opacity="0.6"/>
+          <path d="M0 80 Q30 78 60 80 T120 80" stroke="#43a047" strokeWidth="1" fill="none" opacity="0.6"/>
+          {/* Hillshading effect */}
+          <ellipse cx="60" cy="45" rx="35" ry="25" fill="#ffffff" opacity="0.15"/>
+          <ellipse cx="90" cy="70" rx="25" ry="18" fill="#000000" opacity="0.08"/>
+          {/* Streets with shadow */}
+          <path d="M0 50 L120 50" stroke="#8d6e63" strokeWidth="2" opacity="0.5"/>
+          <path d="M60 0 L60 100" stroke="#8d6e63" strokeWidth="2" opacity="0.5"/>
+        </svg>
+      )
     },
     {
       id: "satellite",
       name: "Satellite",
       icon: Satellite,
       description: "ESRI Satellite",
-      preview: LAYER_PREVIEW
+      preview: (
+        <svg viewBox="0 0 120 100" className="w-full h-full">
+          <defs>
+            <pattern id="terrain-texture" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse">
+              <rect width="10" height="10" fill="#3a5f3a"/>
+              <circle cx="3" cy="3" r="1" fill="#2d4a2d"/>
+              <circle cx="7" cy="7" r="1" fill="#2d4a2d"/>
+            </pattern>
+          </defs>
+          <rect width="120" height="100" fill="#4a6b4a"/>
+          {/* Terrain variation */}
+          <rect width="120" height="100" fill="url(#terrain-texture)" opacity="0.5"/>
+          {/* Forest areas */}
+          <ellipse cx="30" cy="25" rx="20" ry="15" fill="#2d4a2d"/>
+          <ellipse cx="90" cy="60" rx="25" ry="20" fill="#2d4a2d"/>
+          {/* Urban area */}
+          <rect x="45" y="35" width="30" height="30" fill="#5a5a5a" opacity="0.7"/>
+          <rect x="48" y="38" width="4" height="4" fill="#6a6a6a"/>
+          <rect x="54" y="38" width="4" height="4" fill="#6a6a6a"/>
+          <rect x="60" y="38" width="4" height="4" fill="#6a6a6a"/>
+          <rect x="48" y="44" width="4" height="4" fill="#6a6a6a"/>
+          <rect x="60" y="44" width="4" height="4" fill="#6a6a6a"/>
+          <rect x="48" y="56" width="4" height="4" fill="#6a6a6a"/>
+          <rect x="66" y="56" width="4" height="4" fill="#6a6a6a"/>
+          {/* Road */}
+          <path d="M0 50 L120 50" stroke="#7a7a7a" strokeWidth="3"/>
+          <path d="M60 0 L60 100" stroke="#7a7a7a" strokeWidth="2"/>
+          {/* Water body */}
+          <ellipse cx="15" cy="75" rx="12" ry="10" fill="#1a4a6a"/>
+        </svg>
+      )
     }
   ];
   
@@ -1267,17 +1470,20 @@ export default function Map() {
     setSelectedEndPoint(result);
     setToLocation(result.display_name);
     setEndPointResults([]);
-  }, []);
+    // Ensure we don't automatically open the add-destination input after selecting endpoint
+    setIsAddingWaypoint(false);
+    setWaypointSearchResults([]);
+  }, [setWaypointSearchResults]);
   
   // Add waypoint to route
   const addWaypoint = useCallback((point: SearchResult) => {
     // Prevent waypoint search effect from firing when a suggestion is picked
     skipWaypointSearchRef.current = true;
     setWaypoints(prev => [...prev, point]);
-    // Populate the waypoint input with the selected location
+    // Populate the waypoint search query (for history)
     setWaypointSearchQuery(point.display_name);
-    // Keep the waypoint input visible so the user can edit/confirm
-    setIsAddingWaypoint(true);
+    // Ensure the add-destination input is closed and the Add destination button is shown
+    setIsAddingWaypoint(false);
   }, []);
   
   // Remove waypoint
@@ -1419,10 +1625,11 @@ export default function Map() {
             type: data.type || data.category
           } as any;
 
-          // Add waypoint and clear selection mode, keep input visible
+          // Add waypoint and clear selection mode; do not open input automatically
           addWaypoint(result);
           setIsSelectingWaypointFromMap(false);
-          setIsAddingWaypoint(true);
+          // Ensure add-input is closed and Add destination button is visible
+          setIsAddingWaypoint(false);
           toast?.success?.('Waypoint added', data.display_name.split(',')[0]);
         }
       }
@@ -1567,6 +1774,10 @@ export default function Map() {
     
     if (points.length >= 2) {
       setSelectedRouteIndex(0);
+      setIsRouteStepsVisible(false);
+      setActiveInstructionIndex(null);
+      setActiveInstructionLocation(null);
+      setCurrentStepIndex(0);
       setRoutePoints(points);
       calculateRoute(points);
     }
@@ -1575,35 +1786,62 @@ export default function Map() {
   // Handle route selection
   const selectRoute = useCallback((index: number) => {
     if (availableRoutes.length === 0) return;
-    
+
     const newIndex = Math.min(index, availableRoutes.length - 1);
     setSelectedRouteIndex(newIndex);
     const selectedRoute = availableRoutes[newIndex];
-    
-    // Update route info
+
+    const steps = (selectedRoute.instructions || []) as DirectionStep[];
+
     setRouteInfo({
       distance: (selectedRoute.distance / 1000).toFixed(1),
       time: Math.round(selectedRoute.time / 60000),
-      instructions: selectedRoute.instructions || [],
+      instructions: steps,
       totalRoutes: availableRoutes.length
     });
-    
-    // Process turn-by-turn directions
-    if (selectedRoute.instructions) {
-      const steps: DirectionStep[] = selectedRoute.instructions.map((inst: any) => ({
-        instruction: inst.text || 'Continue',
-        distance: inst.distance || 0,
-        time: inst.time || 0,
-        sign: inst.sign || 0
-      }));
-      setDirectionSteps(steps);
-      
-      if (isVoiceNavigationEnabled && steps.length > 0) {
-        speakInstruction(steps[0].instruction);
-      }
+
+    setDirectionSteps(steps);
+    setIsRouteStepsVisible(false);
+    setActiveInstructionIndex(null);
+    setActiveInstructionLocation(null);
+    setCurrentStepIndex(0);
+
+    if (isVoiceNavigationEnabled && steps.length > 0) {
+      speakInstruction(steps[0].instruction);
     }
   }, [availableRoutes, isVoiceNavigationEnabled, speakInstruction]);
-  
+
+  const focusOnInstruction = useCallback((step: DirectionStep, index: number) => {
+    setActiveInstructionIndex(index);
+    setCurrentStepIndex(index);
+    if (isVoiceNavigationEnabled) {
+      speakInstruction(step.instruction);
+    }
+    if (step.coordinates) {
+      setActiveInstructionLocation(step.coordinates);
+      setCenterPoint(step.coordinates);
+    } else {
+      setActiveInstructionLocation(null);
+    }
+  }, [isVoiceNavigationEnabled, speakInstruction]);
+
+  const handleRouteNavigateClick = useCallback((routeIndex: number, isCurrentlySelected: boolean) => {
+    if (!isCurrentlySelected) {
+      selectRoute(routeIndex);
+      setIsRouteStepsVisible(true);
+      return;
+    }
+
+    setIsRouteStepsVisible((prev) => {
+      const next = !prev;
+      if (!next) {
+        setActiveInstructionIndex(null);
+        setActiveInstructionLocation(null);
+      }
+      return next;
+    });
+  }, [selectRoute]);
+
   // Toggle voice navigation
   const toggleVoiceNavigation = useCallback(() => {
     setIsVoiceNavigationEnabled(!isVoiceNavigationEnabled);
@@ -1758,6 +1996,9 @@ export default function Map() {
     setCurrentStepIndex(0);
     setIsNavigating(false);
     setIsVoiceNavigationEnabled(false);
+    setIsRouteStepsVisible(false);
+    setActiveInstructionIndex(null);
+    setActiveInstructionLocation(null);
     setFromLocation("");
     setToLocation("");
     setStartPointResults([]);
@@ -2139,9 +2380,9 @@ export default function Map() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -8 }}
             transition={{ duration: 0.09, ease: 'easeOut' }}
-            className="absolute top-20 left-4 z-50"
+            className="absolute top-20 left-[4.25rem] z-50 w-[min(90vw,22rem)]"
           >
-            <div className="bg-popover/95 backdrop-blur-xl border border-border rounded-3xl shadow-2xl p-4 w-128 max-h-[calc(100vh-5rem)] overflow-y-auto ring-1 ring-border/30">
+            <div className="rounded-3xl overflow-hidden border border-border/40 bg-card/90 shadow-lg p-4 w-[min(90vw,22rem)] max-h-[calc(100vh-5rem)] overflow-y-auto ring-1 ring-border/30">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-semibold">Directions</h3>
                 <Button
@@ -2153,6 +2394,28 @@ export default function Map() {
                   <X className="h-3 w-3" />
                 </Button>
               </div>
+
+              {/* Transport Mode Selection */}
+              <div className="mb-4">
+                <div className="grid grid-cols-4 gap-2">
+                  {transportModes.map((mode) => (
+                    <Button
+                      key={mode.id}
+                      variant={selectedTransport === mode.id ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => handleTransportModeChange(mode.id)}
+                      className={`relative group h-8 w-full flex items-center justify-center text-xs rounded-full border border-border/30 ${selectedTransport===mode.id ? 'bg-primary/10 text-primary' : 'bg-card/90'}`}
+                      title={mode.label}
+                    >
+                      <mode.icon className="h-4 w-4" />
+
+                      <span className="absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md px-2 py-1 text-xs bg-popover/95 border border-border/40 text-foreground shadow-sm opacity-0 pointer-events-none transition-opacity duration-150 group-hover:opacity-100">
+                        {mode.label}
+                      </span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
               
               {/* Start Point Input */}
               <div className="mb-4">
@@ -2162,29 +2425,50 @@ export default function Map() {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-1">
-                      <Button
-                      variant={useCurrentLocation ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setUseCurrentLocation(!useCurrentLocation)}
-                      className="h-7 text-xs px-3 rounded-full flex items-center gap-1"
-                    >
-                      <Target className="h-3 w-3 mr-1" />
-                      Current
-                    </Button>
-                      <span className="text-xs text-muted-foreground">or</span>
+                      {/* <span className="text-xs text-muted-foreground">or</span> */}
                     </div>
-                    <div className="relative mt-1">
-                      <UnifiedInput
-                        placeholder="Enter start point"
-                        className="pl-10 pr-4 text-sm rounded-full bg-popover/80"
-                        value={fromLocation}
-                        onChange={(val: string) => setFromLocation(val)}
-                        disabled={useCurrentLocation}
-                        icon={Search}
-                      />
-                      {isStartPointSearching && (
-                        <Loader2 className="absolute right-3 top-4 transform -translate-y-1/2 h-3 w-3 text-primary animate-spin" />
-                      )}
+                    <div className="mt-1 flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <UnifiedInput
+                          placeholder="Enter start point"
+                          className="pl-10 pr-12 text-sm rounded-full bg-popover/80 w-full"
+                          value={fromLocation}
+                          onChange={(val: string) => setFromLocation(val)}
+                          disabled={useCurrentLocation}
+                          icon={Search}
+                        />
+
+                        {/* Clear selected start point shown inside input when selected */}
+                        {selectedStartPoint && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => { setSelectedStartPoint(null); setFromLocation(''); }}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 h-7 w-7 p-0 flex items-center justify-center rounded-full"
+                            title="Clear start point"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        )}
+
+                        {/* Loader shown when searching and no selection */}
+                        {isStartPointSearching && !selectedStartPoint && (
+                          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 text-primary animate-spin" />
+                        )}
+                      </div>
+
+                      {/* Current location button placed outside the input on the right */}
+                      {/* <div className="flex-shrink-0">
+                        <Button
+                          variant={useCurrentLocation ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setUseCurrentLocation(!useCurrentLocation)}
+                          className="h-9 w-9 p-0 flex items-center justify-center rounded-lg border border-border/30 bg-card/90"
+                          title="Use current location"
+                        >
+                          <Target className="h-4 w-4" />
+                        </Button>
+                      </div> */}
                     </div>
                   </div>
                 </div>
@@ -2198,7 +2482,9 @@ export default function Map() {
                       exit={{ opacity: 0, y: -10 }}
                       className="mt-1 bg-popover border border-border rounded-xl shadow-lg overflow-hidden max-h-40 overflow-y-auto z-50"
                     >
-                      {startPointResults.map((result, index) => {
+                      {startPointResults
+                          .filter(r => r.place_id !== selectedEndPoint?.place_id)
+                          .map((result, index) => {
                         const IconComponent = getPlaceIcon(result.type || result.category || '');
                         return (
                           <motion.button
@@ -2229,28 +2515,7 @@ export default function Map() {
                     </motion.div>
                   )}
 
-                  {/* Show selected start when there are no live results */}
-                  {!useCurrentLocation && startPointResults.length === 0 && selectedStartPoint && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      className="mt-1 bg-popover border border-border rounded-xl shadow-lg overflow-hidden z-50"
-                    >
-                      <div className="w-full text-left p-2 border-b border-border/30 flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                          {(() => { const IconComponent = getPlaceIcon(selectedStartPoint.type || selectedStartPoint.category || ''); return <IconComponent className="h-4 w-4 text-primary" /> })()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs font-medium text-foreground whitespace-normal">{selectedStartPoint.display_name.split(',')[0]}</div>
-                          <div className="text-xs text-muted-foreground line-clamp-2">{selectedStartPoint.display_name.split(',').slice(1,3).join(', ')}</div>
-                        </div>
-                        <Button variant="ghost" size="sm" onClick={() => { setSelectedStartPoint(null); setFromLocation(''); }} className="h-6 w-6 p-0">
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </motion.div>
-                  )}
+
                 </AnimatePresence>
               </div>
               
@@ -2264,12 +2529,26 @@ export default function Map() {
                     <div className="relative">
                       <UnifiedInput
                         placeholder="Enter destination"
-                        className="pl-10 pr-4 text-sm rounded-full bg-popover/80"
+                        className="pl-10 pr-12 text-sm rounded-full bg-popover/80"
                         value={toLocation}
                         onChange={(val: string) => setToLocation(val)}
                         icon={Search}
                       />
-                      {isEndPointSearching && (
+
+                      {/* Clear selected destination shown inside input when selected */}
+                      {selectedEndPoint && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => { setSelectedEndPoint(null); setToLocation(''); }}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 h-7 w-7 p-0 flex items-center justify-center rounded-full"
+                          title="Clear destination"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      )}
+
+                      {isEndPointSearching && !selectedEndPoint && (
                         <Loader2 className="absolute right-3 top-4 transform -translate-y-1/2 h-3 w-3 text-primary animate-spin" />
                       )}
                     </div>
@@ -2278,14 +2557,16 @@ export default function Map() {
                 
                 {/* End Point Results */}
                 <AnimatePresence>
-                  {endPointResults.length > 0 && !(selectedStartPoint && selectedEndPoint) && (
+                  {endPointResults.length > 0 && !selectedEndPoint && (
                     <motion.div
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
                       className="mt-1 bg-popover border border-border rounded-xl shadow-lg overflow-hidden max-h-40 overflow-y-auto z-50"
                     >
-                      {endPointResults.map((result, index) => {
+                      {endPointResults
+                          .filter(r => r.place_id !== selectedStartPoint?.place_id)
+                          .map((result, index) => {
                         const IconComponent = getPlaceIcon(result.type || result.category || '');
                         return (
                           <motion.button
@@ -2316,70 +2597,43 @@ export default function Map() {
                     </motion.div>
                   )}
 
-                  {/* Show selected end when there are no live results */}
-                  {endPointResults.length === 0 && selectedEndPoint && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      className="mt-1 bg-popover border border-border rounded-xl shadow-lg overflow-hidden z-50"
-                    >
-                      <div className="w-full text-left p-2 border-b border-border/30 flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                          {(() => { const IconComponent = getPlaceIcon(selectedEndPoint.type || selectedEndPoint.category || ''); return <IconComponent className="h-4 w-4 text-primary" /> })()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs font-medium text-foreground whitespace-normal">{selectedEndPoint.display_name.split(',')[0]}</div>
-                          <div className="text-xs text-muted-foreground line-clamp-2">{selectedEndPoint.display_name.split(',').slice(1,3).join(', ')}</div>
-                        </div>
-                        <Button variant="ghost" size="sm" onClick={() => { setSelectedEndPoint(null); setToLocation(''); }} className="h-6 w-6 p-0">
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </motion.div>
-                  )}
+
                 </AnimatePresence>
               </div>
               
-              {/* Waypoints Section */}
+              {/* Waypoints Section - inputs like destination input */}
               {waypoints.length > 0 && (
                 <div className="mb-4">
-                                    <div className="space-y-2">
+                  <div className="space-y-3">
                     {waypoints.map((waypoint, index) => (
-                      <div key={index} className="flex items-start gap-2">
-                        <div className="w-6 mt-2 h-6 rounded-full bg-green-500/10 flex items-center justify-center">
-                          <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                      <div
+                        key={index}
+                        draggable
+                        onDragStart={(e) => handleWaypointDragStart(index, e)}
+                        onDragOver={(e) => handleWaypointDragOver(index, e)}
+                        onDrop={(e) => handleWaypointDrop(index, e)}
+                        onDragEnd={handleWaypointDragEnd}
+                        className={`flex items-start gap-2 ${draggingIndex === index ? 'opacity-70' : ''}`}
+                      >
+                        <div className="w-6 mt-2 h-6 rounded-full bg-green-500/10 flex items-center justify-center cursor-grab">
+                          <div className="w-2 h-2 rounded-full bg-green-500" />
                         </div>
                         <div className="flex-1">
-                          <UnifiedInput
-                            placeholder={`Waypoint ${index + 1}`}
-                            className="pl-10 pr-4 text-sm rounded-full bg-popover/80"
-                            value={waypoint.display_name}
-                            onChange={(val: string) => setWaypoints(prev => prev.map((w, i) => i === index ? { ...w, display_name: val } : w))}
-                            icon={Search}
-                            onFocus={() => {
-                              setIsSelectingWaypointFromMap(true);
-                              toast?.info?.('Select waypoint', 'Click on the map to pick a waypoint.');
-                              setIsAddingWaypoint(false);
-                            }}
-                          />
+                          <div className="relative">
+                            <UnifiedInput
+                              placeholder={`Destination ${index + 1}`}
+                              className="pl-10 pr-12 text-sm rounded-full bg-popover/80 w-full"
+                              value={waypoint.display_name}
+                              onChange={(val: string) => setWaypoints(prev => prev.map((w, i) => i === index ? { ...w, display_name: val } : w))}
+                              icon={Search}
+                              onFocus={() => { setIsSelectingWaypointFromMap(true); toast?.info?.('Select destination', 'Click on the map to pick a destination.'); }}
+                            />
 
-                          <div className="mt-1 flex gap-2">
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => moveWaypointUp(index)} title="Move up">
-                              <ArrowUp className="h-4 w-4" />
+                            {/* Clear button inside input */}
+                            <Button variant="ghost" size="sm" onClick={() => removeWaypoint(index)} className="absolute right-3 top-1/2 -translate-y-1/2 h-7 w-7 p-0">
+                              <X className="h-3 w-3" />
                             </Button>
 
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => moveWaypointDown(index)} title="Move down">
-                              <ArrowUp className="h-4 w-4 transform rotate-180" />
-                            </Button>
-
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => { setIsSelectingWaypointFromMap(true); toast?.info?.('Select waypoint', 'Click on the map to pick a waypoint.'); }} title="Pick from map">
-                              <MapPin className="h-4 w-4" />
-                            </Button>
-
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => removeWaypoint(index)} title="Remove">
-                              <X className="h-4 w-4" />
-                            </Button>
                           </div>
                         </div>
                       </div>
@@ -2417,9 +2671,9 @@ export default function Map() {
                         {isWaypointSearching && (
                           <Loader2 className="absolute right-3 top-4 transform -translate-y-1/2 h-3 w-3 text-primary animate-spin" />
                         )}
-                        {isSelectingWaypointFromMap && (
+                        {/* {isSelectingWaypointFromMap && (
                           <div className="mt-2 text-xs text-muted-foreground">Click on the map to place the waypoint, or type to search. Press Esc to cancel.</div>
-                        )}
+                        )} */}
                       </div>
                     </div>
 
@@ -2461,7 +2715,8 @@ export default function Map() {
                               onClick={() => {
                                 addWaypoint(result);
                                 setWaypointSearchResults([]);
-                                setIsAddingWaypoint(true);
+                                // Ensure add-input is closed and Add destination button is visible
+                                setIsAddingWaypoint(false);
                               }}
                               className="w-full text-left p-3 border-b border-border/20 hover:bg-accent/5 transition-colors duration-150 flex items-start gap-3"
                             >
@@ -2484,25 +2739,36 @@ export default function Map() {
                   </AnimatePresence>
                 </div>
               ) : (
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsAddingWaypoint(true);
-                    setIsSelectingWaypointFromMap(true);
-                    toast?.info?.('Select waypoint', 'Click on the map to pick a waypoint.');
-                  }}
-                  className="w-full h-10 text-sm mb-4 rounded-full bg-primary text-primary-foreground shadow-md hover:shadow-lg"
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  Add Waypoint
-                </Button>
+                <div className="mb-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (waypoints.length >= 10) return;
+                      // Open a blank input for the user to type a new destination
+                      setWaypointSearchQuery("");
+                      setWaypointSearchResults([]);
+                      setIsSelectingWaypointFromMap(false);
+                      setIsAddingWaypoint(true);
+                      // Inform user they can type or pick from map
+                      toast?.info?.('Add destination', 'Type to search or click the map to pick a destination.');
+                    }}
+                    disabled={waypoints.length >= 10}
+                    className="w-full h-10 text-sm mb-2 rounded-full bg-primary text-primary-foreground shadow-md hover:bg-primary hover:text-primary-foreground hover:shadow-md hover:translate-y-0 transform"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Add destination
+                  </Button>
+                  {waypoints.length >= 10 && (
+                    <div className="text-xs text-muted-foreground">Maximum of 10 destinations reached</div>
+                  )}
+                </div>
               )}
               
               {/* Calculate Route Button */}
               <Button
                 onClick={calculateRouteFromPoints}
                 disabled={isRouting || ((useCurrentLocation ? false : !selectedStartPoint) || !selectedEndPoint)}
-                className="w-full h-10 text-sm mb-4 rounded-full bg-primary text-primary-foreground shadow-md hover:shadow-lg"
+                className="w-full h-10 text-sm mb-4 rounded-full bg-primary text-primary-foreground shadow-md hover:bg-primary hover:text-primary-foreground hover:shadow-md hover:translate-y-0 transform"
               >
                 {isRouting ? (
                   <>
@@ -2516,25 +2782,6 @@ export default function Map() {
                   </>
                 )}
               </Button>
-              
-              {/* Transport Mode Selection */}
-              <div className="mb-4">
-                <div className="flex gap-2">
-                  {transportModes.map((mode) => (
-                    <Button
-                      key={mode.id}
-                      variant={selectedTransport === mode.id ? "default" : "ghost"}
-                      size="sm"
-                      onClick={() => handleTransportModeChange(mode.id)}
-                      className={`h-8 px-3 text-xs rounded-full ${selectedTransport===mode.id? 'bg-primary/10' : 'bg-popover/60'}`}
-                      title={mode.label}
-                    >
-                      <mode.icon className="h-4 w-4 mr-2" />
-                      <span className="hidden sm:inline">{mode.label}</span>
-                    </Button>
-                  ))}
-                </div>
-              </div>
               
               {/* Route Options - Google Maps Style */}
               {isRouting && (
@@ -2587,10 +2834,25 @@ export default function Map() {
                               {formatDurationMs(route.time)}
                             </div>
                           </div>
-                          <div className="flex items-center justify-between mt-1">
+                          <div className="flex items-center justify-between mt-2">
                             <div className="text-xs text-muted-foreground">
                               {(route.distance / 1000).toFixed(1)} km
                             </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className={`h-7 px-3 text-xs transition-colors ${
+                                isSelected && isRouteStepsVisible
+                                  ? 'bg-primary text-primary-foreground border-primary/60 hover:bg-primary/90'
+                                  : ''
+                              }`}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleRouteNavigateClick(index, isSelected);
+                              }}
+                            >
+                              Navigate
+                            </Button>
                           </div>
                         </motion.div>
                       );
@@ -2645,36 +2907,53 @@ export default function Map() {
               )}
               
               {/* Turn-by-turn Directions */}
-              {directionSteps.length > 0 && (
+              {isRouteStepsVisible && directionSteps.length > 0 && (
                 <div>
-                  <h4 className="text-xs font-medium text-muted-foreground mb-2">Turn-by-turn</h4>
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {directionSteps.slice(0, 10).map((step, index) => {
+                  <h4 className="text-xs font-medium text-muted-foreground mb-2">Navigation instructions</h4>
+                  <div className="space-y-2 max-h-48 overflow-y-auto panel-scroll">
+                    {directionSteps.map((step, index) => {
                       const IconComponent = getDirectionIcon(step.sign);
+                      const isActive = index === activeInstructionIndex;
                       return (
-                        <div
+                        <button
                           key={index}
-                          className="flex items-start gap-2 p-2 rounded-lg bg-muted/30"
+                          type="button"
+                          onClick={() => focusOnInstruction(step, index)}
+                          className={`w-full text-left flex items-start gap-2 p-2 rounded-lg border transition-colors ${
+                            isActive
+                              ? 'bg-primary/10 border-primary/40 shadow-sm'
+                              : 'bg-muted/30 border-border/40 hover:bg-muted/50'
+                          }`}
                         >
-                          <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <div
+                            className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                              isActive ? 'bg-primary/20' : 'bg-primary/10'
+                            }`}
+                          >
                             <IconComponent className="h-4 w-4 text-primary" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="text-xs font-medium text-foreground">{step.instruction}</div>
-                            {step.distance > 0 && (
-                              <div className="text-xs text-muted-foreground">
-                                {step.distance > 1000 
-                                  ? `${(step.distance / 1000).toFixed(1)} km`
-                                  : `${Math.round(step.distance)} m`
-                                }
+                            {(step.distance > 0 || step.time > 0) && (
+                              <div className="text-[11px] text-muted-foreground">
+                                Step {index + 1}
+                                {step.distance > 0 && (
+                                  <> • {step.distance > 1000 ? `${(step.distance / 1000).toFixed(1)} km` : `${Math.round(step.distance)} m`}</>
+                                )}
+                                {step.time > 0 && (
+                                  <> • {formatDurationMs(step.time)}</>
+                                )}
                               </div>
                             )}
                           </div>
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
                 </div>
+              )}
+              {isRouteStepsVisible && directionSteps.length === 0 && (
+                <div className="text-xs text-muted-foreground">Navigation instructions are not available for this route.</div>
               )}
             </div>
           </motion.div>
@@ -2718,7 +2997,11 @@ export default function Map() {
                     onClick={() => { setMapLayer(layer.id); setShowLayerPanel(false); }}
                     className={`w-full flex items-center gap-3 p-2 rounded-lg transition-all ${mapLayer===layer.id ? 'bg-primary/10 border border-primary/50 shadow-sm' : 'bg-popover/60 border border-border/50 hover:bg-popover/80'}`}>
                     <div className="w-12 h-8 bg-muted/10 rounded-md overflow-hidden flex items-center justify-center flex-shrink-0">
-                      <img src={layer.preview || '/placeholder.svg'} alt={`${layer.name} preview`} className="h-full w-full object-cover" onError={(e)=>{(e.target as HTMLImageElement).src='/placeholder.svg'}} />
+                      {typeof layer.preview === 'string' ? (
+                        <img src={layer.preview || '/placeholder.svg'} alt={`${layer.name} preview`} className="h-full w-full object-cover" onError={(e)=>{(e.target as HTMLImageElement).src='/placeholder.svg'}} />
+                      ) : (
+                        <div className="h-full w-full">{layer.preview}</div>
+                      )}
                     </div>
 
                     <div className="flex-1 text-left min-w-0">
@@ -2847,6 +3130,7 @@ export default function Map() {
           mapLayer={mapLayer}
           onMapClick={(lng, lat) => onMapClickRef.current?.(lng, lat)}
           centerPoint={centerPoint}
+          instructionPoint={activeInstructionLocation}
           onRouteClick={selectRoute}
         />
       </div>
