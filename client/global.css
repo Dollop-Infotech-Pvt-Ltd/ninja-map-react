@@ -594,7 +594,7 @@
 
 /* Enhanced focus styling */
 :focus-visible {
-  @apply outline-2 outline-brand outline-offset-2 rounded;
+  @apply outline-2 outline-brand outline-offset-2;
 }
 
 /* Typography improvements */

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import { UnifiedTextarea, UnifiedInput } from "@/components/ui/unified-input";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useTheme } from "@/hooks/use-theme";
@@ -16,7 +17,7 @@ import {
   Target,
   Car,
   Bike,
-
+  Motorbike,
   X,
   Volume2,
   VolumeX,
@@ -39,6 +40,7 @@ import {
   Coffee,
   Fuel,
   Hospital,
+  Footprints,
   School,
   ShoppingBag,
   Utensils,
@@ -133,6 +135,31 @@ function formatDurationMs(ms: number): string {
   return formatMinutes(minutes);
 }
 
+function extractServerErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message.trim();
+  }
+  if (typeof error === 'string' && error.trim()) {
+    return error.trim();
+  }
+  if (error && typeof error === 'object') {
+    const candidates = [
+      (error as Record<string, unknown>).message,
+      (error as Record<string, unknown>).error,
+      (error as Record<string, unknown>).error_description,
+      (error as Record<string, unknown>).detail,
+      (error as Record<string, unknown>).details,
+      (error as Record<string, unknown>).reason
+    ];
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string' && candidate.trim()) {
+        return candidate.trim();
+      }
+    }
+  }
+  return 'Unknown server error.';
+}
+
 interface SearchResult {
   place_id: string;
   display_name: string;
@@ -221,14 +248,11 @@ const fallbackStyle: StyleSpecification = {
 
 // Route colors for multiple routes
 const routeColors = [
-  '#4285f4', // Google Blue
-  '#ea4335', // Google Red
-  '#34a853', // Google Green
-  '#fbbc04', // Google Yellow
-  '#9c27b0', // Purple
-  '#ff9800', // Orange
-  '#00bcd4', // Cyan
-  '#795548', // Brown
+  '#1e40af', // Indigo-800
+  '#2563eb', // Blue-600
+  '#3b82f6', // Blue-500
+  '#60a5fa', // Blue-400
+  '#93c5fd', // Blue-300
 ];
 
 // Map Component
@@ -244,7 +268,9 @@ function MapLibreMap({
   onMapClick,
   centerPoint,
   instructionPoint,
-  onRouteClick
+  onRouteClick,
+  onRouteMarkerDrag,
+  isDark
 }: {
   onMapLoad: (map: maplibregl.Map) => void;
   userLocation: [number, number] | null;
@@ -259,6 +285,8 @@ function MapLibreMap({
   centerPoint: [number, number] | null;
   instructionPoint: [number, number] | null;
   onRouteClick: (index: number) => void;
+  onRouteMarkerDrag: (index: number, lat: number, lng: number) => void;
+  isDark?: boolean;
 }) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
@@ -630,9 +658,9 @@ function MapLibreMap({
             <div style="
               width: ${isStart || isEnd ? '28px' : '24px'}; 
               height: ${isStart || isEnd ? '28px' : '24px'}; 
-              background: ${isStart ? 'linear-gradient(135deg, #4285f4, #1a73e8)' : 
-                         isEnd ? 'linear-gradient(135deg, #ea4335, #d33b2c)' : 
-                         'linear-gradient(135deg, #34a853, #0f9d58)'}; 
+              background: ${isStart ? 'linear-gradient(135deg, #4285f4, #1a73e8)' :
+                         isEnd ? 'linear-gradient(135deg, #ea4335, #d33b2c)' :
+                         'linear-gradient(135deg, #4b5563, #374151)'}; 
               border-radius: 50%;
               border: 2px solid white;
               box-shadow: 0 2px 6px rgba(0,0,0,0.15);
@@ -646,14 +674,23 @@ function MapLibreMap({
               transition: all 0.3s ease;
               position: relative;
             " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-              ${isStart ? 'A' : isEnd ? String.fromCharCode(65 + routePoints.length - 1) : index + 1}
+              ${isStart ? 'A' : isEnd ? 'B' : (index + 1)}
               ${isWaypoint ? '<div style="position: absolute; bottom: -6px; width: 4px; height: 4px; background: white; border-radius: 50%;"></div>' : ''}
             </div>
           `;
           
-          const marker = new maplibregl.Marker({ element: el })
+          const marker = new maplibregl.Marker({ element: el, draggable: true })
             .setLngLat([point.coordinates[1], point.coordinates[0]])
             .addTo(map.current!);
+
+          marker.on('dragend', () => {
+            try {
+              const ll = marker.getLngLat();
+              onRouteMarkerDrag(index, ll.lat, ll.lng);
+            } catch (e) {
+              console.warn('Drag handler error:', e);
+            }
+          });
           
           routeMarkers.current.push(marker);
         } catch (e) {
@@ -664,7 +701,8 @@ function MapLibreMap({
       // Add all routes; blur/mute alternates, highlight selected
       if (routeGeometries.length > 0) {
         const selectedIdx = Math.min(Math.max(selectedRouteIndex, 0), routeGeometries.length - 1);
-        const mainColor = routeColors[selectedIdx % routeColors.length];
+      const themeAccent = isDark ? '#60a5fa' : '#1e40af';
+      const mainColor = themeAccent;
 
         // First add all alternate routes (so selected can be drawn on top later)
         routeGeometries.forEach((geometry, i) => {
@@ -686,12 +724,12 @@ function MapLibreMap({
             source: sourceId,
             layout: { 'line-join': 'round', 'line-cap': 'round' },
             paint: {
-              'line-color': '#000000',
-              'line-width': 6,
-              'line-opacity': 0.25,
-              'line-blur': 1.5,
-              'line-translate': [0, 1]
-            }
+              'line-color': '#0f172a',
+            'line-width': 6,
+            'line-opacity': 0.25,
+            'line-blur': 1.5,
+            'line-translate': [0, 1]
+          }
           });
 
           // Muted/blurred alternate route
@@ -703,9 +741,9 @@ function MapLibreMap({
             paint: {
               'line-color': mainColor,
               'line-width': 4,
-              'line-opacity': 0.35,
-              'line-blur': 1.2,
-              'line-dasharray': [1.5, 1.5]
+              'line-opacity': 0.6,
+              'line-blur': 0.8,
+              'line-dasharray': [2, 1]
             }
           });
 
@@ -819,6 +857,27 @@ export default function Map() {
   const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
   const [directionSteps, setDirectionSteps] = useState<DirectionStep[]>([]);
   const [isRouteStepsVisible, setIsRouteStepsVisible] = useState(false);
+  const [isDirectionsInstructionMode, setIsDirectionsInstructionMode] = useState(false);
+  const [directionsSnapshot, setDirectionsSnapshot] = useState<{
+    fromLocation: string;
+    toLocation: string;
+    selectedStartPoint: SearchResult | null;
+    selectedEndPoint: SearchResult | null;
+    waypoints: SearchResult[];
+    useCurrentLocation: boolean;
+  } | null>(null);
+
+  // Restore snapshot when theme changes if we have a saved directions snapshot
+  useEffect(() => {
+    if (!directionsSnapshot) return;
+    // Restore saved values to ensure inputs remain populated when theme toggles
+    setFromLocation(directionsSnapshot.fromLocation);
+    setToLocation(directionsSnapshot.toLocation);
+    setSelectedStartPoint(directionsSnapshot.selectedStartPoint);
+    setSelectedEndPoint(directionsSnapshot.selectedEndPoint);
+    setWaypoints(directionsSnapshot.waypoints);
+    setUseCurrentLocation(directionsSnapshot.useCurrentLocation);
+  }, [isDark, directionsSnapshot]);
   const [activeInstructionIndex, setActiveInstructionIndex] = useState<number | null>(null);
   const [activeInstructionLocation, setActiveInstructionLocation] = useState<[number, number] | null>(null);
   const [map, setMap] = useState<maplibregl.Map | null>(null);
@@ -842,45 +901,99 @@ export default function Map() {
   const [waypointSearchQuery, setWaypointSearchQuery] = useState("");
   const [waypointSearchResults, setWaypointSearchResults] = useState<SearchResult[]>([]);
   const [isWaypointSearching, setIsWaypointSearching] = useState(false);
+  const [isStartInputFocused, setIsStartInputFocused] = useState(false);
+  const [isEndInputFocused, setIsEndInputFocused] = useState(false);
+  const startSectionRef = useRef<HTMLDivElement | null>(null);
+  const endSectionRef = useRef<HTMLDivElement | null>(null);
 
-  // Drag-and-drop state for reordering waypoints
-  const dragIndexRef = useRef<number | null>(null);
-  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
-  const handleWaypointDragStart = useCallback((index: number, e: React.DragEvent) => {
-    dragIndexRef.current = index;
-    setDraggingIndex(index);
+  const hasStartPoint = useCurrentLocation || !!selectedStartPoint || fromLocation.trim().length > 0;
+  const hasEndPoint = !!selectedEndPoint || toLocation.trim().length > 0;
+  const canShowAddDestinationButton = hasStartPoint && hasEndPoint;
+
+  // Drag-and-drop state for reordering start/waypoints/end
+  const routeDragIndexRef = useRef<number | null>(null);
+  const [draggingRouteIndex, setDraggingRouteIndex] = useState<number | null>(null);
+
+  const buildRouteOrder = useCallback((): SearchResult[] => {
+    const list: SearchResult[] = [];
+    if (!useCurrentLocation && selectedStartPoint) list.push(selectedStartPoint);
+    list.push(...waypoints);
+    if (selectedEndPoint) list.push(selectedEndPoint);
+    return list;
+  }, [useCurrentLocation, selectedStartPoint, waypoints, selectedEndPoint]);
+
+  const applyRouteOrder = useCallback(async (order: SearchResult[]) => {
+    if (order.length < 1) return;
+    setUseCurrentLocation(false);
+    if (order.length >= 1) {
+      setSelectedStartPoint(order[0]);
+      setFromLocation(order[0].display_name);
+    }
+    if (order.length >= 2) {
+      const mids = order.slice(1, Math.max(1, order.length - 1));
+      setWaypoints(mids);
+    } else {
+      setWaypoints([]);
+    }
+    if (order.length >= 2) {
+      const end = order[order.length - 1];
+      setSelectedEndPoint(end);
+      setToLocation(end.display_name);
+    }
+    const points: RoutePoint[] = order.map(r => ({
+      coordinates: [parseFloat(r.lat), parseFloat(r.lon)] as [number, number],
+      address: r.display_name
+    }));
+    if (points.length >= 2) {
+      setRoutePoints(points);
+      await calculateRouteRef.current?.(points);
+    }
+  }, [setRoutePoints]);
+
+  const handleRouteItemDragStart = useCallback((orderIndex: number, e: React.DragEvent) => {
+    routeDragIndexRef.current = orderIndex;
+    setDraggingRouteIndex(orderIndex);
     try {
-      e.dataTransfer.setData('text/plain', String(index));
+      e.dataTransfer.setData('text/plain', String(orderIndex));
       e.dataTransfer.effectAllowed = 'move';
-    } catch (err) {}
+    } catch {}
   }, []);
-  const handleWaypointDragOver = useCallback((index: number, e: React.DragEvent) => {
+
+  const handleRouteItemDragOver = useCallback((_orderIndex: number, e: React.DragEvent) => {
     e.preventDefault();
-    // allow drop
     e.dataTransfer.dropEffect = 'move';
   }, []);
-  const handleWaypointDrop = useCallback((index: number, e: React.DragEvent) => {
+
+  const handleRouteItemDrop = useCallback(async (orderIndex: number, e: React.DragEvent) => {
     e.preventDefault();
-    const from = dragIndexRef.current ?? Number(e.dataTransfer.getData('text/plain'));
-    const to = index;
+    const from = routeDragIndexRef.current ?? Number(e.dataTransfer.getData('text/plain'));
+    const to = orderIndex;
+    const list = buildRouteOrder();
+    if (list.length < 2) return;
     if (from != null && !Number.isNaN(from) && to != null && from !== to) {
-      setWaypoints(prev => {
-        const next = [...prev];
-        const [moved] = next.splice(from, 1);
-        next.splice(to, 0, moved);
-        return next;
-      });
+      const next = [...list];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      await applyRouteOrder(next);
     }
-    dragIndexRef.current = null;
-    setDraggingIndex(null);
-  }, []);
-  const handleWaypointDragEnd = useCallback(() => {
-    dragIndexRef.current = null;
-    setDraggingIndex(null);
+    routeDragIndexRef.current = null;
+    setDraggingRouteIndex(null);
+  }, [buildRouteOrder, applyRouteOrder]);
+
+  const handleRouteItemDragEnd = useCallback(() => {
+    routeDragIndexRef.current = null;
+    setDraggingRouteIndex(null);
   }, []);
   const [locationError, setLocationError] = useState<string | null>(null);
-  const [isRouting, setIsRouting] = useState(false);
-  const [routeError, setRouteError] = useState<string | null>(null);
+const [isRouting, setIsRouting] = useState(false);
+const [routeError, setRouteError] = useState<string | null>(null);
+
+useEffect(() => {
+  if (locationError) {
+    toast.error('Location error', locationError);
+    setLocationError(null);
+  }
+}, [locationError, toast]);
   const [modeSummaries, setModeSummaries] = useState<Record<string, { timeMs: number; distanceM: number }>>({});
 
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
@@ -893,13 +1006,16 @@ export default function Map() {
   const skipStartSearchRef = useRef(false);
   const skipEndSearchRef = useRef(false);
   const skipWaypointSearchRef = useRef(false);
-  
+  const calculateRouteRef = useRef<((points: RoutePoint[], modeId?: string) => Promise<void>) | null>(null);
+  const searchContainerRef = useRef<HTMLDivElement | null>(null);
+  const searchPanelRef = useRef<HTMLDivElement | null>(null);
+
   // Fixed transport modes with Valhalla costings (no bus option)
   const transportModes = [
     { id: "car", icon: Car, label: "Car", profile: "auto", color: "#4285f4" },
     { id: "bike", icon: Bike, label: "Bicycle", profile: "bicycle", color: "#34a853" },
-    { id: "foot", icon: Navigation, label: "Walk", profile: "pedestrian", color: "#fbbc04" },
-    { id: "motorcycle", icon: Car, label: "Motorcycle", profile: "motorcycle", color: "#ff6b6b" },
+    { id: "foot", icon: Footprints, label: "Walk", profile: "pedestrian", color: "#fbbc04" },
+    { id: "motorcycle", icon: Motorbike, label: "Motorcycle", profile: "motorcycle", color: "#ff6b6b" },
   ];
   
   // Voice navigation functions
@@ -956,7 +1072,8 @@ export default function Map() {
           console.warn('Could not read error response:', e);
         }
         console.error('Routing error response:', errorText);
-        const ghMessage: string = errorJson?.message || errorText;
+        const ghMessage: string =
+          typeof errorJson?.message === 'string' ? errorJson.message : (typeof errorText === 'string' ? errorText : '');
         const ghHints: any[] = Array.isArray(errorJson?.hints) ? errorJson.hints : [];
         const distanceExceeded =
           (typeof ghMessage === 'string' && ghMessage.toLowerCase().includes('too far from point')) ||
@@ -971,7 +1088,18 @@ export default function Map() {
           toast.error('Points too far apart', 'Please add waypoints or pick closer locations.');
           return;
         }
-        throw new Error(`Routing failed: ${response.status} ${response.statusText}`);
+        const messageSource = errorJson && typeof errorJson === 'object' ? errorJson : errorText;
+        let resolvedMessage = extractServerErrorMessage(messageSource);
+        if (!resolvedMessage || resolvedMessage === 'Unknown server error.') {
+          const statusSummary = `${response.status} ${response.statusText}`.trim();
+          resolvedMessage = statusSummary ? `Routing failed: ${statusSummary}` : 'Routing failed.';
+        }
+        const routingError = new Error(resolvedMessage);
+        (routingError as any).status = response.status;
+        (routingError as any).statusText = response.statusText;
+        (routingError as any).raw = errorText;
+        (routingError as any).details = errorJson;
+        throw routingError;
       } else {
         data = await response.json();
         console.log('Route data received:', data);
@@ -1111,38 +1239,39 @@ export default function Map() {
       }
     } catch (error) {
       console.error('Routing failed:', error);
-
-      // Fallback to straight line if routing fails (except specific handled cases)
-      if (routeError) {
-        return;
-      }
-      const start = points[0];
-      const end = points[points.length - 1];
-
-      const geometry = {
-        type: 'Feature',
-        properties: {},
-        geometry: {
-          type: 'LineString',
-          coordinates: [
-            [start.coordinates[1], start.coordinates[0]],
-            [end.coordinates[1], end.coordinates[0]]
-          ]
+      const rawErrorMessage = extractServerErrorMessage(error);
+      const statusSummary = (() => {
+        const status = (error as { status?: number; statusText?: string } | undefined)?.status;
+        const statusText = (error as { status?: number; statusText?: string } | undefined)?.statusText;
+        if (typeof status === 'number') {
+          return `${status}${statusText ? ` ${statusText}` : ''}`.trim();
         }
-      };
-      
-      setRouteGeometries([geometry]);
-      setRouteInfo({
-        distance: 'Unknown',
-        time: 0,
-        instructions: [],
-        totalRoutes: 1
-      });
-      toast.warning('Using straight-line preview', 'Route calculation failed; showing an approximate line between points.');
+        if (typeof statusText === 'string' && statusText.trim()) {
+          return statusText.trim();
+        }
+        return '';
+      })();
+      const resolvedErrorMessage =
+        rawErrorMessage && rawErrorMessage !== 'Unknown server error.'
+          ? rawErrorMessage
+          : statusSummary
+            ? `Route calculation failed: ${statusSummary}`
+            : 'Route calculation failed.';
+      setRouteError(resolvedErrorMessage);
+      setRouteGeometries([]);
+      setAvailableRoutes([]);
+      setRouteInfo(null);
+      setDirectionSteps([]);
+      setIsRouteStepsVisible(false);
+      setActiveInstructionIndex(null);
+      setActiveInstructionLocation(null);
+      setCurrentStepIndex(0);
+      toast.error('Route calculation failed', resolvedErrorMessage);
     } finally {
       setIsRouting(false);
     }
   }, [selectedTransport, transportModes, selectedRouteIndex, isVoiceNavigationEnabled, speakInstruction]);
+  useEffect(() => { calculateRouteRef.current = calculateRoute; }, [calculateRoute]);
   
   // Handle transport mode change - recalculate route
   const handleTransportModeChange = useCallback((newMode: string) => {
@@ -1153,11 +1282,11 @@ export default function Map() {
     setAvailableRoutes([]);
     setRouteGeometries([]);
     if (routePoints.length >= 2) {
-      calculateRoute(routePoints, newMode);
+      calculateRouteRef.current?.(routePoints, newMode);
     } else {
       setIsRouting(false);
     }
-  }, [routePoints, calculateRoute]);
+  }, [routePoints]);
   
 
 
@@ -1446,13 +1575,13 @@ const mapLayers = [
       
       // Add to route and calculate
       const newRoutePoints: RoutePoint[] = [...routePoints, {
-        coordinates: [parseFloat(result.lat), parseFloat(result.lon)] as [number, number],
-        address: result.display_name
-      }];
-      setRoutePoints(newRoutePoints);
-      calculateRoute(newRoutePoints);
-    }
-  }, [routePoints, calculateRoute]);
+    coordinates: [parseFloat(result.lat), parseFloat(result.lon)] as [number, number],
+    address: result.display_name
+  }];
+  setRoutePoints(newRoutePoints);
+  calculateRouteRef.current?.(newRoutePoints);
+}
+  }, [routePoints]);
   
   // Handle start point selection
   const handleStartPointSelect = useCallback((result: SearchResult) => {
@@ -1482,7 +1611,7 @@ const mapLayers = [
     setWaypoints(prev => [...prev, point]);
     // Populate the waypoint search query (for history)
     setWaypointSearchQuery(point.display_name);
-    // Ensure the add-destination input is closed and the Add destination button is shown
+    // Ensure the add-destination input is closed and the Add waypoints button is shown
     setIsAddingWaypoint(false);
   }, []);
   
@@ -1628,7 +1757,7 @@ const mapLayers = [
           // Add waypoint and clear selection mode; do not open input automatically
           addWaypoint(result);
           setIsSelectingWaypointFromMap(false);
-          // Ensure add-input is closed and Add destination button is visible
+          // Ensure add-input is closed and Add waypoints button is visible
           setIsAddingWaypoint(false);
           toast?.success?.('Waypoint added', data.display_name.split(',')[0]);
         }
@@ -1655,8 +1784,8 @@ const mapLayers = [
     // Auto-open directions overlay when points are added
     if (newRoutePoints.length >= 2) {
       setIsDirectionsOpen(true);
-      calculateRoute(newRoutePoints);
-      
+      calculateRouteRef.current?.(newRoutePoints);
+
       // Auto-fill direction form with the first and last points
       setUseCurrentLocation(false);
       setFromLocation(newRoutePoints[0].address);
@@ -1680,13 +1809,15 @@ const mapLayers = [
       setSelectedStartPoint(startPoint);
       setSelectedEndPoint(endPoint);
     }
-  }, [routePoints, calculateRoute]);
+  }, [routePoints]);
   
   // Handle directions - now just opens the panel
   const handleDirections = useCallback(() => {
     setIsMenuOpen(false);
     setShowLayerPanel(false);
     setIsDirectionsOpen(true);
+    setSearchResults([]);
+    setSearchQuery("");
     // If we have a marker selected, use it as the end point
     if (markerDetails) {
       setToLocation(markerDetails.address);
@@ -1718,13 +1849,13 @@ const mapLayers = [
             address: markerDetails.address
           }];
           setRoutePoints(newRoutePoints);
-          calculateRoute(newRoutePoints);
+          calculateRouteRef.current?.(newRoutePoints);
         }
       } else if (userLocation) {
         // Use current location as start if no route points
         setUseCurrentLocation(true);
         setSelectedStartPoint(null);
-        
+
         // Add to route and calculate
         const newRoutePoints = [{
           coordinates: userLocation,
@@ -1734,10 +1865,10 @@ const mapLayers = [
           address: markerDetails.address
         }];
         setRoutePoints(newRoutePoints);
-        calculateRoute(newRoutePoints);
+        calculateRouteRef.current?.(newRoutePoints);
       }
     }
-  }, [markerDetails, routePoints, userLocation, calculateRoute]);
+  }, [markerDetails, routePoints, userLocation]);
   
   // Calculate route from entered points
   const calculateRouteFromPoints = useCallback(() => {
@@ -1779,9 +1910,9 @@ const mapLayers = [
       setActiveInstructionLocation(null);
       setCurrentStepIndex(0);
       setRoutePoints(points);
-      calculateRoute(points);
+      calculateRouteRef.current?.(points);
     }
-  }, [useCurrentLocation, userLocation, selectedStartPoint, waypoints, selectedEndPoint, calculateRoute]);
+  }, [useCurrentLocation, userLocation, selectedStartPoint, waypoints, selectedEndPoint]);
   
   // Handle route selection
   const selectRoute = useCallback((index: number) => {
@@ -1811,6 +1942,81 @@ const mapLayers = [
     }
   }, [availableRoutes, isVoiceNavigationEnabled, speakInstruction]);
 
+  // Reverse geocode helper for drag updates
+  const reverseGeocode = useCallback(async (lat: number, lng: number) => {
+    try {
+      const resp = await fetch(`${NOMINATIM_REVERSE_URL}?format=json&lat=${lat}&lon=${lng}&addressdetails=1`);
+      if (!resp.ok) throw new Error(String(resp.statusText));
+      const data = await resp.json();
+      const display = data?.display_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+      const type = data?.type || data?.category || undefined;
+      return { display, type } as { display: string; type?: string };
+    } catch {
+      return { display: `${lat.toFixed(6)}, ${lng.toFixed(6)}` } as { display: string };
+    }
+  }, []);
+
+  // Handle route marker drag from map
+  const handleRouteMarkerDrag = useCallback(async (index: number, lat: number, lng: number) => {
+    const total = routePoints.length;
+    if (total < 2 || index < 0 || index >= total) return;
+
+    const { display, type } = await reverseGeocode(lat, lng);
+
+    const usingInputs = !!selectedEndPoint || !!selectedStartPoint || waypoints.length > 0 || useCurrentLocation;
+
+    if (usingInputs) {
+      // Update inputs so auto routing recalculates correctly
+      if (index === 0) {
+        if (useCurrentLocation) {
+          setUseCurrentLocation(false);
+        }
+        setSelectedStartPoint({
+          place_id: `drag-start-${Date.now()}`,
+          display_name: display,
+          lat: String(lat),
+          lon: String(lng),
+          type
+        } as SearchResult);
+        setFromLocation(display);
+      } else if (index === total - 1) {
+        setSelectedEndPoint({
+          place_id: `drag-end-${Date.now()}`,
+          display_name: display,
+          lat: String(lat),
+          lon: String(lng),
+          type
+        } as SearchResult);
+        setToLocation(display);
+      } else {
+        const wpIndex = index - 1;
+        setWaypoints(prev => {
+          const next = [...prev];
+          if (wpIndex >= 0 && wpIndex < next.length) {
+            const prevWp = next[wpIndex];
+            next[wpIndex] = {
+              ...prevWp,
+              place_id: `drag-wp-${wpIndex}-${Date.now()}`,
+              display_name: display,
+              lat: String(lat),
+              lon: String(lng),
+              type
+            } as SearchResult;
+          }
+          return next;
+        });
+      }
+      // Trigger recompute
+      calculateRouteFromPoints();
+    } else {
+      // No inputs in use; update routePoints directly
+      const next = [...routePoints];
+      next[index] = { coordinates: [lat, lng], address: display } as RoutePoint;
+      setRoutePoints(next);
+      await calculateRouteRef.current?.(next);
+    }
+  }, [routePoints, selectedStartPoint, selectedEndPoint, waypoints.length, useCurrentLocation, reverseGeocode, calculateRouteFromPoints]);
+
   const focusOnInstruction = useCallback((step: DirectionStep, index: number) => {
     setActiveInstructionIndex(index);
     setCurrentStepIndex(index);
@@ -1828,19 +2034,29 @@ const mapLayers = [
   const handleRouteNavigateClick = useCallback((routeIndex: number, isCurrentlySelected: boolean) => {
     if (!isCurrentlySelected) {
       selectRoute(routeIndex);
-      setIsRouteStepsVisible(true);
-      return;
     }
-
-    setIsRouteStepsVisible((prev) => {
-      const next = !prev;
-      if (!next) {
-        setActiveInstructionIndex(null);
-        setActiveInstructionLocation(null);
-      }
-      return next;
-    });
-  }, [selectRoute]);
+    if (routePoints.length >= 2) {
+      setIsDirectionsOpen(true);
+      setIsRouteStepsVisible(true);
+      setIsDirectionsInstructionMode(true);
+      setDirectionsSnapshot({
+        fromLocation,
+        toLocation,
+        selectedStartPoint,
+        selectedEndPoint,
+        waypoints: [...waypoints],
+        useCurrentLocation,
+      });
+      setFromLocation("");
+      setToLocation("");
+      setSelectedStartPoint(null);
+      setSelectedEndPoint(null);
+      setWaypoints([]);
+      setUseCurrentLocation(false);
+      setStartPointResults([]);
+      setEndPointResults([]);
+    }
+  }, [selectRoute, routePoints, fromLocation, toLocation, selectedStartPoint, selectedEndPoint, waypoints, useCurrentLocation]);
 
   // Toggle voice navigation
   const toggleVoiceNavigation = useCallback(() => {
@@ -1851,7 +2067,30 @@ const mapLayers = [
       window.speechSynthesis.cancel();
     }
   }, [isVoiceNavigationEnabled, directionSteps, currentStepIndex, speakInstruction]);
-  
+
+  const baseCalculateRouteButtonClasses =
+    "h-9 text-sm px-4 rounded-full bg-primary text-primary-foreground shadow-md hover:bg-primary hover:text-primary-foreground hover:shadow-md hover:translate-y-0 transform";
+
+  const renderCalculateRouteButton = (className?: string) => (
+    <Button
+      onClick={calculateRouteFromPoints}
+      disabled={isRouting || ((useCurrentLocation ? false : !selectedStartPoint) || !selectedEndPoint)}
+      className={cn(className, baseCalculateRouteButtonClasses)}
+    >
+      {isRouting ? (
+        <>
+          <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+          Finding routes...
+        </>
+      ) : (
+        <>
+          <Route className="h-3 w-3 mr-1" />
+          Calculate Route
+        </>
+      )}
+    </Button>
+  );
+
   // Optimize route via Valhalla optimized_route
   const optimizeRoute = useCallback(async () => {
     if (routePoints.length < 2) return;
@@ -1876,16 +2115,16 @@ const mapLayers = [
             : routePoints;
           if (newPoints.length >= 2) {
             setRoutePoints(newPoints);
-            await calculateRoute(newPoints);
+            await calculateRouteRef.current?.(newPoints);
             return;
           }
         }
       }
-      await calculateRoute(routePoints);
+      await calculateRouteRef.current?.(routePoints);
     } catch (error) {
       console.error('Route optimization failed:', error);
     }
-  }, [routePoints, selectedTransport, transportModes, calculateRoute]);
+  }, [routePoints, selectedTransport, transportModes]);
   
   // Map controls
   const zoomIn = useCallback(() => {
@@ -2015,14 +2254,6 @@ const mapLayers = [
     window.speechSynthesis.cancel();
   }, []);
   
-  // Start navigation
-  const startNavigation = useCallback(() => {
-    if (routePoints.length >= 2) {
-      setIsNavigating(true);
-      setIsDirectionsOpen(false);
-    }
-  }, [routePoints]);
-  
   // Get direction icon based on instruction
   const getDirectionIcon = (sign: number) => {
     switch (sign) {
@@ -2052,17 +2283,23 @@ const mapLayers = [
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
-    
+
+    // If we have a saved directions snapshot and the directions panel is open,
+    // avoid performing a global search automatically (prevents accidental clearing/restores).
+    if (directionsSnapshot && isDirectionsOpen) {
+      return;
+    }
+
     searchTimeoutRef.current = setTimeout(() => {
       performSearch(searchQuery);
     }, 300);
-    
+
     return () => {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [searchQuery, performSearch]);
+  }, [searchQuery, performSearch, directionsSnapshot, isDirectionsOpen]);
   
   // Debounced start point search
   useEffect(() => {
@@ -2173,7 +2410,36 @@ const mapLayers = [
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [searchResults.length]);
-  
+
+  // Close search results on outside click
+  useEffect(() => {
+    const onMouseDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      const inInput = !!(searchContainerRef.current && searchContainerRef.current.contains(target));
+      const inPanel = !!(searchPanelRef.current && searchPanelRef.current.contains(target));
+      if (!inInput && !inPanel && searchResults.length > 0) {
+        setSearchResults([]);
+      }
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, [searchResults.length]);
+
+  // Outside click to blur start/end suggestion lists
+  useEffect(() => {
+    const onMouseDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (startSectionRef.current && !startSectionRef.current.contains(target)) {
+        setIsStartInputFocused(false);
+      }
+      if (endSectionRef.current && !endSectionRef.current.contains(target)) {
+        setIsEndInputFocused(false);
+      }
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, []);
+
   // Initialize geolocation on mount
   useEffect(() => {
     getUserLocation();
@@ -2187,7 +2453,22 @@ const mapLayers = [
       if (watchTimeoutRef.current != null) window.clearTimeout(watchTimeoutRef.current);
     };
   }, []);
-  
+
+  // Close search dropdown when directions is opened
+  useEffect(() => {
+    if (isDirectionsOpen) {
+      setSearchResults([]);
+      setSearchQuery("");
+    }
+  }, [isDirectionsOpen]);
+
+  // Close directions when search suggestions open, unless we have a saved directions snapshot
+  useEffect(() => {
+    if (searchResults.length > 0 && !directionsSnapshot) {
+      setIsDirectionsOpen(false);
+    }
+  }, [searchResults.length, directionsSnapshot]);
+
   return (
     <div className="fixed inset-0 h-screen w-screen overflow-hidden bg-background">
       {/* Floating Search - top-left (logo left, input center, directions right) */}
@@ -2199,7 +2480,7 @@ const mapLayers = [
             </div>
           </Link>
 
-          <div className="relative flex-1">
+          <div className="relative flex-1" ref={searchContainerRef}>
             <div className="rounded-full overflow-hidden border border-border/40 bg-card/90 shadow-lg focus-within:ring-2 focus-within:ring-brand/20 transition-all duration-150">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/80 z-10" />
@@ -2223,48 +2504,6 @@ const mapLayers = [
               </div>
             </div>
 
-            {/* Results dropdown anchored to input */}
-            <AnimatePresence>
-              {searchResults.length > 0 && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => { setSearchResults([]); setSearchQuery(""); }}
-                  />
-
-                  <motion.div
-                    initial={{ opacity: 0, y: -6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.09, ease: 'easeOut' }}
-                    className="absolute left-0 top-full mt-2 bg-card/95 border border-border/50 rounded-b-full rounded-t-none shadow-xl z-50 max-h-64 overflow-y-auto w-full"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {searchResults.map((result, index) => {
-                      const IconComponent = getPlaceIcon(result.type);
-                      return (
-                        <motion.button
-                          key={result.place_id}
-                          initial={{ opacity: 0, x: -6 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.06, delay: index * 0.015 }}
-                          onClick={() => { handleSearchResultClick(result); setSearchResults([]); setSearchQuery(""); }}
-                          className="w-full text-left p-3 border-b border-border/20 hover:bg-accent/10 transition-colors flex items-start gap-3"
-                        >
-                          <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                            <IconComponent className="h-4 w-4 text-primary" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs font-medium text-foreground line-clamp-2">{result.display_name.split(',')[0]}</div>
-                            <div className="text-xs text-muted-foreground line-clamp-2">{result.display_name.split(',').slice(1, 3).join(', ')}</div>
-                          </div>
-                        </motion.button>
-                      );
-                    })}
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
           </div>
 
           {/* Directions button as sibling to input */}
@@ -2272,7 +2511,27 @@ const mapLayers = [
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => { setIsDirectionsOpen(true); setShowLayerPanel(false); }}
+              onClick={() => {
+                setMarkerDetails(null);
+                setDestination(null);
+                setSearchResults([]);
+                setSearchQuery("");
+                // If we have a saved directions snapshot (from prior "View steps"), restore it
+                if (directionsSnapshot) {
+                  setFromLocation(directionsSnapshot.fromLocation);
+                  setToLocation(directionsSnapshot.toLocation);
+                  setSelectedStartPoint(directionsSnapshot.selectedStartPoint);
+                  setSelectedEndPoint(directionsSnapshot.selectedEndPoint);
+                  setWaypoints(directionsSnapshot.waypoints);
+                  setUseCurrentLocation(directionsSnapshot.useCurrentLocation);
+                } else {
+                  // Clear selected endpoint/input when starting a fresh directions session
+                  setSelectedEndPoint(null);
+                  setToLocation("");
+                }
+                setIsDirectionsOpen(true);
+                setShowLayerPanel(false);
+              }}
               className="h-10 w-10 backdrop-blur-sm bg-card/60 border border-border/40 rounded-full shadow-sm p-1 flex items-center justify-center transition"
               title="Directions"
             >
@@ -2306,7 +2565,7 @@ const mapLayers = [
 
       {/* Compact Location Details Overlay */}
       <AnimatePresence>
-        {markerDetails && !isDirectionsOpen && (
+        {markerDetails && (!isDirectionsOpen || routePoints.length < 2) && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -2372,6 +2631,57 @@ const mapLayers = [
       </AnimatePresence>
       
       
+      {/* Search Results Overlay */}
+      <AnimatePresence>
+        {searchResults.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -8 }}
+            transition={{ duration: 0.09, ease: 'easeOut' }}
+            className="absolute top-20 left-[4.25rem] z-50 w-[min(90vw,22rem)]"
+          >
+            <div ref={searchPanelRef} className="rounded-3xl overflow-hidden border border-border/40 bg-card/90 shadow-lg p-4 w-[min(90vw,22rem)] max-h-[calc(100vh-5rem)] overflow-y-auto ring-1 ring-border/30">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold">Search results</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { setSearchResults([]); setSearchQuery(""); }}
+                  className="h-6 w-6 p-0"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+
+              <div className="space-y-0">
+                {searchResults.map((result, index) => {
+                  const IconComponent = getPlaceIcon(result.type || result.category || '');
+                  return (
+                    <motion.button
+                      key={result.place_id}
+                      initial={{ opacity: 0, x: -6 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.06, delay: index * 0.015 }}
+                      onClick={() => { handleSearchResultClick(result); setSearchResults([]); setSearchQuery(""); }}
+                      className="w-full text-left p-3 border-b border-border/20 hover:bg-accent/10 transition-colors flex items-start gap-3"
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <IconComponent className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-medium text-foreground line-clamp-2">{result.display_name.split(',')[0]}</div>
+                        <div className="text-xs text-muted-foreground line-clamp-2">{result.display_name.split(',').slice(1, 3).join(', ')}</div>
+                      </div>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Directions Overlay */}
       <AnimatePresence>
         {isDirectionsOpen && (
@@ -2384,7 +2694,32 @@ const mapLayers = [
           >
             <div className="rounded-3xl overflow-hidden border border-border/40 bg-card/90 shadow-lg p-4 w-[min(90vw,22rem)] max-h-[calc(100vh-5rem)] overflow-y-auto ring-1 ring-border/30">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold">Directions</h3>
+                <div className="flex items-center gap-2">
+                  {isDirectionsInstructionMode && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (directionsSnapshot) {
+                          setFromLocation(directionsSnapshot.fromLocation);
+                          setToLocation(directionsSnapshot.toLocation);
+                          setSelectedStartPoint(directionsSnapshot.selectedStartPoint);
+                          setSelectedEndPoint(directionsSnapshot.selectedEndPoint);
+                          setWaypoints(directionsSnapshot.waypoints);
+                          setUseCurrentLocation(directionsSnapshot.useCurrentLocation);
+                        }
+                        setIsDirectionsInstructionMode(false);
+                        setIsRouteStepsVisible(false);
+                        setIsNavigating(false);
+                      }}
+                      className="h-6 px-2"
+                      title="Back"
+                    >
+                      <ArrowLeft className="h-3 w-3" />
+                    </Button>
+                  )}
+                  <h3 className="text-sm font-semibold">{isDirectionsInstructionMode ? 'Navigation' : 'Directions'}</h3>
+                </div>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -2395,32 +2730,46 @@ const mapLayers = [
                 </Button>
               </div>
 
-              {/* Transport Mode Selection */}
-              <div className="mb-4">
-                <div className="grid grid-cols-4 gap-2">
-                  {transportModes.map((mode) => (
-                    <Button
-                      key={mode.id}
-                      variant={selectedTransport === mode.id ? "default" : "ghost"}
-                      size="sm"
-                      onClick={() => handleTransportModeChange(mode.id)}
-                      className={`relative group h-8 w-full flex items-center justify-center text-xs rounded-full border border-border/30 ${selectedTransport===mode.id ? 'bg-primary/10 text-primary' : 'bg-card/90'}`}
-                      title={mode.label}
-                    >
-                      <mode.icon className="h-4 w-4" />
+              {/* Transport Mode Selection (hidden when in Navigation instruction mode) */}
+  {!isDirectionsInstructionMode && (
+    <div className="mb-4">
+      <div className="grid grid-cols-4 gap-2">
+        {transportModes.map((mode) => (
+          <Button
+            key={mode.id}
+            variant={selectedTransport === mode.id ? "default" : "ghost"}
+            size="sm"
+            onClick={() => handleTransportModeChange(mode.id)}
+            className={`relative group h-8 w-full flex items-center justify-center text-xs rounded-full border border-border/30 ${selectedTransport===mode.id ? 'bg-primary/10 text-primary' : 'bg-card/90'}`}
+            title={mode.label}
+          >
+            <mode.icon className="h-4 w-4" />
 
-                      <span className="absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md px-2 py-1 text-xs bg-popover/95 border border-border/40 text-foreground shadow-sm opacity-0 pointer-events-none transition-opacity duration-150 group-hover:opacity-100">
-                        {mode.label}
-                      </span>
-                    </Button>
-                  ))}
-                </div>
-              </div>
+            <span className="absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md px-2 py-1 text-xs bg-popover/95 border border-border/40 text-foreground shadow-sm opacity-0 pointer-events-none transition-opacity duration-150 group-hover:opacity-100">
+              {mode.label}
+            </span>
+          </Button>
+        ))}
+      </div>
+    </div>
+  )}
               
+              <div className={isDirectionsInstructionMode ? 'hidden' : ''}>
               {/* Start Point Input */}
-              <div className="mb-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+              <div className="mb-4" ref={startSectionRef}>
+                <div
+                  className={`flex items-center gap-2 mb-2 ${draggingRouteIndex === 0 ? 'opacity-70' : ''}`}
+                  draggable={!useCurrentLocation && !!selectedStartPoint}
+                  onDragStart={(e) => { if (!useCurrentLocation && selectedStartPoint) handleRouteItemDragStart(0, e); }}
+                  onDragOver={(e) => { if (!useCurrentLocation && selectedStartPoint) handleRouteItemDragOver(0, e); }}
+                  onDrop={(e) => { if (!useCurrentLocation && selectedStartPoint) handleRouteItemDrop(0, e); }}
+                  onDragEnd={handleRouteItemDragEnd}
+                >
+                  <div
+                    className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center cursor-grab active:cursor-grabbing"
+                    draggable={!useCurrentLocation && !!selectedStartPoint}
+                    onDragStart={(e) => { if (!useCurrentLocation && selectedStartPoint) handleRouteItemDragStart(0, e); }}
+                  >
                     <div className="w-2 h-2 rounded-full bg-primary"></div>
                   </div>
                   <div className="flex-1">
@@ -2433,9 +2782,14 @@ const mapLayers = [
                           placeholder="Enter start point"
                           className="pl-10 pr-12 text-sm rounded-full bg-popover/80 w-full"
                           value={fromLocation}
-                          onChange={(val: string) => setFromLocation(val)}
-                          disabled={useCurrentLocation}
+                          onChange={(val: string) => {
+                            if (useCurrentLocation) {
+                              setUseCurrentLocation(false);
+                            }
+                            setFromLocation(val);
+                          }}
                           icon={Search}
+                          onFocus={() => setIsStartInputFocused(true)}
                         />
 
                         {/* Clear selected start point shown inside input when selected */}
@@ -2475,13 +2829,40 @@ const mapLayers = [
                 
                 {/* Start Point Results */}
                 <AnimatePresence>
-                  {!useCurrentLocation && startPointResults.length > 0 && !(selectedStartPoint && selectedEndPoint) && (
+                  {(isStartInputFocused || (startPointResults.length > 0 && !fromLocation.trim())) && (
                     <motion.div
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="mt-1 bg-popover border border-border rounded-xl shadow-lg overflow-hidden max-h-40 overflow-y-auto z-50"
+                      className="mt-1 bg-popover border border-border rounded-xl shadow-lg overflow-hidden max-h-[40vh] sm:max-h-40 overflow-y-auto overscroll-contain z-50"
                     >
+                      {isStartInputFocused && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!userLocation) {
+                              getUserLocation();
+                            }
+                            if (userLocation) {
+                              setUseCurrentLocation(true);
+                              setSelectedStartPoint(null);
+                              setFromLocation('Current Location');
+                            }
+                            setStartPointResults([]);
+                            setIsStartInputFocused(false);
+                          }}
+                          className="w-full text-left p-3 border-b border-border/20 hover:bg-accent/5 transition-colors duration-150 flex items-start gap-3"
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <Target className="h-4 w-4 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-medium text-foreground">Your location</div>
+                            <div className="text-xs text-muted-foreground">Use your current position as start</div>
+                          </div>
+                        </button>
+                      )}
+
                       {startPointResults
                           .filter(r => r.place_id !== selectedEndPoint?.place_id)
                           .map((result, index) => {
@@ -2495,6 +2876,7 @@ const mapLayers = [
                             onClick={() => {
                               handleStartPointSelect(result);
                               setStartPointResults([]);
+                              setIsStartInputFocused(false);
                             }}
                             className="w-full text-left p-3 border-b border-border/20 hover:bg-accent/5 transition-colors duration-150 flex items-start gap-3"
                           >
@@ -2514,15 +2896,24 @@ const mapLayers = [
                       })}
                     </motion.div>
                   )}
-
-
                 </AnimatePresence>
               </div>
               
               {/* End Point Input */}
-              <div className="mb-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-6 h-6 rounded-full bg-destructive/10 flex items-center justify-center">
+              <div className="mb-4" ref={endSectionRef}>
+                <div
+                  className={`flex items-center gap-2 mb-2 ${draggingRouteIndex === ((!useCurrentLocation && selectedStartPoint ? 1 : 0) + waypoints.length) ? 'opacity-70' : ''}`}
+                  draggable={!!selectedEndPoint}
+                  onDragStart={(e) => { if (selectedEndPoint) handleRouteItemDragStart((!useCurrentLocation && selectedStartPoint ? 1 : 0) + waypoints.length, e); }}
+                  onDragOver={(e) => { if (selectedEndPoint) handleRouteItemDragOver((!useCurrentLocation && selectedStartPoint ? 1 : 0) + waypoints.length, e); }}
+                  onDrop={(e) => { if (selectedEndPoint) handleRouteItemDrop((!useCurrentLocation && selectedStartPoint ? 1 : 0) + waypoints.length, e); }}
+                  onDragEnd={handleRouteItemDragEnd}
+                >
+                  <div
+                    className="w-6 h-6 rounded-full bg-destructive/10 flex items-center justify-center cursor-grab active:cursor-grabbing"
+                    draggable={!!selectedEndPoint}
+                    onDragStart={(e) => { if (selectedEndPoint) handleRouteItemDragStart((!useCurrentLocation && selectedStartPoint ? 1 : 0) + waypoints.length, e); }}
+                  >
                     <div className="w-2 h-2 rounded-full bg-destructive"></div>
                   </div>
                   <div className="flex-1">
@@ -2533,6 +2924,7 @@ const mapLayers = [
                         value={toLocation}
                         onChange={(val: string) => setToLocation(val)}
                         icon={Search}
+                        onFocus={() => setIsEndInputFocused(true)}
                       />
 
                       {/* Clear selected destination shown inside input when selected */}
@@ -2557,13 +2949,13 @@ const mapLayers = [
                 
                 {/* End Point Results */}
                 <AnimatePresence>
-                  {endPointResults.length > 0 && !selectedEndPoint && (
+                  {(isEndInputFocused || (endPointResults.length > 0 && !toLocation.trim())) && !selectedEndPoint && (
                     <motion.div
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="mt-1 bg-popover border border-border rounded-xl shadow-lg overflow-hidden max-h-40 overflow-y-auto z-50"
-                    >
+                      className="mt-1 bg-popover border border-border rounded-xl shadow-lg overflow-hidden max-h-[40vh] sm:max-h-40 overflow-y-auto overscroll-contain z-50"
+>
                       {endPointResults
                           .filter(r => r.place_id !== selectedStartPoint?.place_id)
                           .map((result, index) => {
@@ -2577,6 +2969,7 @@ const mapLayers = [
                             onClick={() => {
                               handleEndPointSelect(result);
                               setEndPointResults([]);
+                              setIsEndInputFocused(false);
                             }}
                             className="w-full text-left p-2 border-b border-border/30 hover:bg-accent/30 transition-colors duration-150 flex items-center gap-2"
                           >
@@ -2596,8 +2989,6 @@ const mapLayers = [
                       })}
                     </motion.div>
                   )}
-
-
                 </AnimatePresence>
               </div>
               
@@ -2609,24 +3000,24 @@ const mapLayers = [
                       <div
                         key={index}
                         draggable
-                        onDragStart={(e) => handleWaypointDragStart(index, e)}
-                        onDragOver={(e) => handleWaypointDragOver(index, e)}
-                        onDrop={(e) => handleWaypointDrop(index, e)}
-                        onDragEnd={handleWaypointDragEnd}
-                        className={`flex items-start gap-2 ${draggingIndex === index ? 'opacity-70' : ''}`}
+                        onDragStart={(e) => handleRouteItemDragStart((!useCurrentLocation && selectedStartPoint ? 1 : 0) + index, e)}
+                        onDragOver={(e) => handleRouteItemDragOver((!useCurrentLocation && selectedStartPoint ? 1 : 0) + index, e)}
+                        onDrop={(e) => handleRouteItemDrop((!useCurrentLocation && selectedStartPoint ? 1 : 0) + index, e)}
+                        onDragEnd={handleRouteItemDragEnd}
+                        className={`flex items-start gap-2 ${draggingRouteIndex === ((!useCurrentLocation && selectedStartPoint ? 1 : 0) + index) ? 'opacity-70' : ''}`}
                       >
-                        <div className="w-6 mt-2 h-6 rounded-full bg-green-500/10 flex items-center justify-center cursor-grab">
-                          <div className="w-2 h-2 rounded-full bg-green-500" />
+                        <div className="w-6 mt-2 h-6 rounded-full bg-gray-600/10 flex items-center justify-center cursor-grab">
+                          <div className="w-2 h-2 rounded-full bg-gray-600" />
                         </div>
                         <div className="flex-1">
                           <div className="relative">
                             <UnifiedInput
-                              placeholder={`Destination ${index + 1}`}
+                              placeholder={`Waypoint ${index + 1}`}
                               className="pl-10 pr-12 text-sm rounded-full bg-popover/80 w-full"
                               value={waypoint.display_name}
                               onChange={(val: string) => setWaypoints(prev => prev.map((w, i) => i === index ? { ...w, display_name: val } : w))}
                               icon={Search}
-                              onFocus={() => { setIsSelectingWaypointFromMap(true); toast?.info?.('Select destination', 'Click on the map to pick a destination.'); }}
+                              onFocus={() => { setIsSelectingWaypointFromMap(true); toast?.info?.('Select waypoint', 'Click on the map to pick a waypoint.'); }}
                             />
 
                             {/* Clear button inside input */}
@@ -2646,8 +3037,8 @@ const mapLayers = [
               {isAddingWaypoint ? (
                 <div className="mb-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center">
-                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                    <div className="w-6 h-6 rounded-full bg-gray-600/10 flex items-center justify-center">
+                      <div className="w-2 h-2 rounded-full bg-gray-600"></div>
                     </div>
 
                     <div className="flex-1">
@@ -2694,7 +3085,7 @@ const mapLayers = [
                       </button>
                     </div>
                   </div>
-                  
+
                   {/* Waypoint search results */}
                   <AnimatePresence>
                     {waypointSearchResults.length > 0 && (
@@ -2702,7 +3093,7 @@ const mapLayers = [
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="mt-1 bg-popover border border-border rounded-xl shadow-lg overflow-hidden max-h-40 overflow-y-auto z-50"
+                        className="mt-1 bg-popover border border-border rounded-xl shadow-lg overflow-hidden max-h-[40vh] sm:max-h-40 overflow-y-auto overscroll-contain z-50"
                       >
                         {waypointSearchResults.map((result, index) => {
                           const IconComponent = getPlaceIcon(result.type || result.category || '');
@@ -2715,7 +3106,7 @@ const mapLayers = [
                               onClick={() => {
                                 addWaypoint(result);
                                 setWaypointSearchResults([]);
-                                // Ensure add-input is closed and Add destination button is visible
+                                // Ensure add-input is closed and Add waypoints button is visible
                                 setIsAddingWaypoint(false);
                               }}
                               className="w-full text-left p-3 border-b border-border/20 hover:bg-accent/5 transition-colors duration-150 flex items-start gap-3"
@@ -2737,51 +3128,43 @@ const mapLayers = [
                       </motion.div>
                     )}
                   </AnimatePresence>
+
+                  <div className="mt-3">
+                    {renderCalculateRouteButton("w-full")}
+                  </div>
+                </div>
+              ) : canShowAddDestinationButton ? (
+                <div className="mb-4">
+                  <div className="flex gap-2 flex-nowrap">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        if (waypoints.length >= 10) return;
+                        // Open a blank input for the user to type a new waypoint
+                        setWaypointSearchQuery("");
+                        setWaypointSearchResults([]);
+                        setIsSelectingWaypointFromMap(false);
+                        setIsAddingWaypoint(true);
+                        // Inform user they can type or pick from map
+                        toast?.info?.('Add waypoints', 'Type to search or click the map to pick a waypoint.');
+                      }}
+                      disabled={waypoints.length >= 10}
+                      className="flex-1 h-9 text-sm px-4 rounded-full bg-primary text-primary-foreground shadow-md hover:bg-primary hover:text-primary-foreground hover:shadow-md hover:translate-y-0 transform"
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Add waypoints
+                    </Button>
+                    {renderCalculateRouteButton("flex-1")}
+                  </div>
+                  {waypoints.length >= 10 && (
+                    <div className="text-xs text-muted-foreground">Maximum of 10 waypoints reached</div>
+                  )}
                 </div>
               ) : (
                 <div className="mb-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      if (waypoints.length >= 10) return;
-                      // Open a blank input for the user to type a new destination
-                      setWaypointSearchQuery("");
-                      setWaypointSearchResults([]);
-                      setIsSelectingWaypointFromMap(false);
-                      setIsAddingWaypoint(true);
-                      // Inform user they can type or pick from map
-                      toast?.info?.('Add destination', 'Type to search or click the map to pick a destination.');
-                    }}
-                    disabled={waypoints.length >= 10}
-                    className="w-full h-10 text-sm mb-2 rounded-full bg-primary text-primary-foreground shadow-md hover:bg-primary hover:text-primary-foreground hover:shadow-md hover:translate-y-0 transform"
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    Add destination
-                  </Button>
-                  {waypoints.length >= 10 && (
-                    <div className="text-xs text-muted-foreground">Maximum of 10 destinations reached</div>
-                  )}
+                  {renderCalculateRouteButton("w-full")}
                 </div>
               )}
-              
-              {/* Calculate Route Button */}
-              <Button
-                onClick={calculateRouteFromPoints}
-                disabled={isRouting || ((useCurrentLocation ? false : !selectedStartPoint) || !selectedEndPoint)}
-                className="w-full h-10 text-sm mb-4 rounded-full bg-primary text-primary-foreground shadow-md hover:bg-primary hover:text-primary-foreground hover:shadow-md hover:translate-y-0 transform"
-              >
-                {isRouting ? (
-                  <>
-                    <Loader2 className="h-3 w-3 mr-2 animate-spin" />
-                    Finding routes...
-                  </>
-                ) : (
-                  <>
-                    <Route className="h-3 w-3 mr-1" />
-                    Calculate Route
-                  </>
-                )}
-              </Button>
               
               {/* Route Options - Google Maps Style */}
               {isRouting && (
@@ -2790,20 +3173,14 @@ const mapLayers = [
                   Finding alternative routes...
                 </div>
               )}
-              {routeError && (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertTitle>Routing issue</AlertTitle>
-                  <AlertDescription>{routeError}</AlertDescription>
-                </Alert>
-              )}
               {availableRoutes.length > 0 && (
                 <div className="mb-4">
                   <h4 className="text-xs font-medium text-muted-foreground mb-2">Suggested Routes</h4>
                   <div className="space-y-2">
                     {availableRoutes.map((route, index) => {
                       const isSelected = index === selectedRouteIndex;
-                      const color = routeColors[index % routeColors.length];
+                      const themeAccent = /* map theme accent */ '#1e40af';
+                      const color = isSelected ? (isDark ? '#60a5fa' : themeAccent) : routeColors[index % routeColors.length];
                       
                       return (
                         <motion.div
@@ -2819,15 +3196,11 @@ const mapLayers = [
                           }`}
                         >
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div 
-                                className="w-3 h-3 rounded-full" 
-                                style={{ backgroundColor: color }}
-                              />
+                            <div className="flex items-center gap-1">
                               <span className="text-xs font-medium">
-                                {index === 0 ? 'Fastest route' : 
-                                 index === 1 ? 'Alternative 1' : 
-                                 `Alternative ${index}`}
+                                {selectedEndPoint?.display_name
+                                ? `via ${selectedEndPoint.display_name.split(',')[0]}`
+                                : `Route ${index + 1}`}
                               </span>
                             </div>
                             <div className="text-xs text-muted-foreground">
@@ -2851,7 +3224,7 @@ const mapLayers = [
                                 handleRouteNavigateClick(index, isSelected);
                               }}
                             >
-                              Navigate
+                              View steps
                             </Button>
                           </div>
                         </motion.div>
@@ -2860,7 +3233,8 @@ const mapLayers = [
                   </div>
                 </div>
               )}
-              
+              </div>
+
               {/* Route Summary */}
               {routeInfo && (
                 <div className="mb-4 p-3 rounded-lg bg-muted/50 border border-border/50">
@@ -2874,6 +3248,9 @@ const mapLayers = [
                         {formatMinutes(routeInfo.time)}
                         {routeInfo.totalRoutes > 1 && ` • ${routeInfo.totalRoutes} routes available`}
                       </div>
+                      {selectedEndPoint?.display_name && (
+                        <div className="text-xs text-muted-foreground mt-1">via {selectedEndPoint.display_name.split(',')[0]}</div>
+                      )}
                     </div>
                     <Button
                       variant="ghost"
@@ -2884,30 +3261,11 @@ const mapLayers = [
                       {isVoiceNavigationEnabled ? <Volume2 className="h-3 w-3" /> : <VolumeX className="h-3 w-3" />}
                     </Button>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={startNavigation}
-                      size="sm"
-                      className="flex-1 h-8 text-xs"
-                    >
-                      <Route className="h-3 w-3 mr-1" />
-                      Start Navigation
-                    </Button>
-                    {/* <Button
-                      variant="outline"
-                      onClick={optimizeRoute}
-                      size="sm"
-                      className="h-8 text-xs px-2"
-                      title="Optimize Route"
-                    >
-                      <RotateCw className="h-3 w-3" />
-                    </Button> */}
-                  </div>
                 </div>
               )}
               
               {/* Turn-by-turn Directions */}
-              {isRouteStepsVisible && directionSteps.length > 0 && (
+              {(isDirectionsInstructionMode || isRouteStepsVisible) && directionSteps.length > 0 && (
                 <div>
                   <h4 className="text-xs font-medium text-muted-foreground mb-2">Navigation instructions</h4>
                   <div className="space-y-2 max-h-48 overflow-y-auto panel-scroll">
@@ -2952,7 +3310,7 @@ const mapLayers = [
                   </div>
                 </div>
               )}
-              {isRouteStepsVisible && directionSteps.length === 0 && (
+              {(isDirectionsInstructionMode || isRouteStepsVisible) && directionSteps.length === 0 && (
                 <div className="text-xs text-muted-foreground">Navigation instructions are not available for this route.</div>
               )}
             </div>
@@ -3070,17 +3428,6 @@ const mapLayers = [
         </div>
       </div>
 
-      {locationError && (
-        <div className="absolute top-16 right-4 z-50 max-w-xs bg-destructive text-destructive-foreground border border-destructive rounded-md p-2 text-xs shadow-lg backdrop-blur-sm">
-          <div className="flex items-start gap-2">
-            <div className="flex-1">{locationError}</div>
-            <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => setLocationError(null)}>
-              <X className="h-3 w-3" />
-            </Button>
-          </div>
-        </div>
-      )}
-
       {/* Navigation Banner */}
       <AnimatePresence>
         {isNavigating && routeInfo && (
@@ -3100,6 +3447,9 @@ const mapLayers = [
                     <div className="text-xs opacity-90">
                       {routeInfo.distance} km • {formatMinutes(routeInfo.time)}
                     </div>
+                    {selectedEndPoint?.display_name && (
+                      <div className="text-xs opacity-90">via {selectedEndPoint.display_name.split(',')[0]}</div>
+                    )}
                   </div>
                 </div>
                 <Button
@@ -3132,6 +3482,8 @@ const mapLayers = [
           centerPoint={centerPoint}
           instructionPoint={activeInstructionLocation}
           onRouteClick={selectRoute}
+          onRouteMarkerDrag={handleRouteMarkerDrag}
+          isDark={isDark}
         />
       </div>
     </div>

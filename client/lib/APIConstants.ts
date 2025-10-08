@@ -6,7 +6,7 @@ export const NOMINATIM_BASE = "https://nominatim.ninja-map.dollopinfotech.com";
 
 
 // export const VALHALLA_BASE = "http://192.168.1.161:8002";
-export const VALHALLA_BASE = "https://valhalla.ninja-map.dollopinfotech.com2";
+export const VALHALLA_BASE = "https://valhalla.ninja-map.dollopinfotech.com";
 
 export const TILE_STYLES = {
   vector: `${TILE_STYLE_BASE}/styles/osm-bright/style.json`,
