@@ -135,6 +135,25 @@ function formatDurationMs(ms: number): string {
   return formatMinutes(minutes);
 }
 
+function extractViaFromInstructions(instructions?: DirectionStep[]): string | undefined {
+  if (!instructions || instructions.length === 0) return undefined;
+  const patterns = [/onto\s+([^,\.]+)/i, /via\s+([^,\.]+)/i, /toward(?:s)?\s+([^,\.]+)/i, /on\s+([^,\.]+)/i];
+  for (const instr of instructions) {
+    if (!instr || !instr.instruction) continue;
+    for (const p of patterns) {
+      const m = instr.instruction.match(p);
+      if (m && m[1]) {
+        let v = m[1].trim();
+        // Remove leading 'the'
+        v = v.replace(/^the\s+/i, '');
+        // Trim trailing words like 'road' or 'street' left as-is
+        if (v.length > 0) return v;
+      }
+    }
+  }
+  return undefined;
+}
+
 function extractServerErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim()) {
     return error.message.trim();
@@ -839,6 +858,9 @@ export default function Map() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchHighlightIndex, setSearchHighlightIndex] = useState<number | null>(null);
+  const [startHighlightIndex, setStartHighlightIndex] = useState<number | null>(null);
+  const [endHighlightIndex, setEndHighlightIndex] = useState<number | null>(null);
   const [selectedTransport, setSelectedTransport] = useState("car");
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -849,6 +871,8 @@ export default function Map() {
   const [markerDetails, setMarkerDetails] = useState<MarkerDetails | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
   const [isSelectingWaypointFromMap, setIsSelectingWaypointFromMap] = useState(false);
+  const [isSelectingStartFromMap, setIsSelectingStartFromMap] = useState(false);
+  const [isSelectingEndFromMap, setIsSelectingEndFromMap] = useState(false);
   // Ref to hold latest handler so map click listener isn't stale
   const onMapClickRef = useRef<(lng: number, lat: number) => void | null>(null);
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
@@ -866,6 +890,9 @@ export default function Map() {
     waypoints: SearchResult[];
     useCurrentLocation: boolean;
   } | null>(null);
+
+  // Remember the last directions mode so we can restore navigation mode when reopening
+  const [lastDirectionsMode, setLastDirectionsMode] = useState<'default' | 'navigate' | null>(null);
 
   // Restore snapshot when theme changes if we have a saved directions snapshot
   useEffect(() => {
@@ -903,8 +930,82 @@ export default function Map() {
   const [isWaypointSearching, setIsWaypointSearching] = useState(false);
   const [isStartInputFocused, setIsStartInputFocused] = useState(false);
   const [isEndInputFocused, setIsEndInputFocused] = useState(false);
+
+  // Per-waypoint UI/search state
+  const [waypointInputFocus, setWaypointInputFocus] = useState<Record<number, boolean>>({});
+  const [waypointResultsMap, setWaypointResultsMap] = useState<Record<number, SearchResult[]>>({});
+  const [waypointSearchingMap, setWaypointSearchingMap] = useState<Record<number, boolean>>({});
+  const waypointSkipSearchMapRef = useRef<Record<number, boolean>>({});
+  const waypointSearchTimeoutsRef = useRef<Record<number, NodeJS.Timeout>>({});
+  const waypointSectionRefs = useRef<Map<number, HTMLDivElement | null>>(new (globalThis as any).Map());
   const startSectionRef = useRef<HTMLDivElement | null>(null);
   const endSectionRef = useRef<HTMLDivElement | null>(null);
+
+  // Consolidated search results across start/end/waypoints
+  const consolidatedResults = React.useMemo(() => {
+    const list: { result: SearchResult; type: 'start' | 'end' | 'waypoint'; waypointIndex?: number }[] = [];
+    (startPointResults || []).forEach(r => list.push({ result: r, type: 'start' }));
+    (endPointResults || []).forEach(r => list.push({ result: r, type: 'end' }));
+    Object.entries(waypointResultsMap || {}).forEach(([k, arr]) => {
+      (arr || []).forEach(r => list.push({ result: r, type: 'waypoint', waypointIndex: Number(k) }));
+    });
+    return list;
+  }, [startPointResults, endPointResults, waypointResultsMap]);
+
+  const [resultsLocked, setResultsLocked] = useState(false);
+  const consolidatedActive = consolidatedResults.length > 0 && !resultsLocked;
+
+  const handleConsolidatedSelect = useCallback((item: { result: SearchResult; type: 'start' | 'end' | 'waypoint'; waypointIndex?: number }) => {
+    const { result, type, waypointIndex } = item;
+    if (type === 'start') {
+      // Directly set start point instead of calling handler (avoids initialization order issues)
+      setSelectedStartPoint(result);
+      setFromLocation(result.display_name);
+      setUseCurrentLocation(false);
+      setStartPointResults([]);
+    } else if (type === 'end') {
+      setSelectedEndPoint(result);
+      setToLocation(result.display_name);
+      setEndPointResults([]);
+    } else if (type === 'waypoint' && waypointIndex != null) {
+      setWaypoints(prev => {
+        const next = [...prev];
+        if (waypointIndex >= 0 && waypointIndex < next.length) {
+          next[waypointIndex] = {
+            ...next[waypointIndex],
+            place_id: result.place_id,
+            display_name: result.display_name,
+            lat: result.lat,
+            lon: result.lon,
+            type: result.type || result.category
+          } as SearchResult;
+        } else {
+          // If index doesn't exist, append
+          next.push({
+            place_id: result.place_id,
+            display_name: result.display_name,
+            lat: result.lat,
+            lon: result.lon,
+            type: result.type || result.category
+          } as SearchResult);
+        }
+        return next;
+      });
+      // Clear waypoint results for this index
+      setWaypointResultsMap(prev => {
+        const copy = { ...prev };
+        delete copy[waypointIndex];
+        return copy;
+      });
+    }
+    // Clear all individual result lists so consolidated panel disappears
+    setStartPointResults([]);
+    setEndPointResults([]);
+    setWaypointResultsMap({});
+    setWaypointSearchResults([]);
+    // Lock results so panel does not reopen until user types a new query
+    setResultsLocked(true);
+  }, []);
 
   const hasStartPoint = useCurrentLocation || !!selectedStartPoint || fromLocation.trim().length > 0;
   const hasEndPoint = !!selectedEndPoint || toLocation.trim().length > 0;
@@ -985,6 +1086,7 @@ export default function Map() {
     setDraggingRouteIndex(null);
   }, []);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [hasGeolocationPermission, setHasGeolocationPermission] = useState<boolean | null>(null);
 const [isRouting, setIsRouting] = useState(false);
 const [routeError, setRouteError] = useState<string | null>(null);
 
@@ -1644,6 +1746,61 @@ const mapLayers = [
     });
   }, []);
   
+  // Per-waypoint search (debounced) and selection handlers
+  const performWaypointIndexedSearch = useCallback(async (index: number, query: string) => {
+    if (!query.trim()) {
+      setWaypointResultsMap(prev => ({ ...prev, [index]: [] }));
+      setWaypointSearchingMap(prev => ({ ...prev, [index]: false }));
+      return;
+    }
+    setWaypointSearchingMap(prev => ({ ...prev, [index]: true }));
+    try {
+      const resp = await fetch(
+        `${NOMINATIM_SEARCH_URL}?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1&countrycodes=ng`
+      );
+      const data = await resp.json();
+      setWaypointResultsMap(prev => ({ ...prev, [index]: Array.isArray(data) ? data : [] }));
+    } catch (e) {
+      console.warn('Waypoint search failed:', e);
+      setWaypointResultsMap(prev => ({ ...prev, [index]: [] }));
+    } finally {
+      setWaypointSearchingMap(prev => ({ ...prev, [index]: false }));
+    }
+  }, []);
+
+  const handleWaypointInputChange = useCallback((index: number, val: string) => {
+    // Unlock results because user typed
+    setResultsLocked(false);
+    // Clear other result lists so only fresh results show
+    setStartPointResults([]);
+    setEndPointResults([]);
+    setWaypointResultsMap({});
+    // Update display text immediately
+    setWaypoints(prev => prev.map((w, i) => (i === index ? { ...w, display_name: val } : w)));
+    // Skip next search if just selected a suggestion
+    if (waypointSkipSearchMapRef.current[index]) {
+      waypointSkipSearchMapRef.current[index] = false;
+      return;
+    }
+    // Debounce per index
+    const timeouts = waypointSearchTimeoutsRef.current;
+    if (timeouts[index]) clearTimeout(timeouts[index]);
+    timeouts[index] = setTimeout(() => {
+      performWaypointIndexedSearch(index, val);
+    }, 300) as unknown as NodeJS.Timeout;
+  }, [performWaypointIndexedSearch]);
+
+  const handleWaypointResultSelect = useCallback((index: number, result: SearchResult) => {
+    waypointSkipSearchMapRef.current[index] = true;
+    setWaypoints(prev => prev.map((w, i) => (
+      i === index
+        ? { ...w, place_id: result.place_id, display_name: result.display_name, lat: result.lat, lon: result.lon, type: result.type || result.category }
+        : w
+    )));
+    setWaypointResultsMap(prev => ({ ...prev, [index]: [] }));
+    setWaypointInputFocus(prev => ({ ...prev, [index]: false }));
+  }, []);
+
   // Get user location - enhanced
   const triedLowAccuracyRef = useRef(false);
   const watchIdRef = useRef<number | null>(null);
@@ -1660,13 +1817,18 @@ const mapLayers = [
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const location: [number, number] = [position.coords.latitude, position.coords.longitude];  
+        const location: [number, number] = [position.coords.latitude, position.coords.longitude];
         setUserLocation(location);
         setCenterPoint(location);
         triedLowAccuracyRef.current = false;
         setLocationError(null);
+        setHasGeolocationPermission(true);
       },
       (error) => {
+        // If permission explicitly denied, update permission state
+        if (error && typeof error.code === 'number' && error.code === 1) {
+          setHasGeolocationPermission(false);
+        }
         const insecureOrigin = location.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(location.hostname);
         let msg = error.message || 'Unable to get your location.';
         if (error.code === 1) msg = 'Permission denied. Please allow location access in your browser.';
@@ -1726,6 +1888,18 @@ const mapLayers = [
       }
     );
   }, []);
+
+  // Probe Permissions API if available to know initial permission state
+  useEffect(() => {
+    if (!('permissions' in navigator)) return;
+    try {
+      // @ts-ignore navigator.permissions type may not include geolocation in some TS versions
+      navigator.permissions.query({ name: 'geolocation' }).then((status: any) => {
+        setHasGeolocationPermission(status.state === 'granted');
+        status.onchange = () => setHasGeolocationPermission(status.state === 'granted');
+      }).catch(() => {});
+    } catch (e) {}
+  }, []);
   
   // Handle map click with reverse geocoding
   const handleMapClick = useCallback(async (lng: number, lat: number) => {
@@ -1737,15 +1911,80 @@ const mapLayers = [
       const data = await response.json();
 
       if (data.display_name) {
-        setMarkerDetails({
-          coordinates: [lat, lng],
-          address: data.display_name,
-          name: data.display_name.split(',')[0],
-          type: data.type || data.category
-        });
+        // If user simply clicks map (not picking start/end/waypoint) show compact details overlay like Google Maps
+        if (!isSelectingStartFromMap && !isSelectingEndFromMap && !isSelectingWaypointFromMap) {
+          setMarkerDetails({
+            coordinates: [lat, lng],
+            address: data.display_name,
+            name: data.display_name.split(',')[0],
+            type: data.type || data.category
+          });
+          // hide search UI when pinning
+          try { setSearchResults([]); setSearchQuery(""); } catch {}
+          return;
+        }
+        // If user is selecting a start from the map
+        if (isSelectingStartFromMap) {
+          const startPoint: SearchResult = {
+            place_id: `map-start-${Date.now()}`,
+            display_name: data.display_name,
+            lat: lat.toString(),
+            lon: lng.toString(),
+            type: data.type || data.category
+          } as SearchResult;
+
+          // Prevent debounced start search from firing when location is set programmatically from map
+          skipStartSearchRef.current = true;
+          setSelectedStartPoint(startPoint);
+          setFromLocation(data.display_name);
+          setUseCurrentLocation(false);
+          setIsSelectingStartFromMap(false);
+          setMarkerDetails({ coordinates: [lat, lng], address: data.display_name, name: data.display_name.split(',')[0], type: data.type || data.category });
+          toast?.success?.('Start selected', data.display_name.split(',')[0]);
+          return;
+        }
+
+        // If user is selecting an end/destination from the map
+        if (isSelectingEndFromMap) {
+          const endPoint: SearchResult = {
+            place_id: `map-end-${Date.now()}`,
+            display_name: data.display_name,
+            lat: lat.toString(),
+            lon: lng.toString(),
+            type: data.type || data.category
+          } as SearchResult;
+
+          // Prevent debounced end search from firing when location is set programmatically from map
+          skipEndSearchRef.current = true;
+          setSelectedEndPoint(endPoint);
+          setToLocation(data.display_name);
+          setIsSelectingEndFromMap(false);
+          setMarkerDetails({ coordinates: [lat, lng], address: data.display_name, name: data.display_name.split(',')[0], type: data.type || data.category });
+          toast?.success?.('Destination selected', data.display_name.split(',')[0]);
+
+          // If we have a start (either current or selected), auto-add route points and calculate
+          const startCoord = useCurrentLocation && userLocation ? userLocation : selectedStartPoint ? [parseFloat(selectedStartPoint.lat), parseFloat(selectedStartPoint.lon)] : null;
+          if (startCoord) {
+            const pts: RoutePoint[] = [
+              { coordinates: startCoord, address: startCoord === userLocation ? 'Current Location' : (selectedStartPoint?.display_name || 'Start') },
+              { coordinates: [lat, lng], address: data.display_name }
+            ];
+            setRoutePoints(pts);
+            calculateRouteRef.current?.(pts);
+          }
+
+          return;
+        }
 
         // If user is selecting a waypoint from the map, add it as a waypoint
         if (isSelectingWaypointFromMap) {
+          setMarkerDetails({
+            coordinates: [lat, lng],
+            address: data.display_name,
+            name: data.display_name.split(',')[0],
+            type: data.type || data.category
+          });
+
           const result: SearchResult = {
             place_id: `map-waypoint-${Date.now()}`,
             display_name: data.display_name,
@@ -1766,7 +2005,7 @@ const mapLayers = [
       console.error('Reverse geocoding failed:', error);
       console.log('Make sure Nominatim is running at http://192.168.1.11:8080');
     }
-  }, [isSelectingWaypointFromMap, addWaypoint, toast]);
+  }, [isSelectingWaypointFromMap, isSelectingStartFromMap, isSelectingEndFromMap, addWaypoint, toast, useCurrentLocation, userLocation, selectedStartPoint]);
 
   // Keep ref updated with latest handler
   useEffect(() => { onMapClickRef.current = handleMapClick; }, [handleMapClick]);
@@ -1788,9 +2027,12 @@ const mapLayers = [
 
       // Auto-fill direction form with the first and last points
       setUseCurrentLocation(false);
+      // Prevent debounced searches when filling from/to programmatically
+      skipStartSearchRef.current = true;
+      skipEndSearchRef.current = true;
       setFromLocation(newRoutePoints[0].address);
       setToLocation(newRoutePoints[newRoutePoints.length - 1].address);
-      
+
       // Create SearchResult objects for the form
       const startPoint: SearchResult = {
         place_id: `route-start-${Date.now()}`,
@@ -1815,11 +2057,15 @@ const mapLayers = [
   const handleDirections = useCallback(() => {
     setIsMenuOpen(false);
     setShowLayerPanel(false);
+    clearMapOverlays();
     setIsDirectionsOpen(true);
     setSearchResults([]);
     setSearchQuery("");
     // If we have a marker selected, use it as the end point
     if (markerDetails) {
+      // Prevent debounced searches when filling inputs from the selected marker
+      skipEndSearchRef.current = true;
+      skipStartSearchRef.current = true;
       setToLocation(markerDetails.address);
       setSelectedEndPoint({
         place_id: "selected",
@@ -1827,7 +2073,7 @@ const mapLayers = [
         lat: markerDetails.coordinates[0].toString(),
         lon: markerDetails.coordinates[1].toString()
       });
-      
+
       // If we have a route with at least one point, use it as start
       if (routePoints.length > 0) {
         setUseCurrentLocation(false);
@@ -1971,6 +2217,8 @@ const mapLayers = [
         if (useCurrentLocation) {
           setUseCurrentLocation(false);
         }
+        // Avoid triggering a search when updating inputs due to marker drag
+        skipStartSearchRef.current = true;
         setSelectedStartPoint({
           place_id: `drag-start-${Date.now()}`,
           display_name: display,
@@ -1980,6 +2228,8 @@ const mapLayers = [
         } as SearchResult);
         setFromLocation(display);
       } else if (index === total - 1) {
+        // Avoid triggering a search when updating inputs due to marker drag
+        skipEndSearchRef.current = true;
         setSelectedEndPoint({
           place_id: `drag-end-${Date.now()}`,
           display_name: display,
@@ -2069,7 +2319,7 @@ const mapLayers = [
   }, [isVoiceNavigationEnabled, directionSteps, currentStepIndex, speakInstruction]);
 
   const baseCalculateRouteButtonClasses =
-    "h-9 text-sm px-4 rounded-full bg-primary text-primary-foreground shadow-md hover:bg-primary hover:text-primary-foreground hover:shadow-md hover:translate-y-0 transform";
+    "h-9 text-sm px-4 rounded-full bg-primary text-primary-foreground shadow-md hover:bg-primary hover:text-primary-foreground hover:shadow-md hover:translate-y-0 transform whitespace-nowrap min-w-[9rem]";
 
   const renderCalculateRouteButton = (className?: string) => (
     <Button
@@ -2217,42 +2467,39 @@ const mapLayers = [
     setIsAddingWaypoint(false);
     setWaypointSearchQuery("");
     setWaypointSearchResults([]);
-  
+    // Clear saved directions snapshot to avoid restoring stale inputs
+    setDirectionsSnapshot(null);
+    // Clear remembered last directions mode
+    setLastDirectionsMode(null);
+
+    // Stop any active speech
+    window.speechSynthesis.cancel();
+  }, []);
+
+  // Clear only map overlays/route state (keep the directions panel open and preserve inputs)
+  const clearMapOverlays = useCallback(() => {
+    setRouteInfo(null);
+    setRoutePoints([]);
+    setRouteGeometries([]);
+    setDirectionSteps([]);
+    setAvailableRoutes([]);
+    setSelectedRouteIndex(0);
+    setCurrentStepIndex(0);
+    setIsNavigating(false);
+    setIsRouteStepsVisible(false);
+    setIsDirectionsInstructionMode(false);
+    setActiveInstructionIndex(null);
+    setActiveInstructionLocation(null);
+    setCenterPoint(null);
     // Stop any active speech
     window.speechSynthesis.cancel();
   }, []);
   
   // Handle directions overlay dismissal
   const handleDirectionsDismiss = useCallback(() => {
-    setIsDirectionsOpen(false);
-    // Clear route when directions are dismissed
-    setRoutePoints([]);
-    setRouteGeometries([]);
-    setRouteInfo(null);
-    setDirectionSteps([]);
-    setAvailableRoutes([]);
-    setSelectedRouteIndex(0);
-    setCurrentStepIndex(0);
-    setIsNavigating(false);
-    setIsVoiceNavigationEnabled(false);
-    setIsRouteStepsVisible(false);
-    setActiveInstructionIndex(null);
-    setActiveInstructionLocation(null);
-    setFromLocation("");
-    setToLocation("");
-    setStartPointResults([]);
-    setEndPointResults([]);
-    setSelectedStartPoint(null);
-    setSelectedEndPoint(null);
-    setUseCurrentLocation(true);
-    setWaypoints([]);
-    setIsAddingWaypoint(false);
-    setWaypointSearchQuery("");
-    setWaypointSearchResults([]);
-    
-    // Stop any active speech
-    window.speechSynthesis.cancel();
-  }, []);
+    // Clear everything when the directions panel is closed
+    clearAll();
+  }, [clearAll]);
   
   // Get direction icon based on instruction
   const getDirectionIcon = (sign: number) => {
@@ -2280,6 +2527,9 @@ const mapLayers = [
   
   // Debounced search
   useEffect(() => {
+    // Reset highlight when search results change
+    setSearchHighlightIndex(null);
+
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
@@ -2306,7 +2556,7 @@ const mapLayers = [
     if (startPointSearchTimeoutRef.current) {
       clearTimeout(startPointSearchTimeoutRef.current);
     }
-    
+
     startPointSearchTimeoutRef.current = setTimeout(() => {
       if (skipStartSearchRef.current) {
         // Clear the skip flag and do not perform a search when the value was set by a suggestion click
@@ -2317,20 +2567,25 @@ const mapLayers = [
         performStartPointSearch(fromLocation);
       }
     }, 300);
-    
+
     return () => {
       if (startPointSearchTimeoutRef.current) {
         clearTimeout(startPointSearchTimeoutRef.current);
       }
     };
   }, [fromLocation, performStartPointSearch, useCurrentLocation]);
+
+  // Reset start highlight when results change
+  useEffect(() => {
+    setStartHighlightIndex(null);
+  }, [startPointResults.length]);
   
   // Debounced end point search
   useEffect(() => {
     if (endPointSearchTimeoutRef.current) {
       clearTimeout(endPointSearchTimeoutRef.current);
     }
-    
+
     endPointSearchTimeoutRef.current = setTimeout(() => {
       if (skipEndSearchRef.current) {
         skipEndSearchRef.current = false;
@@ -2338,13 +2593,18 @@ const mapLayers = [
       }
       performEndPointSearch(toLocation);
     }, 300);
-    
+
     return () => {
       if (endPointSearchTimeoutRef.current) {
         clearTimeout(endPointSearchTimeoutRef.current);
       }
     };
   }, [toLocation, performEndPointSearch]);
+
+  // Reset end highlight when results change
+  useEffect(() => {
+    setEndHighlightIndex(null);
+  }, [endPointResults.length]);
   
   // Debounced waypoint search
   useEffect(() => {
@@ -2425,7 +2685,7 @@ const mapLayers = [
     return () => document.removeEventListener('mousedown', onMouseDown);
   }, [searchResults.length]);
 
-  // Outside click to blur start/end suggestion lists
+  // Outside click to blur start/end suggestion lists and waypoint lists
   useEffect(() => {
     const onMouseDown = (e: MouseEvent) => {
       const target = e.target as Node;
@@ -2434,6 +2694,23 @@ const mapLayers = [
       }
       if (endSectionRef.current && !endSectionRef.current.contains(target)) {
         setIsEndInputFocused(false);
+      }
+      // Handle per-waypoint focus states
+      const mapRefs = waypointSectionRefs.current;
+      let insideIndex: number | null = null;
+      mapRefs.forEach((el, idx) => {
+        if (el && el.contains(target)) insideIndex = idx;
+      });
+      if (insideIndex == null) {
+        setWaypointInputFocus({});
+      } else {
+        setWaypointInputFocus(prev => {
+          const next: Record<number, boolean> = { ...prev };
+          Object.keys(next).forEach((k) => {
+            next[Number(k)] = Number(k) === insideIndex;
+          });
+          return next;
+        });
       }
     };
     document.addEventListener('mousedown', onMouseDown);
@@ -2462,12 +2739,14 @@ const mapLayers = [
     }
   }, [isDirectionsOpen]);
 
-  // Close directions when search suggestions open, unless we have a saved directions snapshot
+  // Close directions when search suggestions open
   useEffect(() => {
-    if (searchResults.length > 0 && !directionsSnapshot) {
+    if (searchResults.length > 0) {
       setIsDirectionsOpen(false);
+      setIsDirectionsInstructionMode(false);
+      setIsRouteStepsVisible(false);
     }
-  }, [searchResults.length, directionsSnapshot]);
+  }, [searchResults.length]);
 
   return (
     <div className="fixed inset-0 h-screen w-screen overflow-hidden bg-background">
@@ -2475,8 +2754,10 @@ const mapLayers = [
       <div className="absolute top-4 left-4 z-50 w-[min(90vw,28rem)]">
         <div className="flex items-center gap-3">
           <Link to="/" className="flex-shrink-0">
-            <div className="h-10 w-10 rounded-lg bg-gradient-brand text-white flex items-center justify-center shadow-sm">
-              <MapPin className="h-4 w-4" />
+            <div className="rounded-lg bg-gradient-brand p-[2px] shadow-sm">
+              <div className="h-10 w-10 rounded-lg bg-card/90 flex items-center justify-center overflow-hidden">
+                <img src="/logo/logo.png" alt="NINja Map" className="h-10 w-10 object-contain" />
+              </div>
             </div>
           </Link>
 
@@ -2489,7 +2770,26 @@ const mapLayers = [
                   placeholder="Search places"
                   className="h-12 w-full bg-transparent border-0 rounded-none pl-10 pr-12 text-sm"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => { setSearchQuery(e.target.value); setResultsLocked(false); }}
+                  onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                    if (searchResults.length === 0) return;
+                    if (e.key === 'ArrowDown') {
+                      e.preventDefault();
+                      setSearchHighlightIndex(idx => (idx == null ? 0 : Math.min((idx ?? 0) + 1, searchResults.length - 1)));
+                    } else if (e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      setSearchHighlightIndex(idx => (idx == null ? searchResults.length - 1 : Math.max((idx ?? 0) - 1, 0)));
+                    } else if (e.key === 'Enter') {
+                      if (searchHighlightIndex != null && searchResults[searchHighlightIndex]) {
+                        handleSearchResultClick(searchResults[searchHighlightIndex]);
+                        setSearchResults([]);
+                        setSearchQuery('');
+                      }
+                    } else if (e.key === 'Escape') {
+                      setSearchResults([]);
+                      setSearchQuery('');
+                    }
+                  }}
                 />
 
                 {isSearching && (
@@ -2512,23 +2812,24 @@ const mapLayers = [
               variant="ghost"
               size="icon"
               onClick={() => {
+                // Clear map overlays so directions panel opens fresh
+                clearMapOverlays();
                 setMarkerDetails(null);
                 setDestination(null);
                 setSearchResults([]);
                 setSearchQuery("");
-                // If we have a saved directions snapshot (from prior "View steps"), restore it
-                if (directionsSnapshot) {
-                  setFromLocation(directionsSnapshot.fromLocation);
-                  setToLocation(directionsSnapshot.toLocation);
-                  setSelectedStartPoint(directionsSnapshot.selectedStartPoint);
-                  setSelectedEndPoint(directionsSnapshot.selectedEndPoint);
-                  setWaypoints(directionsSnapshot.waypoints);
-                  setUseCurrentLocation(directionsSnapshot.useCurrentLocation);
-                } else {
-                  // Clear selected endpoint/input when starting a fresh directions session
-                  setSelectedEndPoint(null);
-                  setToLocation("");
-                }
+                // Always open the Directions panel to the initial form (clear any navigation mode)
+                // Clear inputs so user starts a fresh directions session
+                setFromLocation("");
+                setToLocation("");
+                setSelectedStartPoint(null);
+                setSelectedEndPoint(null);
+                setWaypoints([]);
+                setUseCurrentLocation(false);
+                setIsDirectionsInstructionMode(false);
+                setIsRouteStepsVisible(false);
+                setIsNavigating(false);
+
                 setIsDirectionsOpen(true);
                 setShowLayerPanel(false);
               }}
@@ -2633,7 +2934,7 @@ const mapLayers = [
       
       {/* Search Results Overlay */}
       <AnimatePresence>
-        {searchResults.length > 0 && (
+        {searchResults.length > 0 && !resultsLocked && (
           <motion.div
             initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
@@ -2657,14 +2958,17 @@ const mapLayers = [
               <div className="space-y-0">
                 {searchResults.map((result, index) => {
                   const IconComponent = getPlaceIcon(result.type || result.category || '');
+                  const isActive = searchHighlightIndex === index;
                   return (
                     <motion.button
                       key={result.place_id}
                       initial={{ opacity: 0, x: -6 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.06, delay: index * 0.015 }}
+                      onMouseEnter={() => setSearchHighlightIndex(index)}
+                      onMouseLeave={() => setSearchHighlightIndex(null)}
                       onClick={() => { handleSearchResultClick(result); setSearchResults([]); setSearchQuery(""); }}
-                      className="w-full text-left p-3 border-b border-border/20 hover:bg-accent/10 transition-colors flex items-start gap-3"
+                      className={`w-full text-left p-3 border-b border-border/20 transition-colors flex items-start gap-3 ${isActive ? 'bg-accent/20' : 'hover:bg-accent/10'}`}
                     >
                       <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
                         <IconComponent className="h-4 w-4 text-primary" />
@@ -2677,6 +2981,8 @@ const mapLayers = [
                   );
                 })}
               </div>
+
+              
             </div>
           </motion.div>
         )}
@@ -2690,9 +2996,9 @@ const mapLayers = [
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -8 }}
             transition={{ duration: 0.09, ease: 'easeOut' }}
-            className="absolute top-20 left-[4.25rem] z-50 w-[min(90vw,22rem)]"
+            className="absolute top-20 left-4 z-50 w-[min(90vw,28rem)] overflow-x-hidden"
           >
-            <div className="rounded-3xl overflow-hidden border border-border/40 bg-card/90 shadow-lg p-4 w-[min(90vw,22rem)] max-h-[calc(100vh-5rem)] overflow-y-auto ring-1 ring-border/30">
+            <div className="rounded-3xl overflow-hidden border border-border/40 bg-card/90 shadow-lg p-4 w-[min(90vw,25rem)] max-h-[calc(100vh-5rem)] ring-1 ring-border/30 flex flex-col">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   {isDirectionsInstructionMode && (
@@ -2730,6 +3036,8 @@ const mapLayers = [
                 </Button>
               </div>
 
+              <div className="overflow-y-auto flex-1 overflow-x-hidden">
+
               {/* Transport Mode Selection (hidden when in Navigation instruction mode) */}
   {!isDirectionsInstructionMode && (
     <div className="mb-4">
@@ -2751,12 +3059,13 @@ const mapLayers = [
           </Button>
         ))}
       </div>
+
     </div>
   )}
               
               <div className={isDirectionsInstructionMode ? 'hidden' : ''}>
               {/* Start Point Input */}
-              <div className="mb-4" ref={startSectionRef}>
+              <div className="mb-4 relative" ref={startSectionRef}>
                 <div
                   className={`flex items-center gap-2 mb-2 ${draggingRouteIndex === 0 ? 'opacity-70' : ''}`}
                   draggable={!useCurrentLocation && !!selectedStartPoint}
@@ -2779,30 +3088,64 @@ const mapLayers = [
                     <div className="mt-1 flex items-center gap-2">
                       <div className="relative flex-1">
                         <UnifiedInput
-                          placeholder="Enter start point"
-                          className="pl-10 pr-12 text-sm rounded-full bg-popover/80 w-full"
+  placeholder="Enter start point"
+  size="sm"
+  className="pl-10 pr-12 text-sm rounded-full bg-popover/80 w-full"
                           value={fromLocation}
                           onChange={(val: string) => {
                             if (useCurrentLocation) {
                               setUseCurrentLocation(false);
                             }
                             setFromLocation(val);
+                            setResultsLocked(false);
+                            setEndPointResults([]);
+                            setWaypointResultsMap({});
+                            setWaypointSearchResults([]);
                           }}
                           icon={Search}
-                          onFocus={() => setIsStartInputFocused(true)}
+                          onFocus={() => {
+                            setIsStartInputFocused(true);
+                            setEndPointResults([]);
+                            setWaypointResultsMap({});
+                            setWaypointSearchResults([]);
+                            // Enter map-pick mode for start
+                            setIsSelectingStartFromMap(true);
+                            setIsSelectingWaypointFromMap(false);
+                            setIsSelectingEndFromMap(false);
+                            toast?.info?.('Select start', 'Click on the map to pick the start point.');
+                          }}
+                          onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                            if (startPointResults.length === 0) return;
+                            if (e.key === 'ArrowDown') {
+                              e.preventDefault();
+                              setStartHighlightIndex(idx => (idx == null ? 0 : Math.min((idx ?? 0) + 1, startPointResults.length - 1)));
+                            } else if (e.key === 'ArrowUp') {
+                              e.preventDefault();
+                              setStartHighlightIndex(idx => (idx == null ? startPointResults.length - 1 : Math.max((idx ?? 0) - 1, 0)));
+                            } else if (e.key === 'Enter') {
+                              if (startHighlightIndex != null && startPointResults[startHighlightIndex]) {
+                                handleStartPointSelect(startPointResults[startHighlightIndex]);
+                                setStartPointResults([]);
+                                setIsStartInputFocused(false);
+                              }
+                            } else if (e.key === 'Escape') {
+                              setStartPointResults([]);
+                              setIsStartInputFocused(false);
+                            }
+                          }}
                         />
 
                         {/* Clear selected start point shown inside input when selected */}
                         {selectedStartPoint && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => { setSelectedStartPoint(null); setFromLocation(''); }}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 h-7 w-7 p-0 flex items-center justify-center rounded-full"
-                            title="Clear start point"
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
+                          <div
+                          
+                         
+                          onClick={() => { setSelectedStartPoint(null); setFromLocation(''); }}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 h-7 w-7 p-0 flex items-center justify-center rounded-full z-10 bg-transparent hover:bg-transparent hover:shadow-none transition-none"
+                          title="Clear start point"
+                        >
+                            <X className="h-4 w-4 " style={{cursor:"pointer"}} />
+                          </div>
                         )}
 
                         {/* Loader shown when searching and no selection */}
@@ -2829,14 +3172,14 @@ const mapLayers = [
                 
                 {/* Start Point Results */}
                 <AnimatePresence>
-                  {(isStartInputFocused || (startPointResults.length > 0 && !fromLocation.trim())) && (
+                  {(isStartInputFocused || (startPointResults.length > 0 && !fromLocation.trim())) && !consolidatedActive && !resultsLocked && (
                     <motion.div
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="mt-1 bg-popover border border-border rounded-xl shadow-lg overflow-hidden max-h-[40vh] sm:max-h-40 overflow-y-auto overscroll-contain z-50"
+                      className={isDirectionsOpen ? "mt-2 bg-popover border border-border rounded-xl shadow-lg overflow-hidden max-h-[40vh] sm:max-h-40 overflow-y-auto overscroll-contain z-50" : "absolute left-0 right-0 top-full mt-2 bg-popover border border-border rounded-xl shadow-lg overflow-hidden max-h-[40vh] sm:max-h-40 overflow-y-auto overscroll-contain z-50"}
                     >
-                      {isStartInputFocused && (
+                      {isStartInputFocused && (hasGeolocationPermission === true || userLocation != null) && (
                         <button
                           type="button"
                           onClick={() => {
@@ -2867,18 +3210,21 @@ const mapLayers = [
                           .filter(r => r.place_id !== selectedEndPoint?.place_id)
                           .map((result, index) => {
                         const IconComponent = getPlaceIcon(result.type || result.category || '');
+                        const isActive = startHighlightIndex === index;
                         return (
                           <motion.button
                             key={result.place_id}
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: index * 0.03 }}
+                            onMouseEnter={() => setStartHighlightIndex(index)}
+                            onMouseLeave={() => setStartHighlightIndex(null)}
                             onClick={() => {
                               handleStartPointSelect(result);
                               setStartPointResults([]);
                               setIsStartInputFocused(false);
                             }}
-                            className="w-full text-left p-3 border-b border-border/20 hover:bg-accent/5 transition-colors duration-150 flex items-start gap-3"
+                            className={`w-full text-left p-3 border-b border-border/20 transition-colors duration-150 flex items-start gap-3 ${isActive ? 'bg-accent/10' : 'hover:bg-accent/5'}`}
                           >
                             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                               <IconComponent className="h-4 w-4 text-primary" />
@@ -2900,7 +3246,7 @@ const mapLayers = [
               </div>
               
               {/* End Point Input */}
-              <div className="mb-4" ref={endSectionRef}>
+              <div className="mb-4 relative" ref={endSectionRef}>
                 <div
                   className={`flex items-center gap-2 mb-2 ${draggingRouteIndex === ((!useCurrentLocation && selectedStartPoint ? 1 : 0) + waypoints.length) ? 'opacity-70' : ''}`}
                   draggable={!!selectedEndPoint}
@@ -2920,28 +3266,63 @@ const mapLayers = [
                     <div className="relative">
                       <UnifiedInput
                         placeholder="Enter destination"
+                        size="sm"
                         className="pl-10 pr-12 text-sm rounded-full bg-popover/80"
                         value={toLocation}
-                        onChange={(val: string) => setToLocation(val)}
+                        onChange={(val: string) => {
+                          setToLocation(val);
+                          setResultsLocked(false);
+                          setStartPointResults([]);
+                          setWaypointResultsMap({});
+                          setWaypointSearchResults([]);
+                        }}
                         icon={Search}
-                        onFocus={() => setIsEndInputFocused(true)}
+                        onFocus={() => {
+                          setIsEndInputFocused(true);
+                          setStartPointResults([]);
+                          setWaypointResultsMap({});
+                          setWaypointSearchResults([]);
+                          // Enter map-pick mode for destination
+                          setIsSelectingEndFromMap(true);
+                          setIsSelectingWaypointFromMap(false);
+                          setIsSelectingStartFromMap(false);
+                          toast?.info?.('Select destination', 'Click on the map to pick the destination.');
+                        }}
+                        onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                          if (endPointResults.length === 0) return;
+                          if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            setEndHighlightIndex(idx => (idx == null ? 0 : Math.min((idx ?? 0) + 1, endPointResults.length - 1)));
+                          } else if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            setEndHighlightIndex(idx => (idx == null ? endPointResults.length - 1 : Math.max((idx ?? 0) - 1, 0)));
+                          } else if (e.key === 'Enter') {
+                            if (endHighlightIndex != null && endPointResults[endHighlightIndex]) {
+                              handleEndPointSelect(endPointResults[endHighlightIndex]);
+                              setEndPointResults([]);
+                              setIsEndInputFocused(false);
+                            }
+                          } else if (e.key === 'Escape') {
+                            setEndPointResults([]);
+                            setIsEndInputFocused(false);
+                          }
+                        }}
                       />
 
                       {/* Clear selected destination shown inside input when selected */}
                       {selectedEndPoint && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
+                        <div
+                    
                           onClick={() => { setSelectedEndPoint(null); setToLocation(''); }}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 h-7 w-7 p-0 flex items-center justify-center rounded-full"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 h-7 w-7 p-0 flex items-center justify-center rounded-full z-10 bg-transparent hover:bg-transparent hover:shadow-none transition-none"
                           title="Clear destination"
                         >
-                          <X className="h-3 w-3" />
-                        </Button>
+                      <X className="h-4 w-4 " style={{cursor:"pointer"}} />
+                        </div>
                       )}
 
                       {isEndPointSearching && !selectedEndPoint && (
-                        <Loader2 className="absolute right-3 top-4 transform -translate-y-1/2 h-3 w-3 text-primary animate-spin" />
+                        <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 text-primary animate-spin" />
                       )}
                     </div>
                   </div>
@@ -2949,29 +3330,32 @@ const mapLayers = [
                 
                 {/* End Point Results */}
                 <AnimatePresence>
-                  {(isEndInputFocused || (endPointResults.length > 0 && !toLocation.trim())) && !selectedEndPoint && (
+                  {(isEndInputFocused || (endPointResults.length > 0 && !toLocation.trim())) && !consolidatedActive && !resultsLocked && (
                     <motion.div
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="mt-1 bg-popover border border-border rounded-xl shadow-lg overflow-hidden max-h-[40vh] sm:max-h-40 overflow-y-auto overscroll-contain z-50"
+                      className={isDirectionsOpen ? "mt-2 bg-popover border border-border rounded-xl shadow-lg overflow-hidden max-h-[40vh] sm:max-h-40 overflow-y-auto overscroll-contain z-50" : "absolute left-0 right-0 top-full mt-2 bg-popover border border-border rounded-xl shadow-lg overflow-hidden max-h-[40vh] sm:max-h-40 overflow-y-auto overscroll-contain z-50"}
 >
                       {endPointResults
                           .filter(r => r.place_id !== selectedStartPoint?.place_id)
                           .map((result, index) => {
                         const IconComponent = getPlaceIcon(result.type || result.category || '');
+                        const isActive = endHighlightIndex === index;
                         return (
                           <motion.button
                             key={result.place_id}
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: index * 0.03 }}
+                            onMouseEnter={() => setEndHighlightIndex(index)}
+                            onMouseLeave={() => setEndHighlightIndex(null)}
                             onClick={() => {
                               handleEndPointSelect(result);
                               setEndPointResults([]);
                               setIsEndInputFocused(false);
                             }}
-                            className="w-full text-left p-2 border-b border-border/30 hover:bg-accent/30 transition-colors duration-150 flex items-center gap-2"
+                            className={`w-full text-left p-2 border-b border-border/30 transition-colors duration-150 flex items-center gap-2 ${isActive ? 'bg-accent/20' : 'hover:bg-accent/30'}`}
                           >
                             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                               <IconComponent className="h-4 w-4 text-primary" />
@@ -2998,14 +3382,15 @@ const mapLayers = [
                   <div className="space-y-3">
                     {waypoints.map((waypoint, index) => (
                       <div
-                        key={index}
-                        draggable
-                        onDragStart={(e) => handleRouteItemDragStart((!useCurrentLocation && selectedStartPoint ? 1 : 0) + index, e)}
-                        onDragOver={(e) => handleRouteItemDragOver((!useCurrentLocation && selectedStartPoint ? 1 : 0) + index, e)}
-                        onDrop={(e) => handleRouteItemDrop((!useCurrentLocation && selectedStartPoint ? 1 : 0) + index, e)}
-                        onDragEnd={handleRouteItemDragEnd}
-                        className={`flex items-start gap-2 ${draggingRouteIndex === ((!useCurrentLocation && selectedStartPoint ? 1 : 0) + index) ? 'opacity-70' : ''}`}
-                      >
+                      key={index}
+                      draggable
+                      ref={(el) => { const m = waypointSectionRefs.current; if (el) m.set(index, el); else m.delete(index); }}
+                      onDragStart={(e) => handleRouteItemDragStart((!useCurrentLocation && selectedStartPoint ? 1 : 0) + index, e)}
+                      onDragOver={(e) => handleRouteItemDragOver((!useCurrentLocation && selectedStartPoint ? 1 : 0) + index, e)}
+                      onDrop={(e) => handleRouteItemDrop((!useCurrentLocation && selectedStartPoint ? 1 : 0) + index, e)}
+                      onDragEnd={handleRouteItemDragEnd}
+                      className={`flex items-start gap-2 ${draggingRouteIndex === ((!useCurrentLocation && selectedStartPoint ? 1 : 0) + index) ? 'opacity-70' : ''}`}
+                    >
                         <div className="w-6 mt-2 h-6 rounded-full bg-gray-600/10 flex items-center justify-center cursor-grab">
                           <div className="w-2 h-2 rounded-full bg-gray-600" />
                         </div>
@@ -3013,29 +3398,107 @@ const mapLayers = [
                           <div className="relative">
                             <UnifiedInput
                               placeholder={`Waypoint ${index + 1}`}
+                              size="sm"
                               className="pl-10 pr-12 text-sm rounded-full bg-popover/80 w-full"
                               value={waypoint.display_name}
-                              onChange={(val: string) => setWaypoints(prev => prev.map((w, i) => i === index ? { ...w, display_name: val } : w))}
+                              onChange={(val: string) => handleWaypointInputChange(index, val)}
                               icon={Search}
-                              onFocus={() => { setIsSelectingWaypointFromMap(true); toast?.info?.('Select waypoint', 'Click on the map to pick a waypoint.'); }}
+                              onFocus={() => setWaypointInputFocus(prev => ({ ...prev, [index]: true }))}
                             />
 
+                            {/* Loader shown when searching for this waypoint */}
+                            {waypointSearchingMap[index] && (
+                              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 text-primary animate-spin" />
+                            )}
+
                             {/* Clear button inside input */}
-                            <Button variant="ghost" size="sm" onClick={() => removeWaypoint(index)} className="absolute right-3 top-1/2 -translate-y-1/2 h-7 w-7 p-0">
-                              <X className="h-3 w-3" />
-                            </Button>
+                            <div onClick={() => removeWaypoint(index)} className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-7 p-0 z-10 bg-transparent hover:bg-transparent hover:shadow-none transition-none">
+                             <X className="h-4 w-4 " style={{cursor:"pointer"}} />
+                            </div>
 
                           </div>
                         </div>
+
+                        {/* Waypoint Results Dropdown */}
+                        <AnimatePresence>
+                          {(waypointInputFocus[index] || (Array.isArray(waypointResultsMap[index]) && waypointResultsMap[index].length > 0 && !waypoints[index].display_name.trim())) && !consolidatedActive && !resultsLocked && (
+                            <motion.div
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
+                              className={isDirectionsOpen ? "mt-2 bg-popover border border-border rounded-xl shadow-lg overflow-hidden max-h-[40vh] sm:max-h-40 overflow-y-auto overscroll-contain z-50" : "absolute left-0 right-0 top-full mt-2 bg-popover border border-border rounded-xl shadow-lg overflow-hidden max-h-[40vh] sm:max-h-40 overflow-y-auto overscroll-contain z-50"}
+                            >
+                              {(waypointResultsMap[index] || [])
+                                .filter(r => r.place_id !== selectedStartPoint?.place_id && r.place_id !== selectedEndPoint?.place_id && waypoints.every((w, i) => i === index || w.place_id !== r.place_id))
+                                .map((result, rIndex) => {
+                                  const IconComponent = getPlaceIcon(result.type || result.category || '');
+                                  return (
+                                    <motion.button
+                                      key={result.place_id}
+                                      initial={{ opacity: 0, x: -10 }}
+                                      animate={{ opacity: 1, x: 0 }}
+                                      transition={{ delay: rIndex * 0.03 }}
+                                      onClick={() => {
+                                        handleWaypointResultSelect(index, result);
+                                      }}
+                                      className="w-full text-left p-2 border-b border-border/30 transition-colors duration-150 flex items-center gap-2 hover:bg-accent/30"
+                                    >
+                                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                        <IconComponent className="h-4 w-4 text-primary" />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="text-xs font-medium text-foreground truncate">
+                                          {result.display_name.split(',')[0]}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground truncate line-clamp-1">
+                                          {result.display_name.split(',').slice(1, 3).join(', ')}
+                                        </div>
+                                      </div>
+                                    </motion.button>
+                                  );
+                                })}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
               
+              {/* Consolidated Results Panel placed below inputs and above calculate buttons */}
+              {consolidatedActive && (
+                <div className="mb-4">
+                  <div className="bg-popover border border-border rounded-xl shadow-lg overflow-hidden max-h-56 overflow-y-auto p-2">
+                    <div className="text-xs font-medium text-muted-foreground px-2 py-1">Search results</div>
+                    <div className="divide-y divide-border/20">
+                      {consolidatedResults.map((item, idx) => {
+                        const IconComponent = getPlaceIcon(item.result.type || item.result.category || '');
+                        return (
+                          <button
+                            key={`${item.type}-${item.result.place_id}-${idx}`}
+                            onClick={() => handleConsolidatedSelect(item)}
+                            className="w-full text-left p-2 flex items-start gap-3 hover:bg-accent/10 transition-colors"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                              <IconComponent className="h-4 w-4 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs font-medium text-foreground truncate">{item.result.display_name.split(',')[0]}</div>
+                              <div className="text-xs text-muted-foreground truncate">{item.result.display_name.split(',').slice(1,3).join(', ')}</div>
+                            </div>
+                            <div className="text-xs text-muted-foreground ml-2">{item.type === 'waypoint' ? `Waypoint ${item.waypointIndex!+1}` : item.type === 'start' ? 'Start' : 'End'}</div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Add Waypoint Section */}
               {isAddingWaypoint ? (
-                <div className="mb-4">
+                <div className="mb-4 relative">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-6 h-6 rounded-full bg-gray-600/10 flex items-center justify-center">
                       <div className="w-2 h-2 rounded-full bg-gray-600"></div>
@@ -3045,22 +3508,33 @@ const mapLayers = [
                       <div className="relative">
                         <UnifiedInput
                           placeholder="Add waypoint"
+                          size="sm"
                           className="pl-10 pr-4 text-sm rounded-full bg-popover/80"
                           value={waypointSearchQuery}
-                          onChange={(val: string) => setWaypointSearchQuery(val)}
+                          onChange={(val: string) => { setWaypointSearchQuery(val); setResultsLocked(false); }}
                           icon={Search}
                           onFocus={() => {
                             setIsSelectingWaypointFromMap(true);
+                            // Clear other result lists so waypoint search shows fresh results
+                            setStartPointResults([]);
+                            setEndPointResults([]);
+                            setWaypointResultsMap({});
+                            setWaypointSearchResults([]);
                             toast?.info?.('Select waypoint', 'Click on the map to pick a waypoint.');
                           }}
                           onClick={() => {
                             setIsSelectingWaypointFromMap(true);
+                            // Clear other result lists so waypoint search shows fresh results
+                            setStartPointResults([]);
+                            setEndPointResults([]);
+                            setWaypointResultsMap({});
+                            setWaypointSearchResults([]);
                             toast?.info?.('Select waypoint', 'Click on the map to pick a waypoint.');
                           }}
                         />
 
                         {isWaypointSearching && (
-                          <Loader2 className="absolute right-3 top-4 transform -translate-y-1/2 h-3 w-3 text-primary animate-spin" />
+                          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 text-primary animate-spin" />
                         )}
                         {/* {isSelectingWaypointFromMap && (
                           <div className="mt-2 text-xs text-muted-foreground">Click on the map to place the waypoint, or type to search. Press Esc to cancel.</div>
@@ -3093,7 +3567,7 @@ const mapLayers = [
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="mt-1 bg-popover border border-border rounded-xl shadow-lg overflow-hidden max-h-[40vh] sm:max-h-40 overflow-y-auto overscroll-contain z-50"
+                        className={isDirectionsOpen ? "mt-2 bg-popover border border-border rounded-xl shadow-lg overflow-hidden max-h-[40vh] sm:max-h-40 overflow-y-auto overscroll-contain z-50" : "absolute left-0 right-0 top-full mt-2 bg-popover border border-border rounded-xl shadow-lg overflow-hidden max-h-[40vh] sm:max-h-40 overflow-y-auto overscroll-contain z-50"}
                       >
                         {waypointSearchResults.map((result, index) => {
                           const IconComponent = getPlaceIcon(result.type || result.category || '');
@@ -3149,7 +3623,7 @@ const mapLayers = [
                         toast?.info?.('Add waypoints', 'Type to search or click the map to pick a waypoint.');
                       }}
                       disabled={waypoints.length >= 10}
-                      className="flex-1 h-9 text-sm px-4 rounded-full bg-primary text-primary-foreground shadow-md hover:bg-primary hover:text-primary-foreground hover:shadow-md hover:translate-y-0 transform"
+                      className="flex-1 h-9 text-sm px-4 rounded-full bg-primary text-primary-foreground shadow-md hover:bg-primary hover:text-primary-foreground hover:shadow-md hover:translate-y-0 transform whitespace-nowrap min-w-[9rem] flex-shrink-0"
                     >
                       <Plus className="h-3 w-3 mr-1" />
                       Add waypoints
@@ -3198,10 +3672,18 @@ const mapLayers = [
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-1">
                               <span className="text-xs font-medium">
-                                {selectedEndPoint?.display_name
-                                ? `via ${selectedEndPoint.display_name.split(',')[0]}`
-                                : `Route ${index + 1}`}
+                                {(() => {
+                                const via = extractViaFromInstructions(route.instructions);
+                                if (via) return `via ${via}`;
+                                if (selectedEndPoint?.display_name) return `via ${selectedEndPoint.display_name.split(',')[0]}`;
+                                return `Route ${index + 1}`;
+                              })() }
                               </span>
+                              {index === 0 && (
+                                <span className="ml-2 inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                  Fastest
+                                </span>
+                              )}
                             </div>
                             <div className="text-xs text-muted-foreground">
                               {formatDurationMs(route.time)}
@@ -3236,7 +3718,7 @@ const mapLayers = [
               </div>
 
               {/* Route Summary */}
-              {routeInfo && (
+              {routeInfo && isDirectionsInstructionMode && (
                 <div className="mb-4 p-3 rounded-lg bg-muted/50 border border-border/50">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -3248,9 +3730,12 @@ const mapLayers = [
                         {formatMinutes(routeInfo.time)}
                         {routeInfo.totalRoutes > 1 && ` • ${routeInfo.totalRoutes} routes available`}
                       </div>
-                      {selectedEndPoint?.display_name && (
-                        <div className="text-xs text-muted-foreground mt-1">via {selectedEndPoint.display_name.split(',')[0]}</div>
-                      )}
+                      {(() => {
+                        const via = extractViaFromInstructions(routeInfo?.instructions);
+                        if (via) return <div className="text-xs text-muted-foreground mt-1">via {via}</div>;
+                        if (selectedEndPoint?.display_name) return <div className="text-xs text-muted-foreground mt-1">via {selectedEndPoint.display_name.split(',')[0]}</div>;
+                        return null;
+                      })()}
                     </div>
                     <Button
                       variant="ghost"
@@ -3268,7 +3753,7 @@ const mapLayers = [
               {(isDirectionsInstructionMode || isRouteStepsVisible) && directionSteps.length > 0 && (
                 <div>
                   <h4 className="text-xs font-medium text-muted-foreground mb-2">Navigation instructions</h4>
-                  <div className="space-y-2 max-h-48 overflow-y-auto panel-scroll">
+                  <div className="space-y-2">
                     {directionSteps.map((step, index) => {
                       const IconComponent = getDirectionIcon(step.sign);
                       const isActive = index === activeInstructionIndex;
@@ -3294,12 +3779,11 @@ const mapLayers = [
                             <div className="text-xs font-medium text-foreground">{step.instruction}</div>
                             {(step.distance > 0 || step.time > 0) && (
                               <div className="text-[11px] text-muted-foreground">
-                                Step {index + 1}
                                 {step.distance > 0 && (
-                                  <> • {step.distance > 1000 ? `${(step.distance / 1000).toFixed(1)} km` : `${Math.round(step.distance)} m`}</>
+                                  <>{step.distance > 1000 ? `${(step.distance / 1000).toFixed(1)} km` : `${Math.round(step.distance)} m`}</>
                                 )}
                                 {step.time > 0 && (
-                                  <> • {formatDurationMs(step.time)}</>
+                                  <>{step.distance > 0 ? ' • ' : ''}{formatDurationMs(step.time)}</>
                                 )}
                               </div>
                             )}
@@ -3314,6 +3798,7 @@ const mapLayers = [
                 <div className="text-xs text-muted-foreground">Navigation instructions are not available for this route.</div>
               )}
             </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -3322,7 +3807,7 @@ const mapLayers = [
       <div className="absolute bottom-4 left-4 z-50">
         <Button
           variant="ghost"
-          onClick={() => setShowLayerPanel((prev) => { const next = !prev; if (next) setIsDirectionsOpen(false); return next; })}
+          onClick={() => setShowLayerPanel((prev) => { const next = !prev; if (next) clearAll(); return next; })}
           className="h-10 w-10 backdrop-blur-sm bg-card/60 border border-border/40 rounded-full shadow-sm p-1 flex items-center justify-center transition"
           title="Map style"
         >
@@ -3447,9 +3932,12 @@ const mapLayers = [
                     <div className="text-xs opacity-90">
                       {routeInfo.distance} km • {formatMinutes(routeInfo.time)}
                     </div>
-                    {selectedEndPoint?.display_name && (
-                      <div className="text-xs opacity-90">via {selectedEndPoint.display_name.split(',')[0]}</div>
-                    )}
+                    {(() => {
+                      const via = extractViaFromInstructions(routeInfo?.instructions);
+                      if (via) return <div className="text-xs opacity-90">via {via}</div>;
+                      if (selectedEndPoint?.display_name) return <div className="text-xs opacity-90">via {selectedEndPoint.display_name.split(',')[0]}</div>;
+                      return null;
+                    })()}
                   </div>
                 </div>
                 <Button

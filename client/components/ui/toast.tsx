@@ -28,9 +28,9 @@ const toastVariants = cva(
     variants: {
       variant: {
         default:
-          "border border-border/80 bg-[hsl(var(--foreground))]/90 text-[hsl(var(--background))] shadow-lg dark:border-[hsl(var(--sidebar-border))]/70 dark:bg-[hsl(var(--sidebar-background))]/90 dark:text-[hsl(var(--sidebar-foreground))]",
+          "border border-red-700 bg-red-600 text-white shadow-lg",
         destructive:
-          "destructive group border-[hsl(var(--destructive))]/40 bg-[hsl(var(--destructive))]/12 text-[hsl(var(--destructive))]",
+          "destructive group border-red-800 bg-red-700 text-white",
       },
     },
     defaultVariants: {
@@ -76,7 +76,7 @@ const ToastClose = React.forwardRef<
   <ToastPrimitives.Close
     ref={ref}
     className={cn(
-      "absolute right-2 top-2 rounded-md p-1 text-foreground/60 opacity-0 transition-opacity hover:bg-muted/60 hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring/40 focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 group-hover:opacity-100 group-[.destructive]:text-[hsl(var(--destructive))] group-[.destructive]:hover:bg-[hsl(var(--destructive))]/15 group-[.destructive]:hover:text-[hsl(var(--destructive))] group-[.destructive]:focus:ring-[hsl(var(--destructive))]/30",
+      "absolute right-2 top-2 rounded-md p-1 text-white/80 opacity-0 transition-opacity hover:bg-white/10 hover:text-white focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-white/40 focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 group-hover:opacity-100",
       className,
     )}
     toast-close=""
