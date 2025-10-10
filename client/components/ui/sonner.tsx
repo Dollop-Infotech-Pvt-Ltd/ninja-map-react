@@ -14,12 +14,12 @@ const Toaster = ({ position = "top-right", ...props }: ToasterProps) => {
       toastOptions={{
         classNames: {
           toast:
-            "group toast bg-red-600 text-white border border-red-700 shadow-lg",
-          description: "text-white/90",
+            "group toast border border-green-200 bg-green-50 text-green-800 shadow-md",
+          description: "text-green-800/80",
           actionButton:
-            "bg-white text-red-700",
+            "bg-transparent text-green-800",
           cancelButton:
-            "bg-red-700 text-white",
+            "bg-transparent text-red-800",
         },
       }}
       {...props}

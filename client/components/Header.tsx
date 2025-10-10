@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import React, { useState, useEffect } from "react";
-import { MapPin, Sun, Moon, Navigation, User } from "lucide-react";
+import { Sun, Moon, Navigation, User } from "lucide-react";
 import { useAuthModal } from "@/hooks/use-auth-modal";
 import { motion } from "framer-motion";
 import { useTheme } from "@/hooks/use-theme";
@@ -79,13 +79,15 @@ export default function Header({ showBackButton = true }: HeaderProps) {
       <div className="container py-3">
         <div className="flex items-center justify-between">
           {/* Brand Logo */}
-          <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-brand text-white shadow-sm">
-              <MapPin className="h-4 w-4" />
-            </div>
-            <span className="text-auto-lg font-bold font-display text-brand">
-              NINja Map
-            </span>
+          <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity overflow-visible h-8 relative" aria-label="NINja Map">
+            <img
+              src="/logo/logo2.png"
+              alt="NINja Map"
+              loading="eager"
+              decoding="sync"
+              className="w-[96px] h-[56px] object-contain -ml-[10px] md:w-[146px] md:h-[76px] md:-ml-[20px] relative"
+              style={{ top: '50%', transform: 'translateY(calc(-50% + 20px))' }}
+            />
           </Link>
 
           {/* Navigation and Controls */}

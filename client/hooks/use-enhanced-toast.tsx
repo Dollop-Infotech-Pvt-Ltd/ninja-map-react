@@ -31,10 +31,7 @@ export function useEnhancedToast() {
       title: (
         <div className="flex items-center gap-2">
           <Icon className={`h-4 w-4 ${
-            type === 'success' ? 'text-green-500' :
-            type === 'error' ? 'text-red-500' :
-            type === 'warning' ? 'text-yellow-500' :
-            'text-blue-500'
+            type === 'error' ? 'text-red-800' : 'text-green-800'
           }`} />
           {options.title}
         </div>

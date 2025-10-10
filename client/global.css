@@ -15,16 +15,16 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 84% 4.9%;
 
-    --primary: 234 89% 58%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 152 95% 21%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 98%;
+    --secondary: 41 100% 55%;
     --secondary-foreground: 222.2 84% 4.9%;
 
     --muted: 210 40% 98%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 210 40% 98%;
+    --accent: 41 100% 55%;
     --accent-foreground: 222.2 84% 4.9%;
 
     --destructive: 0 84.2% 60.2%;
@@ -32,28 +32,28 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 234 89% 58%;
+    --ring: 152 95% 21%;
 
     --radius: 0.75rem;
 
     /* Enhanced brand colors for stunning light theme */
-    --brand: 234 89% 58%;
+    --brand: 152 95% 21%;
     --brand-foreground: 0 0% 100%;
-    --brand-50: 234 100% 99%;
-    --brand-100: 234 100% 97%;
-    --brand-200: 234 100% 95%;
-    --brand-300: 234 89% 88%;
-    --brand-400: 234 89% 78%;
-    --brand-500: 234 89% 68%;
-    --brand-600: 234 89% 58%;
-    --brand-700: 234 89% 48%;
-    --brand-800: 234 89% 38%;
-    --brand-900: 234 89% 28%;
+    --brand-50: 152 60% 97%;
+    --brand-100: 152 55% 93%;
+    --brand-200: 152 55% 85%;
+    --brand-300: 152 60% 70%;
+    --brand-400: 152 70% 50%;
+    --brand-500: 152 80% 40%;
+    --brand-600: 152 95% 30%;
+    --brand-700: 152 95% 24%;
+    --brand-800: 152 95% 18%;
+    --brand-900: 152 95% 12%;
 
     /* Beautiful gradient colors for light theme */
-    --gradient-from: 234 89% 65%;
-    --gradient-to: 270 91% 55%;
-    --gradient-via: 250 90% 60%;
+    --gradient-from: 152 80% 35%;
+    --gradient-to: 41 100% 55%;
+    --gradient-via: 41 100% 50%;
 
     /* Light theme specific colors with enhanced contrast */
     --light-overlay: 255 255 255 / 0.95;
@@ -73,11 +73,11 @@
     --popover: 222 15% 9%;
     --popover-foreground: 210 20% 98%;
 
-    --primary: 234 89% 74%;
+    --primary: 152 75% 60%;
     --primary-foreground: 222 15% 7%;
 
-    --secondary: 217 33% 15%;
-    --secondary-foreground: 210 20% 98%;
+    --secondary: 41 100% 50%;
+    --secondary-foreground: 222 15% 7%;
 
     --muted: 217 33% 15%;
     --muted-foreground: 218 11% 75%;
@@ -90,30 +90,30 @@
 
     --border: 217 33% 15%;
     --input: 217 33% 15%;
-    --ring: 234 89% 74%;
+    --ring: 152 75% 60%;
 
     --sidebar-background: 240 6% 10%;
     --sidebar-foreground: 240 5% 96%;
-    --sidebar-primary: 224 76% 48%;
+    --sidebar-primary: 152 75% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 240 4% 16%;
     --sidebar-accent-foreground: 240 5% 96%;
     --sidebar-border: 240 4% 16%;
-    --sidebar-ring: 234 89% 74%;
+    --sidebar-ring: 152 75% 60%;
 
     /* Dark theme brand colors */
-    --brand: 234 89% 74%;
+    --brand: 152 75% 60%;
     --brand-foreground: 222 15% 7%;
-    --brand-50: 234 89% 15%;
-    --brand-100: 234 89% 18%;
-    --brand-200: 234 89% 22%;
-    --brand-300: 234 89% 30%;
-    --brand-400: 234 89% 45%;
-    --brand-500: 234 89% 74%;
-    --brand-600: 234 89% 78%;
-    --brand-700: 234 89% 82%;
-    --brand-800: 234 89% 88%;
-    --brand-900: 234 89% 92%;
+    --brand-50: 152 60% 15%;
+    --brand-100: 152 60% 20%;
+    --brand-200: 152 60% 24%;
+    --brand-300: 152 60% 30%;
+    --brand-400: 152 70% 45%;
+    --brand-500: 152 75% 60%;
+    --brand-600: 152 80% 65%;
+    --brand-700: 152 85% 72%;
+    --brand-800: 152 90% 80%;
+    --brand-900: 152 95% 88%;
 
     /* Dark theme specific colors */
     --light-overlay: 0 0% 0% / 0.9;
@@ -175,11 +175,24 @@
   }
 
   .text-gradient {
-    @apply bg-gradient-to-r from-[hsl(var(--gradient-from))] via-[hsl(var(--gradient-via))] to-[hsl(var(--gradient-to))] bg-clip-text text-transparent;
+    background-image: linear-gradient(
+      to right,
+      hsl(var(--gradient-from)) 0%,
+      hsl(var(--gradient-from)) 65%,
+      hsl(var(--gradient-to)) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
 
   .bg-gradient-brand {
-    @apply bg-gradient-to-r from-[hsl(var(--gradient-from))] via-[hsl(var(--gradient-via))] to-[hsl(var(--gradient-to))];
+    background-image: linear-gradient(
+      to right,
+      hsl(var(--gradient-from)) 0%,
+      hsl(var(--gradient-from)) 65%,
+      hsl(var(--gradient-to)) 100%
+    );
   }
 
   /* Beautiful hero pattern background for light theme */

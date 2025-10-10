@@ -267,11 +267,11 @@ const fallbackStyle: StyleSpecification = {
 
 // Route colors for multiple routes
 const routeColors = [
-  '#1e40af', // Indigo-800
-  '#2563eb', // Blue-600
-  '#3b82f6', // Blue-500
-  '#60a5fa', // Blue-400
-  '#93c5fd', // Blue-300
+  '#036A38', // Pantone Green
+  '#1B8F55', // Green medium
+  '#6FCF97', // Green light
+  '#FFB81C', // Pantone 123 C Yellow
+  '#F4C542', // Yellow light
 ];
 
 // Map Component
@@ -519,18 +519,18 @@ function MapLibreMap({
             width: 28px;
             height: 28px;
             border-radius: 50%;
-            background: rgba(66, 133, 244, 0.18);
+            background: rgba(3, 106, 56, 0.18);
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 0 6px rgba(66, 133, 244, 0.08);
+            box-shadow: 0 0 0 6px rgba(3, 106, 56, 0.08);
           ">
             <div style="
               width: 12px;
               height: 12px;
               border-radius: 50%;
-              background: #4285f4;
-              box-shadow: 0 0 12px rgba(66, 133, 244, 0.45);
+              background: #036A38;
+              box-shadow: 0 0 12px rgba(3, 106, 56, 0.45);
             "></div>
           </div>
         `;
@@ -559,7 +559,7 @@ function MapLibreMap({
         <div style="
           width: 20px; 
           height: 20px; 
-          background: #4285f4; 
+          background: #036A38; 
           border-radius: 50%;
           border: 3px solid white;
           box-shadow: 0 2px 6px rgba(0,0,0,0.3);
@@ -571,7 +571,7 @@ function MapLibreMap({
             left: -8px;
             width: 36px;
             height: 36px;
-            background: rgba(66, 133, 244, 0.2);
+            background: rgba(3, 106, 56, 0.2);
             border-radius: 50%;
             animation: pulse 2s infinite;
           "></div>
@@ -595,33 +595,24 @@ function MapLibreMap({
         detailsMarker.current.remove();
       }
       
-      // Beautiful details marker
+      // Details marker using custom pin image from public/mappin/map-pin.png
       const el = document.createElement('div');
-      el.innerHTML = `
-        <div style="
-          width: 24px; 
-          height: 24px; 
-          background: linear-gradient(135deg, #ea4335, #d33b2c); 
-          border-radius: 50% 50% 50% 0;
-          border: 2px solid white;
-          box-shadow: 0 3px 8px rgba(0,0,0,0.3);
-          transform: rotate(-45deg);
-          position: relative;
-          cursor: pointer;
-        ">
-          <div style="
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(45deg);
-            color: white;
-            font-size: 12px;
-            font-weight: bold;
-          ">📍</div>
-        </div>
-      `;
-      
-      detailsMarker.current = new maplibregl.Marker({ element: el })
+      el.style.cursor = 'pointer';
+      el.style.pointerEvents = 'auto';
+      const img = document.createElement('img');
+      img.src = '/mappin/map-pin.png';
+      img.alt = 'Location pin';
+      img.style.height = '56px';
+      img.style.width = 'auto';
+      img.style.display = 'block';
+      img.style.objectFit = 'contain';
+      img.style.imageRendering = 'auto';
+      img.style.filter = isDark
+        ? 'contrast(1.25) drop-shadow(0 8px 14px rgba(0,0,0,0.6))'
+        : 'contrast(1.25) drop-shadow(0 8px 14px rgba(0,0,0,0.35))';
+      el.appendChild(img);
+
+      detailsMarker.current = new maplibregl.Marker({ element: el, anchor: 'bottom' })
         .setLngLat([markerDetails.coordinates[1], markerDetails.coordinates[0]])
         .addTo(map.current);
     } else if (detailsMarker.current) {
@@ -677,8 +668,8 @@ function MapLibreMap({
             <div style="
               width: ${isStart || isEnd ? '28px' : '24px'}; 
               height: ${isStart || isEnd ? '28px' : '24px'}; 
-              background: ${isStart ? 'linear-gradient(135deg, #4285f4, #1a73e8)' :
-                         isEnd ? 'linear-gradient(135deg, #ea4335, #d33b2c)' :
+              background: ${isStart ? 'linear-gradient(135deg, #036A38, #025A30)' :
+                         isEnd ? 'linear-gradient(135deg, #FFB81C, #D99A00)' :
                          'linear-gradient(135deg, #4b5563, #374151)'}; 
               border-radius: 50%;
               border: 2px solid white;
@@ -720,8 +711,7 @@ function MapLibreMap({
       // Add all routes; blur/mute alternates, highlight selected
       if (routeGeometries.length > 0) {
         const selectedIdx = Math.min(Math.max(selectedRouteIndex, 0), routeGeometries.length - 1);
-      const themeAccent = isDark ? '#60a5fa' : '#1e40af';
-      const mainColor = themeAccent;
+      const mainColor = '#4285F4';
 
         // First add all alternate routes (so selected can be drawn on top later)
         routeGeometries.forEach((geometry, i) => {
@@ -758,10 +748,10 @@ function MapLibreMap({
             source: sourceId,
             layout: { 'line-join': 'round', 'line-cap': 'round' },
             paint: {
-              'line-color': mainColor,
+              'line-color': '#7BAAF7',
               'line-width': 4,
-              'line-opacity': 0.6,
-              'line-blur': 0.8,
+              'line-opacity': 0.7,
+              'line-blur': 0.5,
               'line-dasharray': [2, 1]
             }
           });
@@ -789,11 +779,10 @@ function MapLibreMap({
           source: sourceId,
           layout: { 'line-join': 'round', 'line-cap': 'round' },
           paint: {
-            'line-color': '#000000',
-            'line-width': 8,
-            'line-opacity': 0.35,
-            'line-blur': 2,
-            'line-translate': [0, 1]
+            'line-color': '#FFFFFF',
+            'line-width': 10,
+            'line-opacity': 1,
+            'line-blur': 0.5
           }
         });
 
@@ -1051,6 +1040,8 @@ export default function Map() {
     }
   }, [setRoutePoints]);
 
+  const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
+
   const handleRouteItemDragStart = useCallback((orderIndex: number, e: React.DragEvent) => {
     routeDragIndexRef.current = orderIndex;
     setDraggingRouteIndex(orderIndex);
@@ -1060,9 +1051,19 @@ export default function Map() {
     } catch {}
   }, []);
 
+  const handleRouteItemDragEnter = useCallback((orderIndex: number, e: React.DragEvent) => {
+    e.preventDefault();
+    setDropTargetIndex(orderIndex);
+  }, []);
+
+  const handleRouteItemDragLeave = useCallback((_orderIndex: number, _e: React.DragEvent) => {
+    setDropTargetIndex(prev => (prev === _orderIndex ? null : prev));
+  }, []);
+
   const handleRouteItemDragOver = useCallback((_orderIndex: number, e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    setDropTargetIndex(_orderIndex);
   }, []);
 
   const handleRouteItemDrop = useCallback(async (orderIndex: number, e: React.DragEvent) => {
@@ -1070,7 +1071,10 @@ export default function Map() {
     const from = routeDragIndexRef.current ?? Number(e.dataTransfer.getData('text/plain'));
     const to = orderIndex;
     const list = buildRouteOrder();
-    if (list.length < 2) return;
+    if (list.length < 2) {
+      setDropTargetIndex(null);
+      return;
+    }
     if (from != null && !Number.isNaN(from) && to != null && from !== to) {
       const next = [...list];
       const [moved] = next.splice(from, 1);
@@ -1079,11 +1083,13 @@ export default function Map() {
     }
     routeDragIndexRef.current = null;
     setDraggingRouteIndex(null);
+    setDropTargetIndex(null);
   }, [buildRouteOrder, applyRouteOrder]);
 
   const handleRouteItemDragEnd = useCallback(() => {
     routeDragIndexRef.current = null;
     setDraggingRouteIndex(null);
+    setDropTargetIndex(null);
   }, []);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [hasGeolocationPermission, setHasGeolocationPermission] = useState<boolean | null>(null);
@@ -1114,10 +1120,10 @@ useEffect(() => {
 
   // Fixed transport modes with Valhalla costings (no bus option)
   const transportModes = [
-    { id: "car", icon: Car, label: "Car", profile: "auto", color: "#4285f4" },
-    { id: "bike", icon: Bike, label: "Bicycle", profile: "bicycle", color: "#34a853" },
-    { id: "foot", icon: Footprints, label: "Walk", profile: "pedestrian", color: "#fbbc04" },
-    { id: "motorcycle", icon: Motorbike, label: "Motorcycle", profile: "motorcycle", color: "#ff6b6b" },
+    { id: "car", icon: Car, label: "Car", profile: "auto", color: "#036A38" },
+    { id: "bike", icon: Bike, label: "Bicycle", profile: "bicycle", color: "#036A38" },
+    { id: "foot", icon: Footprints, label: "Walk", profile: "pedestrian", color: "#FFB81C" },
+    { id: "motorcycle", icon: Motorbike, label: "Motorcycle", profile: "motorcycle", color: "#036A38" },
   ];
   
   // Voice navigation functions
@@ -1187,7 +1193,7 @@ useEffect(() => {
           setRouteGeometries([]);
           setRouteInfo(null);
           setDirectionSteps([]);
-          toast.error('Points too far apart', 'Please add waypoints or pick closer locations.');
+          toast.error('Points too far apart', 'Please add more destinations or pick closer locations.');
           return;
         }
         const messageSource = errorJson && typeof errorJson === 'object' ? errorJson : errorText;
@@ -1706,16 +1712,30 @@ const mapLayers = [
     setWaypointSearchResults([]);
   }, [setWaypointSearchResults]);
   
-  // Add waypoint to route
+  // Add destination to route
   const addWaypoint = useCallback((point: SearchResult) => {
-    // Prevent waypoint search effect from firing when a suggestion is picked
     skipWaypointSearchRef.current = true;
-    setWaypoints(prev => [...prev, point]);
-    // Populate the waypoint search query (for history)
-    setWaypointSearchQuery(point.display_name);
-    // Ensure the add-destination input is closed and the Add waypoints button is shown
+    skipEndSearchRef.current = true;
+
+    setWaypoints(prev => {
+      if (!selectedEndPoint) {
+        return prev;
+      }
+
+      const exists = prev.some(w => w.place_id === selectedEndPoint.place_id);
+      if (exists) {
+        return prev;
+      }
+
+      return [...prev, selectedEndPoint];
+    });
+
+    setSelectedEndPoint(point);
+    setToLocation(point.display_name);
+    setWaypointSearchQuery("");
+    setWaypointSearchResults([]);
     setIsAddingWaypoint(false);
-  }, []);
+  }, [selectedEndPoint]);
   
   // Remove waypoint
   const removeWaypoint = useCallback((index: number) => {
@@ -1993,12 +2013,12 @@ const mapLayers = [
             type: data.type || data.category
           } as any;
 
-          // Add waypoint and clear selection mode; do not open input automatically
+          // Add destination and clear selection mode; do not open input automatically
           addWaypoint(result);
           setIsSelectingWaypointFromMap(false);
-          // Ensure add-input is closed and Add waypoints button is visible
+          // Ensure add-input is closed and Add destination button is visible
           setIsAddingWaypoint(false);
-          toast?.success?.('Waypoint added', data.display_name.split(',')[0]);
+          toast?.success?.('Destination added', data.display_name.split(',')[0]);
         }
       }
     } catch (error) {
@@ -2133,7 +2153,7 @@ const mapLayers = [
       });
     }
     
-    // Add waypoints
+    // Add middle destinations
     waypoints.forEach(waypoint => {
       points.push({
         coordinates: [parseFloat(waypoint.lat), parseFloat(waypoint.lon)],
@@ -2749,14 +2769,14 @@ const mapLayers = [
   }, [searchResults.length]);
 
   return (
-    <div className="fixed inset-0 h-screen w-screen overflow-hidden bg-background">
+    <div className="fixed inset-0 w-screen overflow-hidden bg-background" style={{ height: '100dvh', ['--primary' as any]: '151 94% 21%', ['--primary-foreground' as any]: '0 0% 100%', ['--secondary' as any]: '41 100% 55%', ['--secondary-foreground' as any]: '0 0% 0%', ['--brand' as any]: '151 94% 21%', ['--brand-foreground' as any]: '0 0% 100%', ['--gradient-from' as any]: '151 94% 21%', ['--gradient-via' as any]: '41 100% 55%', ['--gradient-to' as any]: '41 92% 40%'}}>
       {/* Floating Search - top-left (logo left, input center, directions right) */}
-      <div className="absolute top-4 left-4 z-50 w-[min(90vw,28rem)]">
+      <div className="absolute top-3 left-2 sm:top-4 sm:left-4 z-50 w-[calc(100vw-4.5rem)] sm:w-[min(90vw,28rem)]" style={{ marginTop: 'env(safe-area-inset-top)' }}>
         <div className="flex items-center gap-3">
           <Link to="/" className="flex-shrink-0">
-            <div className="rounded-lg bg-gradient-brand p-[2px] shadow-sm">
-              <div className="h-10 w-10 rounded-lg bg-card/90 flex items-center justify-center overflow-hidden">
-                <img src="/logo/logo.png" alt="NINja Map" className="h-10 w-10 object-contain" />
+            <div className="rounded-full bg-transparent p-[2px] shadow-lg">
+              <div className="h-11 w-11 sm:h-12 sm:w-12 rounded-full bg-card/90 flex items-center justify-center overflow-hidden">
+                <img src="/logo/logo.png" alt="NINja Map" className="h-full w-full object-contain p-1" />
               </div>
             </div>
           </Link>
@@ -2768,7 +2788,7 @@ const mapLayers = [
 
                 <Input
                   placeholder="Search places"
-                  className="h-12 w-full bg-transparent border-0 rounded-none pl-10 pr-12 text-sm"
+                  className="h-11 sm:h-12 w-full bg-transparent border-0 rounded-none pl-10 pr-12 text-sm"
                   value={searchQuery}
                   onChange={(e) => { setSearchQuery(e.target.value); setResultsLocked(false); }}
                   onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -2833,7 +2853,7 @@ const mapLayers = [
                 setIsDirectionsOpen(true);
                 setShowLayerPanel(false);
               }}
-              className="h-10 w-10 backdrop-blur-sm bg-card/60 border border-border/40 rounded-full shadow-sm p-1 flex items-center justify-center transition"
+              className="h-9 w-9 sm:h-10 sm:w-10 backdrop-blur-sm bg-card/60 border border-border/40 rounded-full shadow-sm p-1 flex items-center justify-center transition"
               title="Directions"
             >
               <Route className="h-4 w-4" />
@@ -2843,12 +2863,12 @@ const mapLayers = [
       </div>
 
       {/* Theme Toggle - top-right */}
-      <div className="absolute top-4 right-4 z-50">
+      <div className="absolute top-3 right-2 sm:top-4 sm:right-4 z-50" style={{ marginTop: 'env(safe-area-inset-top)' }}>
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setTheme(isDark ? 'light' : 'dark')}
-          className="h-9 w-9 backdrop-blur-sm bg-card/60 border border-border/40 rounded-full shadow-sm flex items-center justify-center transition"
+          className="h-8 w-8 sm:h-9 sm:w-9 backdrop-blur-sm bg-card/60 border border-border/40 rounded-full shadow-sm flex items-center justify-center transition"
         >
           <motion.div
             initial={false}
@@ -2940,9 +2960,9 @@ const mapLayers = [
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -8 }}
             transition={{ duration: 0.09, ease: 'easeOut' }}
-            className="absolute top-20 left-[4.25rem] z-50 w-[min(90vw,22rem)]"
+            className="absolute top-24 left-2 right-2 sm:top-20 sm:left-[4.25rem] sm:right-auto z-50 w-[min(95vw,22rem)] sm:w-[min(90vw,22rem)]"
           >
-            <div ref={searchPanelRef} className="rounded-3xl overflow-hidden border border-border/40 bg-card/90 shadow-lg p-4 w-[min(90vw,22rem)] max-h-[calc(100vh-5rem)] overflow-y-auto ring-1 ring-border/30">
+            <div ref={searchPanelRef} className="rounded-3xl overflow-hidden border border-border/40 bg-card/90 shadow-lg p-3 sm:p-4 w-[min(95vw,22rem)] sm:w-[min(90vw,22rem)] overflow-y-auto ring-1 ring-border/30" style={{ maxHeight: 'calc(100dvh - 5rem)' }}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-semibold">Search results</h3>
                 <Button
@@ -2996,9 +3016,9 @@ const mapLayers = [
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -8 }}
             transition={{ duration: 0.09, ease: 'easeOut' }}
-            className="absolute top-20 left-4 z-50 w-[min(90vw,28rem)] overflow-x-hidden"
+            className="absolute top-24 left-2 right-2 sm:top-20 sm:left-4 sm:right-auto z-50 w-auto sm:w-[min(90vw,28rem)] overflow-x-hidden"
           >
-            <div className="rounded-3xl overflow-hidden border border-border/40 bg-card/90 shadow-lg p-4 w-[min(90vw,25rem)] max-h-[calc(100vh-5rem)] ring-1 ring-border/30 flex flex-col">
+            <div className="rounded-3xl overflow-hidden border border-border/40 bg-card/90 shadow-lg p-3 sm:p-4 w-full sm:w-[min(95vw,25rem)] ring-1 ring-border/30 flex flex-col" style={{ maxHeight: 'calc(100dvh - 9rem)' }}>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   {isDirectionsInstructionMode && (
@@ -3067,19 +3087,22 @@ const mapLayers = [
               {/* Start Point Input */}
               <div className="mb-4 relative" ref={startSectionRef}>
                 <div
-                  className={`flex items-center gap-2 mb-2 ${draggingRouteIndex === 0 ? 'opacity-70' : ''}`}
+                  className={`flex items-center gap-2 mb-2 ${draggingRouteIndex === 0 ? 'opacity-70' : ''} ${dropTargetIndex === 0 ? 'ring-2 ring-primary/30 rounded-lg bg-accent/5' : ''}`}
                   draggable={!useCurrentLocation && !!selectedStartPoint}
                   onDragStart={(e) => { if (!useCurrentLocation && selectedStartPoint) handleRouteItemDragStart(0, e); }}
+                  onDragEnter={(e) => { if (!useCurrentLocation && selectedStartPoint) handleRouteItemDragEnter(0, e); }}
                   onDragOver={(e) => { if (!useCurrentLocation && selectedStartPoint) handleRouteItemDragOver(0, e); }}
+                  onDragLeave={(e) => { if (!useCurrentLocation && selectedStartPoint) handleRouteItemDragLeave(0, e); }}
                   onDrop={(e) => { if (!useCurrentLocation && selectedStartPoint) handleRouteItemDrop(0, e); }}
                   onDragEnd={handleRouteItemDragEnd}
                 >
+                  {dropTargetIndex === 0 && (<div className="h-1 w-full bg-primary/20 rounded mb-2" />)}
                   <div
-                    className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center cursor-grab active:cursor-grabbing"
+                    className="w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center cursor-grab active:cursor-grabbing"
                     draggable={!useCurrentLocation && !!selectedStartPoint}
                     onDragStart={(e) => { if (!useCurrentLocation && selectedStartPoint) handleRouteItemDragStart(0, e); }}
                   >
-                    <div className="w-2 h-2 rounded-full bg-primary"></div>
+                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-1">
@@ -3248,19 +3271,22 @@ const mapLayers = [
               {/* End Point Input */}
               <div className="mb-4 relative" ref={endSectionRef}>
                 <div
-                  className={`flex items-center gap-2 mb-2 ${draggingRouteIndex === ((!useCurrentLocation && selectedStartPoint ? 1 : 0) + waypoints.length) ? 'opacity-70' : ''}`}
+                  className={`flex items-center gap-2 mb-2 ${draggingRouteIndex === ((!useCurrentLocation && selectedStartPoint ? 1 : 0) + waypoints.length) ? 'opacity-70' : ''} ${dropTargetIndex === ((!useCurrentLocation && selectedStartPoint ? 1 : 0) + waypoints.length) ? 'ring-2 ring-primary/30 rounded-lg bg-accent/5' : ''}`}
                   draggable={!!selectedEndPoint}
                   onDragStart={(e) => { if (selectedEndPoint) handleRouteItemDragStart((!useCurrentLocation && selectedStartPoint ? 1 : 0) + waypoints.length, e); }}
+                  onDragEnter={(e) => { if (selectedEndPoint) handleRouteItemDragEnter((!useCurrentLocation && selectedStartPoint ? 1 : 0) + waypoints.length, e); }}
                   onDragOver={(e) => { if (selectedEndPoint) handleRouteItemDragOver((!useCurrentLocation && selectedStartPoint ? 1 : 0) + waypoints.length, e); }}
+                  onDragLeave={(e) => { if (selectedEndPoint) handleRouteItemDragLeave((!useCurrentLocation && selectedStartPoint ? 1 : 0) + waypoints.length, e); }}
                   onDrop={(e) => { if (selectedEndPoint) handleRouteItemDrop((!useCurrentLocation && selectedStartPoint ? 1 : 0) + waypoints.length, e); }}
                   onDragEnd={handleRouteItemDragEnd}
                 >
+                  {dropTargetIndex === ((!useCurrentLocation && selectedStartPoint ? 1 : 0) + waypoints.length) && (<div className="h-1 w-full bg-primary/20 rounded mb-2" />)}
                   <div
-                    className="w-6 h-6 rounded-full bg-destructive/10 flex items-center justify-center cursor-grab active:cursor-grabbing"
+                    className={`w-6 h-6 rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing ${waypoints.length > 0 ? 'bg-gray-600/10' : 'bg-red-500/10'}`}
                     draggable={!!selectedEndPoint}
                     onDragStart={(e) => { if (selectedEndPoint) handleRouteItemDragStart((!useCurrentLocation && selectedStartPoint ? 1 : 0) + waypoints.length, e); }}
                   >
-                    <div className="w-2 h-2 rounded-full bg-destructive"></div>
+                    <div className={`w-2 h-2 rounded-full ${waypoints.length > 0 ? 'bg-gray-600' : 'bg-red-500'}`}></div>
                   </div>
                   <div className="flex-1">
                     <div className="relative">
@@ -3376,7 +3402,7 @@ const mapLayers = [
                 </AnimatePresence>
               </div>
               
-              {/* Waypoints Section - inputs like destination input */}
+              {/* Middle Destinations Section - inputs like destination input */}
               {waypoints.length > 0 && (
                 <div className="mb-4">
                   <div className="space-y-3">
@@ -3386,18 +3412,21 @@ const mapLayers = [
                       draggable
                       ref={(el) => { const m = waypointSectionRefs.current; if (el) m.set(index, el); else m.delete(index); }}
                       onDragStart={(e) => handleRouteItemDragStart((!useCurrentLocation && selectedStartPoint ? 1 : 0) + index, e)}
+                      onDragEnter={(e) => handleRouteItemDragEnter((!useCurrentLocation && selectedStartPoint ? 1 : 0) + index, e)}
                       onDragOver={(e) => handleRouteItemDragOver((!useCurrentLocation && selectedStartPoint ? 1 : 0) + index, e)}
+                      onDragLeave={(e) => handleRouteItemDragLeave((!useCurrentLocation && selectedStartPoint ? 1 : 0) + index, e)}
                       onDrop={(e) => handleRouteItemDrop((!useCurrentLocation && selectedStartPoint ? 1 : 0) + index, e)}
                       onDragEnd={handleRouteItemDragEnd}
-                      className={`flex items-start gap-2 ${draggingRouteIndex === ((!useCurrentLocation && selectedStartPoint ? 1 : 0) + index) ? 'opacity-70' : ''}`}
+                      className={`flex items-start gap-2 ${draggingRouteIndex === ((!useCurrentLocation && selectedStartPoint ? 1 : 0) + index) ? 'opacity-70' : ''} ${dropTargetIndex === ((!useCurrentLocation && selectedStartPoint ? 1 : 0) + index) ? 'ring-2 ring-primary/30 rounded-lg bg-accent/5' : ''}`}
                     >
-                        <div className="w-6 mt-2 h-6 rounded-full bg-gray-600/10 flex items-center justify-center cursor-grab">
-                          <div className="w-2 h-2 rounded-full bg-gray-600" />
+                      {dropTargetIndex === ((!useCurrentLocation && selectedStartPoint ? 1 : 0) + index) && (<div className="h-1 w-full bg-primary/20 rounded mb-2" />)}
+                        <div className={`w-6 mt-2 h-6 rounded-full flex items-center justify-center cursor-grab ${index === waypoints.length - 1 ? 'bg-red-500/10' : 'bg-gray-600/10'}`}>
+                          <div className={`w-2 h-2 rounded-full ${index === waypoints.length - 1 ? 'bg-red-500' : 'bg-gray-600'}`} />
                         </div>
                         <div className="flex-1">
                           <div className="relative">
                             <UnifiedInput
-                              placeholder={`Waypoint ${index + 1}`}
+                              placeholder={`Middle destination ${index + 1}`}
                               size="sm"
                               className="pl-10 pr-12 text-sm rounded-full bg-popover/80 w-full"
                               value={waypoint.display_name}
@@ -3480,14 +3509,14 @@ const mapLayers = [
                             onClick={() => handleConsolidatedSelect(item)}
                             className="w-full text-left p-2 flex items-start gap-3 hover:bg-accent/10 transition-colors"
                           >
-                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                              <IconComponent className="h-4 w-4 text-primary" />
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${item.type==='start' ? 'bg-green-500/10' : item.type==='end' ? 'bg-red-500/10' : 'bg-gray-500/10'}`}>
+                              <IconComponent className={`h-4 w-4 ${item.type==='start' ? 'text-green-500' : item.type==='end' ? 'text-red-500' : 'text-gray-500'}`} />
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="text-xs font-medium text-foreground truncate">{item.result.display_name.split(',')[0]}</div>
                               <div className="text-xs text-muted-foreground truncate">{item.result.display_name.split(',').slice(1,3).join(', ')}</div>
                             </div>
-                            <div className="text-xs text-muted-foreground ml-2">{item.type === 'waypoint' ? `Waypoint ${item.waypointIndex!+1}` : item.type === 'start' ? 'Start' : 'End'}</div>
+                            <div className="text-xs text-muted-foreground ml-2">{item.type === 'waypoint' ? `Middle destination ${item.waypointIndex!+1}` : item.type === 'start' ? 'Start' : 'End'}</div>
                           </button>
                         );
                       })}
@@ -3496,7 +3525,7 @@ const mapLayers = [
                 </div>
               )}
 
-              {/* Add Waypoint Section */}
+              {/* Add Destination Section */}
               {isAddingWaypoint ? (
                 <div className="mb-4 relative">
                   <div className="flex items-center gap-2 mb-2">
@@ -3507,7 +3536,7 @@ const mapLayers = [
                     <div className="flex-1">
                       <div className="relative">
                         <UnifiedInput
-                          placeholder="Add waypoint"
+                          placeholder="Add destination"
                           size="sm"
                           className="pl-10 pr-4 text-sm rounded-full bg-popover/80"
                           value={waypointSearchQuery}
@@ -3520,7 +3549,7 @@ const mapLayers = [
                             setEndPointResults([]);
                             setWaypointResultsMap({});
                             setWaypointSearchResults([]);
-                            toast?.info?.('Select waypoint', 'Click on the map to pick a waypoint.');
+                            toast?.info?.('Select destination', 'Click on the map to pick another destination.');
                           }}
                           onClick={() => {
                             setIsSelectingWaypointFromMap(true);
@@ -3529,7 +3558,7 @@ const mapLayers = [
                             setEndPointResults([]);
                             setWaypointResultsMap({});
                             setWaypointSearchResults([]);
-                            toast?.info?.('Select waypoint', 'Click on the map to pick a waypoint.');
+                            toast?.info?.('Select destination', 'Click on the map to pick another destination.');
                           }}
                         />
 
@@ -3546,7 +3575,7 @@ const mapLayers = [
                     <div className="flex-shrink-0">
                       <button
                         type="button"
-                        aria-label="Close waypoint input"
+                        aria-label="Close destination input"
                         onClick={() => {
                           setIsAddingWaypoint(false);
                           setWaypointSearchQuery("");
@@ -3560,7 +3589,7 @@ const mapLayers = [
                     </div>
                   </div>
 
-                  {/* Waypoint search results */}
+                  {/* Destination search results */}
                   <AnimatePresence>
                     {waypointSearchResults.length > 0 && (
                       <motion.div
@@ -3580,7 +3609,7 @@ const mapLayers = [
                               onClick={() => {
                                 addWaypoint(result);
                                 setWaypointSearchResults([]);
-                                // Ensure add-input is closed and Add waypoints button is visible
+                                // Ensure add-input is closed and Add destination button is visible
                                 setIsAddingWaypoint(false);
                               }}
                               className="w-full text-left p-3 border-b border-border/20 hover:bg-accent/5 transition-colors duration-150 flex items-start gap-3"
@@ -3614,24 +3643,24 @@ const mapLayers = [
                       variant="outline"
                       onClick={() => {
                         if (waypoints.length >= 10) return;
-                        // Open a blank input for the user to type a new waypoint
+                        // Open a blank input for the user to add another destination
                         setWaypointSearchQuery("");
                         setWaypointSearchResults([]);
                         setIsSelectingWaypointFromMap(false);
                         setIsAddingWaypoint(true);
                         // Inform user they can type or pick from map
-                        toast?.info?.('Add waypoints', 'Type to search or click the map to pick a waypoint.');
+                        toast?.info?.('Add destination', 'Type to search or click the map to add another destination.');
                       }}
                       disabled={waypoints.length >= 10}
                       className="flex-1 h-9 text-sm px-4 rounded-full bg-primary text-primary-foreground shadow-md hover:bg-primary hover:text-primary-foreground hover:shadow-md hover:translate-y-0 transform whitespace-nowrap min-w-[9rem] flex-shrink-0"
                     >
                       <Plus className="h-3 w-3 mr-1" />
-                      Add waypoints
+                      Add destination
                     </Button>
                     {renderCalculateRouteButton("flex-1")}
                   </div>
                   {waypoints.length >= 10 && (
-                    <div className="text-xs text-muted-foreground">Maximum of 10 waypoints reached</div>
+                    <div className="text-xs text-muted-foreground">Maximum of 10 additional destinations reached</div>
                   )}
                 </div>
               ) : (
@@ -3653,8 +3682,16 @@ const mapLayers = [
                   <div className="space-y-2">
                     {availableRoutes.map((route, index) => {
                       const isSelected = index === selectedRouteIndex;
-                      const themeAccent = /* map theme accent */ '#1e40af';
-                      const color = isSelected ? (isDark ? '#60a5fa' : themeAccent) : routeColors[index % routeColors.length];
+                      const resolveThemeAccent = () => {
+                        try {
+                          const el = document.querySelector('.maplibregl-map') || document.documentElement;
+                          const raw = getComputedStyle(el).getPropertyValue('--primary')?.trim();
+                          if (raw) return `hsl(${raw})`;
+                        } catch (e) {}
+                        return '#036A38';
+                      };
+                      const themeAccent = resolveThemeAccent();
+                      const color = isSelected ? themeAccent : routeColors[index % routeColors.length];
                       
                       return (
                         <motion.div
@@ -3804,7 +3841,7 @@ const mapLayers = [
       </AnimatePresence>
       
       {/* Layers Button */}
-      <div className="absolute bottom-4 left-4 z-50">
+      <div className="absolute bottom-4 left-4 z-50 hidden sm:block" style={{ marginBottom: 'env(safe-area-inset-bottom)' }}>
         <Button
           variant="ghost"
           onClick={() => setShowLayerPanel((prev) => { const next = !prev; if (next) clearAll(); return next; })}
@@ -3823,9 +3860,9 @@ const mapLayers = [
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 6, scale: 0.98 }}
           transition={{ duration: 0.09, ease: 'easeOut' }}
-          className="absolute bottom-16 left-4 z-50 origin-bottom-left"
+          className="absolute bottom-16 left-4 z-50 origin-bottom-left" style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
           >
-            <div className="bg-popover/95 backdrop-blur-xl border border-border rounded-2xl shadow-md p-3 w-64 origin-bottom-left overflow-hidden">
+            <div className="bg-popover/95 backdrop-blur-xl border border-border rounded-2xl shadow-md p-3 w-56 sm:w-64 origin-bottom-left overflow-hidden">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-semibold">Map styles</h3>
                 <Button variant="ghost" size="sm" onClick={() => setShowLayerPanel(false)} className="h-7 w-7 p-0">
@@ -3864,7 +3901,7 @@ const mapLayers = [
       </AnimatePresence>
       
       {/* Floating Controls - bottom-right */}
-      <div className="absolute bottom-4 right-4 z-50 flex flex-col gap-3 items-end">
+      <div className="absolute bottom-4 right-4 z-50 hidden sm:flex flex-col gap-3 items-end" style={{ marginBottom: 'env(safe-area-inset-bottom)' }}>
         <div className="flex flex-col gap-2">
           <Button variant="ghost" onClick={zoomIn} className="h-10 w-10 backdrop-blur-sm bg-card/60 border border-border/40 rounded-full shadow-sm p-1 flex items-center justify-center hover:scale-105 transition">
             <Plus className="h-4 w-4" />
@@ -3921,9 +3958,9 @@ const mapLayers = [
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -20, opacity: 0 }}
             transition={{ duration: 0.12, ease: 'easeOut' }}
-            className="absolute top-14 left-4 right-4 z-40"
+            className="absolute top-14 left-4 right-4 z-40" style={{ marginTop: 'env(safe-area-inset-top)' }}
           >
-            <div className="bg-primary text-primary-foreground p-3 rounded-lg shadow-lg backdrop-blur-xl mx-auto max-w-md">
+            <div className="bg-primary text-primary-foreground p-3 rounded-lg shadow-lg backdrop-blur-xl mx-auto max-w-full sm:max-w-md">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Navigation2 className="h-4 w-4" />
