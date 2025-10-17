@@ -219,7 +219,7 @@ export default function Index() {
       longDescription:
         "Our advanced AI system understands Nigerian addressing conventions, from 'After 3rd Mainland Bridge' to 'Opposite Mr. Biggs', providing navigation that feels natural and intuitive to every Nigerian driver.",
       color: "bg-blue-50 dark:bg-blue-950/20",
-      iconColor: "text-blue-600 dark:text-blue-400",
+      iconColor: "text-[#00984E]",
       borderColor: "border-blue-200 dark:border-blue-800",
     },
     {
@@ -491,7 +491,7 @@ export default function Index() {
               transition={{ duration: 0.5, delay: 0.5 }}
             >
               <motion.div
-                className="flex items-center btn-modern text-auto-lg dark:text-white cursor-pointer"
+                className="flex items-center text-auto-lg cursor-pointer rounded-xl px-6 py-3 font-medium transition-all duration-200 ease-out bg-[#036A38] text-white shadow-[0_4px_15px_rgba(3,106,56,0.3)] hover:shadow-[0_8px_25px_rgba(3,106,56,0.35)] hover:-translate-y-0.5"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -499,7 +499,7 @@ export default function Index() {
                 Download for Android
               </motion.div>
               <motion.div
-                className="flex items-center btn-outline-modern text-auto-lg cursor-pointer"
+                className="flex items-center btn-ios-outline text-auto-lg cursor-pointer"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -518,12 +518,12 @@ export default function Index() {
                 {
                   icon: Shield,
                   text: "Privacy Guaranteed",
-                  color: "text-green-500",
+                  color: "text-yellow-500",
                 },
                 {
                   icon: Headphones,
                   text: "24/7 Expert Support",
-                  color: "text-purple-500",
+                  color: "text-yellow-500",
                 },
               ].map((item, index) => (
                 <motion.div
@@ -607,14 +607,14 @@ export default function Index() {
                 >
                   <div className="lg:w-1/2">
                     <Card
-                      className={`border-0 shadow-xl hover-lift hover-glow h-full glass-strong ${feature.borderColor}`}
+                      className={`${index % 2 === 1 ? "panel-amber" : "panel-green"} hover-lift h-full`}
                     >
                       <CardHeader className="pb-8">
                         <div
-                          className={`mb-8 flex h-20 w-20 items-center justify-center rounded-3xl ${feature.color} border ${feature.borderColor}`}
+                          className={`mb-8 flex h-20 w-20 items-center justify-center rounded-3xl  ${index % 2 === 1 ? "border-thin-amber" : "border-thin-green"}`}
                         >
                           <feature.icon
-                            className={`h-10 w-10 ${feature.iconColor}`}
+                            className={`h-10 w-10 ${index % 2 === 1 ? "text-[#FFB81C]" : "text-[#00984E]"}`}
                           />
                         </div>
                         <CardTitle className="text-auto-2xl mb-6 font-bold font-display">
@@ -630,7 +630,7 @@ export default function Index() {
                         </p>
                         <Button
                           variant="ghost"
-                          className={`p-0 h-auto ${feature.iconColor} hover:scale-105 transition-transform group`}
+                          className={`p-2 h-auto ${index % 2 === 1 ? "text-[#FFB81C]" : "text-[#00984E]"} hover:scale-105 transition-transform group`}
                         >
                           <span className="font-semibold">Learn more</span>
                           <ArrowUpRight className="ml-2 h-4 w-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
@@ -641,15 +641,15 @@ export default function Index() {
 
                   <div className="lg:w-1/2">
                     <div
-                      className={`rounded-3xl ${feature.color} p-12 border ${feature.borderColor} glass hover-glow`}
+                      className={`${index % 2 === 1 ? "panel-amber" : "panel-green"} p-12`}
                     >
                       <div className="grid grid-cols-2 gap-6">
                         <motion.div
-                          className="bg-white dark:bg-black/20 backdrop-blur-sm rounded-2xl p-8 hover-lift border border-white/20"
+                          className={`${index % 2 === 1 ? "panel-amber-inner" : "panel-green-inner"} p-8 hover-lift `}
                           whileHover={{ scale: 1.05, y: -5 }}
                         >
                           <BarChart3
-                            className={`h-12 w-12 mb-4 ${feature.iconColor}`}
+                            className={`h-12 w-12 mb-4 ${index % 2 === 1 ? "text-[#FFB81C]" : "text-[#00984E]"}`}
                           />
                           <div className="text-3xl font-bold mb-2 font-display">
                             98.7%
@@ -659,11 +659,11 @@ export default function Index() {
                           </div>
                         </motion.div>
                         <motion.div
-                          className="bg-white dark:bg-black/20 backdrop-blur-sm rounded-2xl p-8 hover-lift border border-white/20"
+                          className={`${index % 2 === 1 ? "panel-amber-inner" : "panel-green-inner"} p-8 hover-lift`}
                           whileHover={{ scale: 1.05, y: -5 }}
                         >
                           <TrendingUp
-                            className={`h-12 w-12 mb-4 ${feature.iconColor}`}
+                            className={`h-12 w-12 mb-4 ${index % 2 === 1 ? "text-[#FFB81C]" : "text-[#00984E]"}`}
                           />
                           <div className="text-3xl font-bold mb-2 font-display">
                             2.1M
@@ -708,10 +708,10 @@ export default function Index() {
                   transition={{ type: "spring", stiffness: 300 }}
                   className="group h-full"
                 >
-                  <Card className="border-0 shadow-xl hover:shadow-2xl transition-all duration-500 h-full glass-strong hover-glow overflow-hidden">
+                  <Card className="panel-green hover-lift h-full overflow-hidden">
                     <CardHeader className="pb-6">
-                      <div className={`w-16 h-16 bg-gradient-to-br from-brand to-gradient-to rounded-2xl flex items-center justify-center mb-6 shadow-lg`}>
-                        <useCase.icon className="h-8 w-8 text-white" />
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-6 border-thin-green`}>
+                        <useCase.icon className="h-6 w-6 text-[#00984E]" />
                       </div>
                       <CardTitle className="text-auto-xl mb-4 font-display">
                         {useCase.title}
@@ -728,18 +728,18 @@ export default function Index() {
                           "Offline capabilities"
                         ].map((feature, itemIndex) => (
                           <div key={itemIndex} className="flex items-center space-x-3">
-                            <CheckCircle className="h-4 w-4 text-brand flex-shrink-0" />
+                            <CheckCircle className="h-4 w-4 text-[#00984E] flex-shrink-0" />
                             <span className="text-auto-sm text-muted-foreground">{feature}</span>
                           </div>
                         ))}
                       </div>
                       <div className="pt-4 border-t border-border/40">
                         <div className="flex items-center justify-between">
-                          <span className="text-auto-sm text-brand font-medium">{useCase.users}</span>
+                          <span className="text-auto-sm text-[#FFB81C] font-medium">{useCase.users}</span>
                           <motion.button
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            className="px-4 py-2 rounded-lg bg-gradient-brand text-white font-medium hover:opacity-90 transition-opacity"
+                            className="px-4 py-2 rounded-lg bg-[#00984E] text-white font-medium border border-[#00984E] transition-colors hover:bg-[#FFB81C] hover:text-black hover:border-[#FFB81C]"
                           >
                             Learn More
                           </motion.button>
@@ -784,10 +784,10 @@ export default function Index() {
                   transition={{ type: "spring", stiffness: 300 }}
                   className="group h-full"
                 >
-                  <Card className="border-0 shadow-xl hover:shadow-2xl transition-all duration-500 h-full glass-strong hover-glow overflow-hidden">
+                  <Card className="panel-green hover-lift h-full overflow-hidden">
                     <CardHeader className="pb-6">
-                      <div className={`w-16 h-16 bg-gradient-to-br from-brand to-gradient-to rounded-2xl flex items-center justify-center mb-6 shadow-lg`}>
-                        <spec.icon className="h-8 w-8 text-white" />
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 border-thin-green`}>
+                        <spec.icon className="h-6 w-6 text-[#00984E]" />
                       </div>
                       <CardTitle className="text-auto-xl mb-4 font-display">
                         {spec.title}
@@ -797,16 +797,12 @@ export default function Index() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-center mb-6">
-                        <div className="inline-flex items-center justify-center p-4 bg-muted/50 rounded-xl border border-border/50">
-                          <div className="text-center">
-                            <div className="text-3xl font-bold text-brand mb-1 font-display">
-                              {spec.metric}
-                            </div>
-                            <div className="text-sm text-muted-foreground font-medium">
-                              {spec.metricLabel}
-                            </div>
-                          </div>
+                      <div className="mb-4">
+                        <div className="text-2xl font-bold text-center text-[#FFB81C] font-display">
+                          {spec.metric}
+                        </div>
+                        <div className="text-xs text-muted-foreground text-center">
+                          {spec.metricLabel}
                         </div>
                       </div>
                       <p className="text-sm text-muted-foreground/80 leading-relaxed mb-6">
@@ -819,7 +815,7 @@ export default function Index() {
                         </div>
                         <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
                           <motion.div
-                            className="h-full bg-gradient-brand rounded-full"
+                            className="h-full bg-gradient-to-r from-[#00984E] via-[#00984E] to-[#FFB81C] rounded-full"
                             initial={{ width: "0%" }}
                             whileInView={{ width: "99%" }}
                             viewport={{ once: true }}
@@ -835,13 +831,13 @@ export default function Index() {
           </div>
 
           <AnimatedSection delay={0.8}>
-            <div className="rounded-3xl bg-gradient-brand p-12 lg:p-16 text-white shadow-2xl hover-glow">
+            <div className="panel-metrics p-12 lg:p-16 text-white">
               <div className="grid lg:grid-cols-2 gap-16 items-center">
                 <div>
                   <h3 className="text-auto-3xl font-bold mb-8 font-display">
                     Enterprise Performance Metrics
                   </h3>
-                  <div className="space-y-6">
+                  <div className="space-y-4">
                     {[
                       "99.99% uptime SLA with multi-region redundancy",
                       "Sub-100ms response times nationwide",
@@ -860,7 +856,7 @@ export default function Index() {
                         viewport={{ once: true }}
                         transition={{ duration: 0.3, delay: index * 0.1 }}
                       >
-                        <CheckCircle className="h-6 w-6 mt-1 flex-shrink-0 opacity-90" />
+                        <CheckCircle className="h-6 w-6 mt-1 flex-shrink-0 opacity-90 text-[#00984E]" />
                         <span className="text-auto-base opacity-90 leading-relaxed">
                           {item}
                         </span>
@@ -872,21 +868,21 @@ export default function Index() {
                 <div className="grid grid-cols-2 gap-6">
                   {[
                     { metric: "2.5M+", label: "Active Users", icon: Users },
-                    { metric: "<100ms", label: "Response", icon: Clock },
-                    { metric: "99.99%", label: "Uptime", icon: Award },
-                    { metric: "100%", label: "Nigeria", icon: Globe },
+                    { metric: "2.1M", label: "Daily Routes", icon: Clock },
+                    { metric: "2.5M+", label: "Active Users", icon: Users },
+                    { metric: "2.1M", label: "Daily Routes", icon: Globe },
                   ].map((item, index) => (
                     <motion.div
                       key={index}
-                      className="metric-box-light"
+                      className="metrics-stat p-8"
                       whileHover={{ scale: 1.05 }}
                       transition={{ type: "spring", stiffness: 300 }}
                     >
-                      <item.icon className="h-10 w-10 mx-auto mb-4 text-brand dark:text-white/90" />
-                      <div className="text-auto-2xl font-bold mb-2 font-display text-brand dark:text-white/90">
+                      <item.icon className="h-8 w-8 mx-auto mb-3 text-[#00984E]" />
+                      <div className="text-auto-2xl font-bold mb-1 font-display text-foreground">
                         {item.metric}
                       </div>
-                      <div className="text-auto-sm text-brand dark:text-white/80">
+                      <div className="text-auto-sm text-muted-foreground">
                         {item.label}
                       </div>
                     </motion.div>
@@ -928,17 +924,17 @@ export default function Index() {
             ].map((stat, index) => (
               <AnimatedSection key={index} delay={index * 0.1}>
                 <motion.div
-                  className="text-center p-6 rounded-2xl bg-white/50 dark:bg-white/5 border border-white/20 glass hover-lift"
+                  className="text-center p-6 rounded-2xl metrics-stat hover-lift"
                   whileHover={{ scale: 1.05, y: -5 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
-                  <div className="w-16 h-16 bg-gradient-brand rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                    <stat.icon className="h-8 w-8 text-white" />
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4 border-thin-green">
+                    <stat.icon className="h-6 w-6 text-[#00984E]" />
                   </div>
-                  <div className="text-auto-3xl font-bold text-brand mb-2 font-display">
+                  <div className="text-auto-3xl font-bold mb-2 font-display text-[#00984E] dark:text-gradient-green-amber">
                     {stat.number}
                   </div>
-                  <p className="text-auto-sm text-muted-foreground font-medium">
+                  <p className="text-auto-sm text-muted-foreground font-medium dark:text-white/70">
                     {stat.label}
                   </p>
                 </motion.div>
@@ -975,11 +971,12 @@ export default function Index() {
                 <motion.div
                   whileHover={{ y: -8, scale: 1.02 }}
                   transition={{ type: "spring", stiffness: 300 }}
+                  className="group"
                 >
-                  <Card className="border-0 shadow-xl hover:shadow-2xl transition-all duration-500 h-full glass-strong hover-glow overflow-hidden">
+                  <Card className="panel-green hover-lift hover-panel-amber transition-all duration-300 h-full overflow-hidden">
                     <CardHeader className="pb-6">
-                      <div className={`w-16 h-16 bg-gradient-to-br ${feature.color} rounded-2xl flex items-center justify-center mb-6 shadow-lg`}>
-                        <feature.icon className="h-8 w-8 text-white" />
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-6 border-thin-green group-hover:border-[#FFB81C]">
+                        <feature.icon className="h-6 w-6 text-[#00984E] group-hover:text-[#FFB81C]" />
                       </div>
                       <CardTitle className="text-auto-xl mb-4 font-display">
                         {feature.title}
@@ -992,7 +989,7 @@ export default function Index() {
                       <ul className="space-y-3">
                         {feature.features.map((item, itemIndex) => (
                           <li key={itemIndex} className="flex items-center space-x-3">
-                            <CheckCircle className="h-4 w-4 text-brand flex-shrink-0" />
+                            <CheckCircle className="h-4 w-4 text-[#00984E] group-hover:text-[#FFB81C] flex-shrink-0" />
                             <span className="text-auto-sm text-muted-foreground">{item}</span>
                           </li>
                         ))}
@@ -1001,7 +998,7 @@ export default function Index() {
                         <motion.button
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
-                          className={`w-full px-4 py-3 rounded-lg bg-gradient-to-r ${feature.color} text-white font-medium hover:opacity-90 transition-opacity`}
+                          className="w-full px-4 py-3 rounded-lg bg-[#00984E] text-white font-medium border border-[#00984E] transition-colors hover:bg-[#FFB81C] hover:text-black hover:border-[#FFB81C]"
                         >
                           Learn More
                         </motion.button>
@@ -1156,13 +1153,12 @@ export default function Index() {
       </section>
 
       {/* Enhanced Download CTA */}
-      <section className="bg-gradient-to-br from-brand via-purple-800 to-orange-800 section-padding text-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(255,255,255,0.1)_0%,_transparent_70%)]"></div>
+      <section className="cta-gradient-bg section-padding text-white relative overflow-hidden">
         <div className="container relative">
           <AnimatedSection className="mx-auto max-w-5xl text-center">
             <Badge
               variant="outline"
-              className="mb-8 border-white/30 bg-white/10 text-white glass text-lg px-6 py-3"
+              className="mb-8 text-white text-lg px-6 py-3 rounded-full bg-white/10 border border-white/20"
             >
               <Rocket className="w-5 h-5 mr-2 text-white" />
               Start Your Journey Today
@@ -1178,7 +1174,7 @@ export default function Index() {
 
             <div className="flex flex-col sm:flex-row gap-8 justify-center mb-16">
               <motion.div
-                className="bg-white text-brand rounded-xl px-8 py-4 shadow-2xl font-display text-auto-xl font-medium transition-all duration-200 hover:shadow-3xl cursor-pointer flex items-center justify-center"
+                className="bg-white text-[#036A38] border border-[#036A38] rounded-xl px-8 py-4 shadow-2xl font-display text-auto-xl font-medium transition-all duration-200 hover:shadow-3xl hover:brightness-105 cursor-pointer flex items-center justify-center"
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -1187,7 +1183,7 @@ export default function Index() {
               </motion.div>
 
               <motion.div
-                className="border-2 border-white text-white rounded-xl px-8 py-4 glass font-display text-auto-xl font-medium transition-all duration-200 hover:bg-white hover:text-brand cursor-pointer flex items-center justify-center"
+                className="btn-ios-outline bg-[#1E7A50] text-white border border-[#1E7A50] rounded-xl px-8 py-4 shadow-2xl font-display text-auto-xl font-medium cursor-pointer flex items-center justify-center hover:brightness-110 dark:bg-transparent dark:border-0"
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
               >

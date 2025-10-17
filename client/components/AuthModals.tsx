@@ -661,13 +661,14 @@ export default function AuthModals({ isOpen, onClose, initialMode = "login" }: A
         >
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-border">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-brand rounded-xl flex items-center justify-center shadow-sm">
-                <MapPin className="h-4 w-4 text-white" />
-              </div>
-              <span className="font-bold text-brand font-display">NINja Map</span>
+            <div className="flex items-center gap-2">
+              <img
+                src="/logo/logo2.png"
+                alt="NINja Map"
+                className="h-8 object-contain"
+              />
             </div>
-            
+
             <Button
               variant="ghost"
               size="sm"
@@ -693,7 +694,7 @@ export default function AuthModals({ isOpen, onClose, initialMode = "login" }: A
                     transition={{ duration: 0.15, ease: "easeOut" }}
                   >
                     <div className="text-center mb-8">
-                      <div className="w-16 h-16 bg-gradient-brand rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                      <div className="w-16 h-16 bg-gradient-to-br from-[#036A38] to-[#FFB81C] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
                         <Shield className="h-8 w-8 text-white" />
                       </div>
                       <h2 id="modal-title" className="text-2xl font-bold font-display text-brand mb-2">
@@ -818,7 +819,7 @@ export default function AuthModals({ isOpen, onClose, initialMode = "login" }: A
                     transition={{ duration: 0.15, ease: "easeOut" }}
                   >
                     <div className="text-center mb-8">
-                      <div className="w-16 h-16 bg-gradient-brand rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                      <div className="w-16 h-16 bg-gradient-to-br from-[#036A38] to-[#FFB81C] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
                         <Sparkles className="h-8 w-8 text-white" />
                       </div>
                       <h2 id="modal-title" className="text-2xl font-bold font-display text-brand mb-2">
@@ -992,7 +993,7 @@ export default function AuthModals({ isOpen, onClose, initialMode = "login" }: A
                     transition={{ duration: 0.15, ease: "easeOut" }}
                   >
                     <div className="text-center mb-8">
-                      <div className="w-16 h-16 bg-gradient-brand rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                      <div className="w-16 h-16 bg-gradient-to-br from-[#036A38] to-[#FFB81C] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
                         <Mail className="h-8 w-8 text-white" />
                       </div>
                       <h2 id="modal-title" className="text-2xl font-bold font-display text-brand mb-2">
@@ -1059,7 +1060,7 @@ export default function AuthModals({ isOpen, onClose, initialMode = "login" }: A
                     transition={{ duration: 0.15, ease: "easeOut" }}
                   >
                     <div className="text-center mb-8">
-                      <div className="w-16 h-16 bg-gradient-brand rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                      <div className="w-16 h-16 bg-gradient-to-br from-[#036A38] to-[#FFB81C] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
                         <Smartphone className="h-8 w-8 text-white" />
                       </div>
                       <h2 id="modal-title" className="text-2xl font-bold font-display text-brand mb-2">
@@ -1140,7 +1141,7 @@ export default function AuthModals({ isOpen, onClose, initialMode = "login" }: A
                     transition={{ duration: 0.15, ease: "easeOut" }}
                   >
                     <div className="text-center mb-8">
-                      <div className="w-16 h-16 bg-gradient-brand rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                      <div className="w-16 h-16 bg-gradient-to-br from-[#036A38] to-[#FFB81C] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
                         <Lock className="h-8 w-8 text-white" />
                       </div>
                       <h2 id="modal-title" className="text-2xl font-bold font-display text-brand mb-2">

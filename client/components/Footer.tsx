@@ -28,18 +28,29 @@ const AnimatedSection: React.FC<{
 
 export default function Footer() {
   return (
-    <footer className="border-t border-border/40 glass-strong section-padding">
+    <footer
+      className="glass-strong section-padding"
+    
+    >
       <div className="container">
         <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-8">
           <div className="sm:col-span-2 col-span-1">
             <AnimatedSection>
-              <div className="mb-6 flex items-center space-x-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-brand text-white shadow-lg">
-                  <MapPin className="h-5 w-5" />
-                </div>
-                <span className="text-xl font-bold font-display text-shimmer">
-                  NINja Map
-                </span>
+              <div className="mb-6 flex items-center gap-3">
+                                         <Link
+                  to="/"
+                  className="flex items-center overflow-visible transition-opacity hover:opacity-80"
+                  aria-label="NINja Map"
+                >
+                  <img
+                    src="/logo/logo2.png"
+                    alt="NINja Map"
+                    loading="lazy"
+                    decoding="async"
+                    className="h-12 w-auto md:h-16"
+                  />
+                </Link> 
+       
               </div>
               <p className="mb-6 max-w-md text-sm text-muted-foreground leading-relaxed">
                 Nigeria's premier AI-powered navigation platform. Experience
@@ -48,20 +59,20 @@ export default function Footer() {
               </p>
               <div className="text-sm text-muted-foreground space-y-2">
                 {/* <div className="flex items-center space-x-2">
-                  <Building className="h-4 w-4 text-brand" />
+                  <Building className="h-4 w-4 text-[#036A38]" />
                   <span>
                     Developed by{" "}
-                    <span className="font-medium text-brand">
+                    <span className="font-medium text-[#036A38]">
                       Dollop Infotech Pvt. Ltd.
                     </span>
                   </span>
                 </div> */}
                 <div className="flex items-center space-x-2">
-                  <MapPin className="h-4 w-4 text-brand" />
+                  <MapPin className="h-4 w-4 text-[#036A38]" />
                   <span>Proudly serving Nigeria since 2025</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Crown className="h-4 w-4 text-brand" />
+                  <Crown className="h-4 w-4 text-[#036A38]" />
                   <span>Trusted by 2.5M+ Nigerian drivers</span>
                 </div>
               </div>
@@ -85,11 +96,11 @@ export default function Footer() {
                 ].map((item, index) => (
                   <motion.div
                     key={item.text}
-                    className="hover:text-brand transition-colors cursor-pointer group flex items-center space-x-2 -ms-4"
+                    className="hover:text-[#036A38] transition-colors cursor-pointer group flex items-center space-x-2 -ms-4"
                     whileHover={{ x: 3 }}
                   >
-                    <ArrowRight className="h-3 w-3 text-brand opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <Link to={item.href} className="hover:text-brand transition-colors">
+                    <ArrowRight className="h-3 w-3 text-[#036A38] opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Link to={item.href} className="hover:text-[#036A38] transition-colors">
                       {item.text}
                     </Link>
                   </motion.div>
@@ -115,11 +126,11 @@ export default function Footer() {
                 ].map((item, index) => (
                   <motion.div
                     key={item.text}
-                    className="hover:text-brand transition-colors cursor-pointer group flex items-center space-x-2 -ms-4"
+                    className="hover:text-[#036A38] transition-colors cursor-pointer group flex items-center space-x-2 -ms-4"
                     whileHover={{ x: 3 }}
                   >
-                    <ArrowRight className="h-3 w-3 text-brand opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <Link to={item.href} className="hover:text-brand transition-colors">
+                    <ArrowRight className="h-3 w-3 text-[#036A38] opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Link to={item.href} className="hover:text-[#036A38] transition-colors">
                       {item.text}
                     </Link>
                   </motion.div>

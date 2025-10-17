@@ -2,8 +2,7 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { 
+import {
   Star, 
   Quote, 
   MapPin,
@@ -101,11 +100,11 @@ export default function Testimonials() {
   ];
 
   const filterOptions = [
-    { value: "all", label: "All Stories", icon: Users, gradient: "from-blue-500 to-purple-600" },
-    { value: "business", label: "Business", icon: Briefcase, gradient: "from-purple-500 to-pink-600" },
-    { value: "transport", label: "Transport", icon: MapPin, gradient: "from-green-500 to-blue-600" },
-    { value: "healthcare", label: "Healthcare", icon: Heart, gradient: "from-red-500 to-pink-600" },
-    { value: "personal", label: "Personal", icon: Star, gradient: "from-orange-500 to-red-600" }
+    { value: "all", label: "All Stories", icon: Users, gradient: "from-[#036A38] to-[#FFB81C]" },
+    { value: "business", label: "Business", icon: Briefcase, gradient: "from-[#036A38] to-[#FFB81C]" },
+    { value: "transport", label: "Transport", icon: MapPin, gradient: "from-[#036A38] to-[#FFB81C]" },
+    { value: "healthcare", label: "Healthcare", icon: Heart, gradient: "from-[#036A38] to-[#FFB81C]" },
+    { value: "personal", label: "Personal", icon: Star, gradient: "from-[#036A38] to-[#FFB81C]" }
   ];
 
   const filteredTestimonials = filter === "all" 
@@ -117,13 +116,13 @@ export default function Testimonials() {
       <Header />
 
       {/* Hero Section */}
-      <section className="section-padding bg-gradient-to-br from-brand/5 via-background to-gradient-to/5 relative overflow-hidden">
+      <section className="section-padding bg-gradient-to-br from-[#036A38]/5 via-background to-[#00984E]/5 relative overflow-hidden">
         <div className="absolute inset-0 hero-pattern opacity-30" />
         <div className="container relative">
           <AnimatedSection className="mx-auto max-w-4xl text-center">
             <Badge
               variant="outline"
-              className="mb-6 border-brand/30 bg-brand/10 text-brand px-6 py-3 text-auto-sm font-medium"
+              className="mb-6 border-[0.6px] border-[#00984E] bg-[rgba(3,106,56,0.4)] text-white px-6 py-3 text-auto-sm font-medium"
             >
               <Quote className="w-4 h-4 mr-2" />
               Customer Stories
@@ -140,19 +139,21 @@ export default function Testimonials() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-12">
               {stats.map((stat, index) => (
                 <AnimatedSection key={index} delay={0.1 * index}>
-                  <Card className="border-0 shadow-lg glass">
-                    <CardContent className="p-6 text-center">
-                      <div className="w-12 h-12 bg-gradient-brand rounded-xl flex items-center justify-center mx-auto mb-4">
-                        <stat.icon className="h-6 w-6 text-white" />
-                      </div>
-                      <div className="text-auto-2xl font-bold text-brand mb-1">
-                        {stat.number}
-                      </div>
-                      <p className="text-auto-sm text-muted-foreground">
-                        {stat.label}
-                      </p>
-                    </CardContent>
-                  </Card>
+                  <motion.div
+                    className="text-center p-6 rounded-2xl metrics-stat hover-lift"
+                    whileHover={{ scale: 1.05, y: -5 }}
+                    transition={{ type: "spring", stiffness: 300 }}
+                  >
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4 border-thin-green">
+                      <stat.icon className="h-6 w-6 text-[#00984E]" />
+                    </div>
+                    <div className="text-auto-2xl font-bold text-[#00984E] mb-1">
+                      {stat.number}
+                    </div>
+                    <p className="text-auto-sm text-muted-foreground">
+                      {stat.label}
+                    </p>
+                  </motion.div>
                 </AnimatedSection>
               ))}
             </div>
@@ -164,7 +165,7 @@ export default function Testimonials() {
       <section className="section-padding">
         <div className="container">
           <AnimatedSection className="text-center mb-16">
-            <h2 className="text-auto-3xl font-bold font-display text-brand mb-4">
+            <h2 className="text-auto-3xl font-bold font-display text-[#00984E] mb-4">
               Stories by Category
             </h2>
             <p className="text-auto-lg text-muted-foreground max-w-2xl mx-auto">
@@ -181,7 +182,7 @@ export default function Testimonials() {
                   onClick={() => setFilter(option.value)}
                   className={`flex items-center gap-3 px-6 py-4 rounded-2xl font-medium text-auto-sm transition-all duration-300 shadow-lg hover:shadow-xl ${
                     filter === option.value
-                      ? `bg-gradient-to-r ${option.gradient} text-white shadow-xl`
+                      ? `btn-theme-green text-white shadow-xl`
                       : 'bg-white/50 dark:bg-white/10 text-muted-foreground hover:bg-white/80 dark:hover:bg-white/20 border border-border/40'
                   }`}
                 >
@@ -205,20 +206,20 @@ export default function Testimonials() {
           <div className="space-y-12 max-w-6xl mx-auto">
             {filteredTestimonials.map((testimonial, index) => (
               <AnimatedSection key={testimonial.name + testimonial.company} delay={index * 0.15}>
-                <Card className="border-0 shadow-2xl glass-strong hover-lift overflow-hidden">
+                <Card className="border-0 shadow-xl hover:shadow-2xl transition-all duration-300 h-full overflow-hidden panel-metrics text-white">
                   <CardContent className="p-0">
                     <div className="flex flex-col lg:flex-row">
                       {/* User Image & Info */}
-                      <div className="lg:w-80 bg-gradient-to-br from-brand/10 to-gradient-to/10 p-8 lg:p-12 flex flex-col justify-center">
+                      <div className="lg:w-80 p-8 lg:p-12 flex flex-col justify-center bg-transparent">
                         <div className="text-center lg:text-left">
-                          <div className="w-24 h-24 bg-gradient-brand text-white rounded-full flex items-center justify-center font-bold text-auto-2xl shadow-2xl mx-auto lg:mx-0 mb-6">
+                          <div className="w-24 h-24 rounded-full flex items-center justify-center font-bold bg-white text-green-900 dark:text-white text-auto-2xl mx-auto lg:mx-0 mb-6 dark:bg-[#036A38]">
                             {testimonial.avatar}
                           </div>
 
-                          <h3 className="text-auto-xl font-bold font-display text-brand mb-2">
+                          <h3 className="text-auto-xl font-bold font-display text-white mb-2">
                             {testimonial.name}
                           </h3>
-                          <p className="text-auto-base text-brand/80 font-medium mb-1">
+                          <p className="text-auto-base text-white font-medium mb-1">
                             {testimonial.role}
                           </p>
                           <p className="text-auto-sm text-muted-foreground mb-4">
@@ -239,7 +240,7 @@ export default function Testimonials() {
                         {/* Rating */}
                         <div className="flex items-center gap-1 justify-center lg:justify-end mb-12">
                           {[...Array(testimonial.rating)].map((_, i) => (
-                            <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
+                            <Star key={i} className="h-5 w-5 text-yellow-400 dark:text-[#036A38] fill-current" />
                           ))}
                           <span className="ml-2 text-auto-sm text-muted-foreground">
                             {testimonial.rating}/5
@@ -247,10 +248,10 @@ export default function Testimonials() {
                         </div>
 
                         <div className="relative">
-                          <Quote className="absolute -top-4 -left-4 h-12 w-12 text-brand/15" />
+                          <Quote className="absolute -top-4 -left-4 h-12 w-12 text-white/15" />
 
                           <div className="pl-4">
-                            <h4 className="text-auto-lg font-bold text-brand mb-4 leading-tight">
+                            <h4 className="text-auto-lg font-bold text-white mb-4 leading-tight">
                               Success Story: {testimonial.company} Transformation
                             </h4>
 
@@ -261,7 +262,7 @@ export default function Testimonials() {
                             {/* Success Metrics */}
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-border/40">
                               <div className="text-center sm:text-left">
-                                <div className="text-auto-xl font-bold text-green-600 mb-1">
+                                <div className="text-auto-xl font-bold text-white mb-1">
                                   {testimonial.category === 'business' ? '40%' :
                                    testimonial.category === 'transport' ? '60%' :
                                    testimonial.category === 'healthcare' ? '50%' : '35%'}
@@ -271,7 +272,7 @@ export default function Testimonials() {
                                 </div>
                               </div>
                               <div className="text-center sm:text-left">
-                                <div className="text-auto-xl font-bold text-blue-600 mb-1">
+                                <div className="text-auto-xl font-bold text-[#FFB81C] mb-1">
                                   {testimonial.category === 'business' ? '25%' :
                                    testimonial.category === 'transport' ? '45%' :
                                    testimonial.category === 'healthcare' ? '30%' : '20%'}
@@ -281,7 +282,7 @@ export default function Testimonials() {
                                 </div>
                               </div>
                               <div className="text-center sm:text-left">
-                                <div className="text-auto-xl font-bold text-purple-600 mb-1">
+                                <div className="text-auto-xl font-bold text-white mb-1">
                                   {testimonial.rating * 20}%
                                 </div>
                                 <div className="text-auto-sm text-muted-foreground">
@@ -305,7 +306,7 @@ export default function Testimonials() {
       <section className="section-bottom-padding">
         <div className="container">
           <AnimatedSection>
-            <Card className="border-0 shadow-2xl bg-gradient-to-br from-brand to-gradient-to text-white overflow-hidden">
+            <Card className="border-0 shadow-2xl panel-metrics text-white overflow-hidden">
               <CardContent className="p-12 text-center relative">
                 <div className="absolute inset-0 bg-pattern opacity-20" />
                 <div className="relative z-10">
@@ -321,19 +322,18 @@ export default function Testimonials() {
                   </p>
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                      <Link to="/contact">
-                        <Button className="bg-white text-brand hover:bg-white/90 shadow-lg hover:shadow-xl transition-all duration-200">
-                          <Heart className="w-4 h-4 mr-2" />
-                          Share Your Story
-                        </Button>
+                      <Link
+                        to="/contact"
+                        className="flex items-center text-auto-lg cursor-pointer rounded-xl px-6 py-3 font-medium transition-all duration-200 ease-out bg-white text-green-800 dark:bg-[#036A38] dark:text-white shadow-[0_4px_15px_rgba(3,106,56,0.3)] hover:shadow-[0_8px_25px_rgba(3,106,56,0.35)] hover:-translate-y-0.5"
+                      >
+                        <Heart className="w-4 h-4 mr-2" />
+                        Share Your Story
                       </Link>
                     </motion.div>
                     <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                      <Link to="/about">
-                        <Button variant="outline" className="border-white/30 bg-transparent text-white hover:bg-white hover:text-brand transition-all backdrop-blur-sm">
-                          <Users className="w-4 h-4 mr-2" />
-                          Learn About Us
-                        </Button>
+                      <Link to="/about" className="flex items-center btn-ios-outline text-auto-lg cursor-pointer">
+                        <Users className="w-4 h-4 mr-2" />
+                        Learn About Us
                       </Link>
                     </motion.div>
                   </div>

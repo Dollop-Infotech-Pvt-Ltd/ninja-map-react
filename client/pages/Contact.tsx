@@ -154,13 +154,13 @@ export default function Contact() {
       <Header />
 
       {/* Hero Section */}
-      <section className="section-padding bg-gradient-to-br from-brand/5 via-background to-gradient-to/5 relative overflow-hidden">
+      <section className="section-padding bg-gradient-to-br from-[#036A38]/5 via-background to-[#00984E]/5 relative overflow-hidden">
         <div className="absolute inset-0 hero-pattern opacity-30" />
         <div className="container relative">
           <AnimatedSection className="mx-auto max-w-4xl text-center">
             <Badge
               variant="outline"
-              className="mb-6 border-brand/30 bg-brand/10 text-brand px-6 py-3 text-auto-sm font-medium"
+              className="mb-6 border-[0.6px] border-[#00984E] bg-[rgba(3,106,56,0.4)] text-white px-6 py-3 text-auto-sm font-medium"
             >
               <MessageSquare className="w-4 h-4 mr-2" />
               Contact Us
@@ -177,19 +177,21 @@ export default function Contact() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-12">
               {stats.map((stat, index) => (
                 <AnimatedSection key={index} delay={0.1 * index}>
-                  <Card className="border-0 shadow-lg glass">
-                    <CardContent className="p-6 text-center">
-                      <div className="w-12 h-12 bg-gradient-brand rounded-xl flex items-center justify-center mx-auto mb-4">
-                        <stat.icon className="h-6 w-6 text-white" />
-                      </div>
-                      <div className="text-auto-2xl font-bold text-brand mb-1">
-                        {stat.number}
-                      </div>
-                      <p className="text-auto-sm text-muted-foreground">
-                        {stat.label}
-                      </p>
-                    </CardContent>
-                  </Card>
+                  <motion.div
+                    className="text-center p-6 rounded-2xl metrics-stat hover-lift"
+                    whileHover={{ scale: 1.05, y: -5 }}
+                    transition={{ type: "spring", stiffness: 300 }}
+                  >
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4 border-thin-green">
+                      <stat.icon className="h-6 w-6 text-[#00984E]" />
+                    </div>
+                    <div className="text-auto-2xl font-bold text-[#00984E] mb-1">
+                      {stat.number}
+                    </div>
+                    <p className="text-auto-sm text-muted-foreground">
+                      {stat.label}
+                    </p>
+                  </motion.div>
                 </AnimatedSection>
               ))}
             </div>
@@ -201,7 +203,7 @@ export default function Contact() {
       <section className="section-padding">
         <div className="container">
           <AnimatedSection className="text-center mb-16">
-            <h2 className="text-auto-3xl font-bold font-display text-brand mb-4">
+            <h2 className="text-auto-3xl font-bold font-display text-[#00984E] mb-4">
               Choose How to Reach Us
             </h2>
             <p className="text-auto-lg text-muted-foreground max-w-2xl mx-auto">
@@ -212,12 +214,12 @@ export default function Contact() {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {contactMethods.map((method, index) => (
               <AnimatedSection key={index} delay={0.1 * index}>
-                <Card className="border-0 shadow-xl h-full glass hover-lift">
+                <Card className="border-0 shadow-xl text-[#00984E] hover:shadow-2xl transition-all duration-300 h-full overflow-hidden group dark:text-white text-center p-6 rounded-2xl metrics-stat hover-lift">
                   <CardContent className="p-8 text-center">
-                    <div className={`w-16 h-16 bg-gradient-to-br ${method.gradient} rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg`}>
-                      <method.icon className="h-8 w-8 text-white" />
+                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg border-thin-green ring-1 ring-white/20">
+                      <method.icon className="h-8 w-8 text-[#00984E]" />
                     </div>
-                    <h3 className="text-auto-lg font-bold font-display text-brand mb-4">
+                    <h3 className="text-auto-lg font-bold font-display mb-4">
                       {method.title}
                     </h3>
                     <p className="text-auto-sm text-muted-foreground leading-relaxed mb-4">
@@ -226,7 +228,7 @@ export default function Contact() {
                     <div className="space-y-2">
                       <a 
                         href={`mailto:${method.email}`}
-                        className="block text-auto-sm text-brand hover:underline font-medium"
+                        className="block text-auto-sm text-white hover:underline font-medium"
                       >
                         {method.email}
                       </a>
@@ -248,7 +250,7 @@ export default function Contact() {
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             {/* Contact Form */}
             <AnimatedSection>
-              <h2 className="text-auto-3xl font-bold font-display text-brand mb-6">
+              <h2 className="text-auto-3xl font-bold font-display text-[#00984E] mb-6">
                 Send us a Message
               </h2>
               <p className="text-auto-base text-muted-foreground leading-relaxed mb-8">
@@ -351,6 +353,9 @@ export default function Contact() {
                       loading={isSubmitting}
                       icon={Send}
                       fullWidth
+                      style={{
+                        background: "linear-gradient(280.64deg, rgba(255, 184, 28, 0.2) 0.53%, rgba(3, 106, 56, 0.2) 99.04%)",
+                      }}
                     >
                       Send Message
                     </ActionButton>
@@ -362,8 +367,8 @@ export default function Contact() {
             {/* Office Info */}
             <AnimatedSection delay={0.2}>
               <div className="relative">
-                <div className="aspect-square rounded-2xl bg-gradient-to-br from-brand/20 to-gradient-to/20 p-8 glass">
-                  <div className="p-8 w-full h-full bg-gradient-to-br from-brand to-gradient-to rounded-xl flex items-center justify-center text-white">
+                <div className="aspect-square rounded-2xl bg-gradient-to-br from-[#036A38]/20 to-[#00984E]/20 p-8 glass">
+                  <div className="p-8 w-full h-full bg-gradient-to-br from-[#036A38] to-[#00984E] rounded-xl flex items-center justify-center text-white">
                     <div className="text-center">
                       <Building className="h-24 w-24 mx-auto mb-6" />
                       <h3 className="text-auto-xl font-bold mb-4">Visit Our Office</h3>
@@ -405,7 +410,7 @@ export default function Contact() {
       <section className="section-bottom-padding">
         <div className="container">
           <AnimatedSection>
-            <Card className="border-0 shadow-2xl bg-gradient-to-br from-brand to-gradient-to text-white overflow-hidden">
+            <Card className="border-0 shadow-2xl bg-gradient-to-br from-[#036A38] to-[#0B1E16] text-white overflow-hidden rounded-2xl panel-metrics">
               <CardContent className="p-12 text-center relative">
                 <div className="absolute inset-0 bg-pattern opacity-20" />
                 <div className="relative z-10">
@@ -417,7 +422,7 @@ export default function Contact() {
                   </p>
                   <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
                     <motion.div 
-                      className="bg-white/10 rounded-xl p-6 backdrop-blur-sm"
+                      className="bg-[#00984E] rounded-xl p-6 backdrop-blur-sm"
                       whileHover={{ scale: 1.05 }}
                     >
                       <MessageSquare className="h-8 w-8 mx-auto mb-3" />
@@ -425,7 +430,7 @@ export default function Contact() {
                       <p className="text-auto-sm opacity-90">Available 9 AM - 9 PM WAT</p>
                     </motion.div>
                     <motion.div 
-                      className="bg-white/10 rounded-xl p-6 backdrop-blur-sm"
+                      className="bg-[#00984E] rounded-xl p-6 backdrop-blur-sm"
                       whileHover={{ scale: 1.05 }}
                     >
                       <Phone className="h-8 w-8 mx-auto mb-3" />
@@ -433,7 +438,7 @@ export default function Contact() {
                       <p className="text-auto-sm opacity-90">+234 801 234 5678</p>
                     </motion.div>
                     <motion.div 
-                      className="bg-white/10 rounded-xl p-6 backdrop-blur-sm"
+                      className="bg-[#00984E] rounded-xl p-6 backdrop-blur-sm"
                       whileHover={{ scale: 1.05 }}
                     >
                       <Globe className="h-8 w-8 mx-auto mb-3" />

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -46,7 +46,7 @@ export default function RSS() {
       description: "Complete feed of all blog posts, updates, and insights from NINja Map",
       url: "https://ninjamap.ng/rss/all.xml",
       icon: BookOpen,
-      color: "from-blue-500 to-purple-600",
+      color: "from-[#036A38] to-[#00984E]",
       subscribers: "2.5K",
       frequency: "Daily",
       posts: 42
@@ -57,7 +57,7 @@ export default function RSS() {
       description: "Latest in navigation technology, AI developments, and platform updates",
       url: "https://ninjamap.ng/rss/technology.xml",
       icon: Zap,
-      color: "from-yellow-500 to-orange-600",
+      color: "from-[#036A38] to-[#00984E]",
       subscribers: "1.8K",
       frequency: "Weekly",
       posts: 15
@@ -68,7 +68,7 @@ export default function RSS() {
       description: "User stories, community highlights, and local business features",
       url: "https://ninjamap.ng/rss/community.xml",
       icon: Heart,
-      color: "from-pink-500 to-red-600",
+      color: "from-[#036A38] to-[#00984E]",
       subscribers: "1.2K",
       frequency: "Bi-weekly", 
       posts: 12
@@ -79,7 +79,7 @@ export default function RSS() {
       description: "Industry analysis, business updates, and partnership announcements",
       url: "https://ninjamap.ng/rss/business.xml",
       icon: TrendingUp,
-      color: "from-green-500 to-blue-600",
+      color: "from-[#036A38] to-[#00984E]",
       subscribers: "950",
       frequency: "Weekly",
       posts: 8
@@ -94,7 +94,7 @@ export default function RSS() {
       users: "15M+",
       rating: 4.8,
       features: ["Smart categories", "AI insights", "Team sharing"],
-      gradient: "from-green-500 to-blue-600"
+      gradient: "from-[#036A38] to-[#00984E]"
     },
     {
       name: "Inoreader",
@@ -103,7 +103,7 @@ export default function RSS() {
       users: "500K+", 
       rating: 4.7,
       features: ["Advanced filters", "API access", "Analytics"],
-      gradient: "from-blue-500 to-purple-600"
+      gradient: "from-[#036A38] to-[#00984E]"
     },
     {
       name: "NewsBlur",
@@ -112,7 +112,7 @@ export default function RSS() {
       users: "100K+",
       rating: 4.5,
       features: ["ML training", "Story intelligence", "Social features"],
-      gradient: "from-purple-500 to-pink-600"
+      gradient: "from-[#036A38] to-[#00984E]"
     }
   ];
 
@@ -135,13 +135,13 @@ export default function RSS() {
       <Header />
 
       {/* Hero Section */}
-      <section className="section-padding bg-gradient-to-br from-brand/5 via-background to-gradient-to/5 relative overflow-hidden">
+      <section className="section-padding bg-gradient-to-br from-[#036A38]/5 via-background to-[#00984E]/5 relative overflow-hidden">
         <div className="absolute inset-0 hero-pattern opacity-30" />
         <div className="container relative">
           <AnimatedSection className="mx-auto max-w-4xl text-center">
             <Badge
               variant="outline"
-              className="mb-6 border-brand/30 bg-brand/10 text-brand px-6 py-3 text-auto-sm font-medium"
+              className="mb-6 border-[0.6px] border-[#00984E] bg-[rgba(3,106,56,0.4)] text-white px-6 py-3 text-auto-sm font-medium"
             >
               <Rss className="w-4 h-4 mr-2" />
               RSS Feeds
@@ -155,7 +155,7 @@ export default function RSS() {
             </p>
             
             {/* Quick Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-12">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-12">
               {[
                 { label: "Active Subscribers", value: "6.5K+", icon: Users },
                 { label: "Articles Published", value: "150+", icon: BookOpen },
@@ -163,19 +163,21 @@ export default function RSS() {
                 { label: "Average Read Time", value: "6 min", icon: Clock }
               ].map((stat, index) => (
                 <AnimatedSection key={index} delay={0.1 * index}>
-                  <Card className="border-0 shadow-lg glass">
-                    <CardContent className="p-6 text-center">
-                      <div className="w-12 h-12 bg-gradient-brand rounded-xl flex items-center justify-center mx-auto mb-4">
-                        <stat.icon className="h-6 w-6 text-white" />
-                      </div>
-                      <div className="text-auto-2xl font-bold text-brand mb-1">
-                        {stat.value}
-                      </div>
-                      <p className="text-auto-sm text-muted-foreground">
-                        {stat.label}
-                      </p>
-                    </CardContent>
-                  </Card>
+                  <motion.div
+                    className="text-center p-6 rounded-2xl metrics-stat hover-lift"
+                    whileHover={{ scale: 1.05, y: -5 }}
+                    transition={{ type: "spring", stiffness: 300 }}
+                  >
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4 border-thin-green">
+                      <stat.icon className="h-6 w-6 text-[#00984E]" />
+                    </div>
+                    <div className="text-auto-2xl font-bold text-[#00984E] mb-2 font-display">
+                      {stat.value}
+                    </div>
+                    <p className="text-auto-sm text-muted-foreground font-medium">
+                      {stat.label}
+                    </p>
+                  </motion.div>
                 </AnimatedSection>
               ))}
             </div>
@@ -187,7 +189,7 @@ export default function RSS() {
       <section className="section-padding">
         <div className="container">
           <AnimatedSection className="text-center mb-16">
-            <h2 className="text-auto-3xl font-bold font-display text-brand mb-4">
+            <h2 className="text-auto-3xl font-bold font-display text-[#00984E] mb-4">
               Choose Your Content Stream
             </h2>
             <p className="text-auto-lg text-muted-foreground max-w-2xl mx-auto">
@@ -202,10 +204,10 @@ export default function RSS() {
                   whileHover={{ y: -8, scale: 1.02 }}
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 >
-                  <Card className="border-0 shadow-xl hover:shadow-2xl transition-all duration-300 h-full glass-strong overflow-hidden group">
+                  <Card className="border-0 shadow-xl hover:shadow-2xl transition-all duration-300 h-full overflow-hidden group panel-metrics text-white">
                     {/* Modern header */}
-                    <div className={`relative p-8 bg-gradient-to-br ${feed.color} text-white overflow-hidden`}>
-                      <div className="absolute inset-0 bg-white/10 backdrop-blur-sm" />
+                    <div className={`relative p-8 bg-transparent text-white overflow-hidden`}>
+                      <div className="absolute  bg-white/10 backdrop-blur-sm" />
                       <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl" />
                       
                       <div className="relative z-10">
@@ -239,9 +241,9 @@ export default function RSS() {
                       </div>
                     </div>
 
-                    <CardContent className="p-6">
+                    <CardContent className="p-6 ">
                       {/* URL display */}
-                      <div className="bg-muted/50 rounded-lg p-3 mb-6 font-mono text-xs text-muted-foreground break-all border border-border/40">
+                      <div className="bg-muted/50 rounded-lg p-3 mb-6 font-mono text-xs text-white break-all border border-border/40">
                         {feed.url}
                       </div>
 
@@ -250,7 +252,7 @@ export default function RSS() {
                         <Button
                           onClick={() => copyToClipboard(feed.url, feed.id)}
                           variant="outline"
-                          className="w-full h-12 group border-border/60 hover:border-brand/60 hover:bg-brand/5"
+                          className="w-full h-12 group border-border/60 hover:border-[#00984E]/60 hover:bg-[#036A38]/5"
                         >
                           {copiedFeed === feed.id ? (
                             <>
@@ -259,8 +261,8 @@ export default function RSS() {
                             </>
                           ) : (
                             <>
-                              <Copy className="w-4 h-4 mr-2 group-hover:text-brand" />
-                              <span className="group-hover:text-brand">Copy RSS URL</span>
+                              <Copy className="w-4 h-4 mr-2 group-hover:text-[#00984E]" />
+                              <span className="group-hover:text-[#00984E]">Copy RSS URL</span>
                             </>
                           )}
                         </Button>
@@ -276,7 +278,7 @@ export default function RSS() {
 
                       {/* Feature highlights */}
                       <div className="mt-6 pt-4 border-t border-border/30">
-                        <div className="flex items-center justify-between text-sm text-muted-foreground">
+                        <div className="flex items-center justify-between text-sm text-white">
                           <div className="flex items-center gap-1">
                             <Radio className="h-4 w-4" />
                             <span>Auto-updates</span>
@@ -304,7 +306,7 @@ export default function RSS() {
       <section className="section-padding bg-muted/20">
         <div className="container">
           <AnimatedSection className="text-center mb-16">
-            <h2 className="text-auto-3xl font-bold font-display text-brand mb-4">
+            <h2 className="text-auto-3xl font-bold font-display text-[#00984E] mb-4">
               Why RSS Over Social Media?
             </h2>
             <p className="text-auto-lg text-muted-foreground max-w-2xl mx-auto">
@@ -312,51 +314,44 @@ export default function RSS() {
             </p>
           </AnimatedSection>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
               {
                 icon: Shield,
                 title: "No Algorithms",
-                description: "Get content in chronological order without manipulation",
-                color: "from-blue-500 to-purple-600"
+                description: "Get content in chronological order without manipulation"
               },
               {
                 icon: Eye,
                 title: "Privacy First",
-                description: "No tracking, data collection, or behavioral profiling",
-                color: "from-green-500 to-blue-600"
+                description: "No tracking, data collection, or behavioral profiling"
               },
               {
                 icon: Zap,
                 title: "Lightning Fast",
-                description: "Instant updates without ads or unnecessary content",
-                color: "from-yellow-500 to-orange-600"
+                description: "Instant updates without ads or unnecessary content"
               },
               {
                 icon: Settings,
                 title: "Full Control",
-                description: "Organize, filter, and customize your content experience",
-                color: "from-purple-500 to-pink-600"
+                description: "Organize, filter, and customize your content experience"
               }
             ].map((benefit, index) => (
               <AnimatedSection key={index} delay={index * 0.1}>
                 <motion.div
-                  whileHover={{ y: -5, scale: 1.02 }}
+                  className="h-full p-8 text-center rounded-2xl metrics-stat values-card hover-lift flex flex-col"
+                  whileHover={{ scale: 1.05, y: -5 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
-                  <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 h-full glass text-center overflow-hidden">
-                    <CardContent className="p-8">
-                      <div className={`w-16 h-16 bg-gradient-to-br ${benefit.color} rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg`}>
-                        <benefit.icon className="h-8 w-8 text-white" />
-                      </div>
-                      <h3 className="font-bold text-lg mb-4 font-display">
-                        {benefit.title}
-                      </h3>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {benefit.description}
-                      </p>
-                    </CardContent>
-                  </Card>
+                  <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 border-thin-green shadow-lg">
+                    <benefit.icon className="h-8 w-8 text-[#00984E]" />
+                  </div>
+                  <h3 className="text-auto-lg font-bold font-display mb-4 text-foreground dark:text-white">
+                    {benefit.title}
+                  </h3>
+                  <p className="text-auto-sm text-muted-foreground leading-relaxed">
+                    {benefit.description}
+                  </p>
                 </motion.div>
               </AnimatedSection>
             ))}
@@ -368,7 +363,7 @@ export default function RSS() {
       <section className="section-padding">
         <div className="container">
           <AnimatedSection className="text-center mb-16">
-            <h2 className="text-auto-3xl font-bold font-display text-brand mb-4">
+            <h2 className="text-auto-3xl font-bold font-display text-[#00984E] mb-4">
               Recommended RSS Readers
             </h2>
             <p className="text-auto-lg text-muted-foreground max-w-2xl mx-auto">
@@ -382,57 +377,51 @@ export default function RSS() {
                 <motion.div
                   whileHover={{ y: -8, scale: 1.02 }}
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  className="group"
                 >
-                  <Card className="border-0 shadow-xl hover:shadow-2xl transition-all duration-300 h-full glass-strong overflow-hidden">
-                    {/* Client header */}
-                    <div className={`p-8 bg-gradient-to-br ${client.gradient} text-white relative overflow-hidden`}>
-                      <div className="absolute inset-0 bg-white/10 backdrop-blur-sm" />
-                      <div className="absolute -top-4 -right-4 w-20 h-20 bg-white/10 rounded-full blur-xl" />
-                      
-                      <div className="relative z-10 text-center">
-                        <div className="text-5xl mb-4">{client.icon}</div>
-                        <h3 className="text-xl font-bold mb-2 font-display">
-                          {client.name}
-                        </h3>
-                        <div className="flex items-center justify-center gap-2 mb-3">
-                          <div className="flex items-center">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`h-4 w-4 ${
-                                  i < Math.floor(client.rating)
-                                    ? 'text-yellow-300 fill-current'
-                                    : 'text-white/30'
-                                }`}
-                              />
-                            ))}
-                          </div>
-                          <span className="text-sm font-medium">{client.rating}</span>
+                  <Card className="panel-green hover-lift hover-panel-amber transition-all duration-300 h-full overflow-hidden">
+                    <CardHeader className="pb-6">
+                      <div className="flex items-start justify-between mb-6">
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center border-thin-green text-3xl group-hover:border-[#FFB81C]">
+                          <span>{client.icon}</span>
                         </div>
-                        <p className="text-sm opacity-90 mb-2">{client.users} users</p>
-                      </div>
-                    </div>
-
-                    <CardContent className="p-6">
-                      <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-                        {client.description}
-                      </p>
-
-                      {/* Features */}
-                      <div className="space-y-3 mb-6">
-                        {client.features.map((feature, fIndex) => (
-                          <div key={fIndex} className="flex items-center gap-3">
-                            <CheckCircle className="h-4 w-4 text-brand flex-shrink-0" />
-                            <span className="text-sm text-muted-foreground">{feature}</span>
+                        <div className="text-right">
+                          <div className="flex items-center justify-end gap-1 text-auto-sm font-medium text-muted-foreground">
+                            <Star className="h-4 w-4 text-[#FFB81C]" />
+                            <span>{client.rating}</span>
                           </div>
-                        ))}
+                          <div className="text-auto-sm text-muted-foreground">
+                            {client.users} users
+                          </div>
+                        </div>
                       </div>
+                      <CardTitle className="text-auto-xl mb-3 font-display">
+                        {client.name}
+                      </CardTitle>
+                      <CardDescription className="text-auto-base leading-relaxed">
+                        {client.description}
+                      </CardDescription>
+                    </CardHeader>
 
-                      <Button
-                        className={`w-full bg-gradient-to-r ${client.gradient} text-white hover:opacity-90 shadow-lg`}
-                      >
-                        Try {client.name}
-                      </Button>
+                    <CardContent className="px-6 pb-6 pt-0">
+                      <ul className="space-y-3">
+                        {client.features.map((feature, fIndex) => (
+                          <li key={fIndex} className="flex items-center space-x-3">
+                            <CheckCircle className="h-4 w-4 text-[#00984E] group-hover:text-[#FFB81C] flex-shrink-0" />
+                            <span className="text-auto-sm text-muted-foreground">{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+
+                      <div className="mt-6 pt-4 border-t border-border/40">
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="w-full px-4 py-3 rounded-lg bg-[#00984E] text-white font-medium border border-[#00984E] transition-colors hover:bg-[#FFB81C] hover:text-black hover:border-[#FFB81C]"
+                        >
+                          Try {client.name}
+                        </motion.button>
+                      </div>
                     </CardContent>
                   </Card>
                 </motion.div>
@@ -446,11 +435,11 @@ export default function RSS() {
       <section className="section-bottom-padding">
         <div className="container">
           <AnimatedSection>
-            <Card className="border-0 shadow-2xl bg-gradient-to-br from-brand to-gradient-to text-white overflow-hidden">
+            <Card className="border-0 shadow-2xl panel-metrics text-white overflow-hidden rounded-2xl">
               <CardContent className="p-16 text-center relative">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(255,255,255,0.1),transparent)]" />
                 <div className="relative z-10 max-w-3xl mx-auto">
-                  <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-lg backdrop-blur-sm">
+                  <div className="w-20 h-20 bg-[rgba(255,255,255,0.08)] rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-lg backdrop-blur-sm">
                     <Rss className="h-10 w-10 text-white" />
                   </div>
                   <h3 className="text-auto-4xl font-bold font-display mb-6">
@@ -461,24 +450,22 @@ export default function RSS() {
                     Choose your preferred feed and never miss an important update.
                   </p>
                   <div className="flex flex-col sm:flex-row gap-6 justify-center">
-                    <motion.div
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <Button className="bg-white text-brand hover:bg-white/90 px-10 py-4 h-14 text-lg font-semibold">
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                      <Link
+                        to="/download"
+                        className="bg-white text-green-800 flex items-center text-auto-lg cursor-pointer rounded-xl px-6 py-3 font-medium transition-all duration-200 ease-out dark:bg-[#036A38] dark:text-white shadow-[0_4px_15px_rgba(3,106,56,0.3)] hover:shadow-[0_8px_25px_rgba(3,106,56,0.35)] hover:-translate-y-0.5"
+                      >
                         <Download className="w-5 h-5 mr-2" />
                         Download OPML File
-                      </Button>
+                      </Link>
                     </motion.div>
-                    <motion.div
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
+
+                    <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.95 }}>
                       <Link
                         to="/blog"
-                        className="inline-flex items-center gap-3 border-2 border-white text-white px-10 py-4 rounded-lg hover:bg-white hover:text-brand transition-all duration-200 h-14 text-lg font-semibold"
+                        className="flex items-center btn-ios-outline text-auto-lg cursor-pointer"
                       >
-                        <BookOpen className="w-5 h-5" />
+                        <BookOpen className="w-5 h-5 mr-2" />
                         Browse Blog
                       </Link>
                     </motion.div>

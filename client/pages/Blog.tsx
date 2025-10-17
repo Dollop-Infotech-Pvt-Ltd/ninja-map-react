@@ -39,12 +39,12 @@ const BlogImage = ({ type, className }: { type: string; className?: string }) =>
   };
 
   const overlayGradients = {
-    "ai-tech": "from-blue-600/80 to-purple-700/80",
-    "community": "from-green-600/80 to-teal-700/80",
-    "offline-tech": "from-orange-600/80 to-red-700/80",
-    "business": "from-purple-600/80 to-blue-700/80",
-    "traffic-ai": "from-yellow-600/80 to-orange-700/80",
-    "safety": "from-red-600/80 to-pink-700/80"
+    "ai-tech": "from-[#036A38]/80 to-[#00984E]/80",
+    "community": "from-[#036A38]/80 to-[#00984E]/80",
+    "offline-tech": "from-[#036A38]/80 to-[#00984E]/80",
+    "business": "from-[#036A38]/80 to-[#00984E]/80",
+    "traffic-ai": "from-[#036A38]/80 to-[#00984E]/80",
+    "safety": "from-[#036A38]/80 to-[#00984E]/80"
   };
 
   const imageUrl = imageUrls[type as keyof typeof imageUrls] || imageUrls["ai-tech"];
@@ -189,14 +189,14 @@ export default function Blog() {
       <Header />
 
       {/* Hero Section */}
-      <section className="section-padding bg-gradient-to-br from-brand/5 via-background to-gradient-to/5 relative overflow-hidden">
+      <section className="section-padding bg-gradient-to-br from-[#036A38]/5 via-background to-[#00984E]/5 relative overflow-hidden">
         <div className="absolute inset-0 hero-pattern opacity-30" />
         <div className="container relative">
           <AnimatedSection className="mx-auto max-w-4xl text-center">
-            <Badge
-              variant="outline"
-              className="mb-6 border-brand/30 bg-brand/10 text-brand px-6 py-3 text-auto-sm font-medium"
-            >
+              <Badge
+                     variant="outline"
+                     className="mb-6 border-[0.6px] border-[#00984E] bg-[rgba(3,106,56,0.4)] text-white px-6 py-3 text-auto-sm font-medium"
+                   >
               <BookOpen className="w-4 h-4 mr-2" />
               NINja Map Blog
             </Badge>
@@ -218,9 +218,9 @@ export default function Blog() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-12 pr-28 h-12 text-auto-base bg-white/80 dark:bg-card/80 backdrop-blur-lg border border-white/40 dark:border-border/40 rounded-full shadow-lg hover:shadow-xl transition-all focus:shadow-xl focus:scale-[1.02] focus:bg-white dark:focus:bg-card"
                 />
-                <Button 
+                <Button
                   size="sm"
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 px-4 bg-gradient-brand text-white rounded-full shadow-md hover:shadow-lg transition-all text-xs"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 px-4 bg-[#036A38] text-white rounded-full shadow-md hover:shadow-lg transition-all text-xs"
                 >
                   <Filter className="w-3 h-3 mr-1" />
                   Filter
@@ -235,7 +235,7 @@ export default function Blog() {
       <section className="section-padding bg-gradient-to-b from-muted/30 to-background">
         <div className="container">
           <AnimatedSection className="text-center mb-12">
-            <h2 className="text-auto-3xl font-bold font-display text-brand mb-4">
+            <h2 className="text-auto-3xl font-bold font-display text-[#00984E] mb-4">
               Explore by Category
             </h2>
             <p className="text-auto-lg text-muted-foreground max-w-2xl mx-auto">
@@ -250,8 +250,8 @@ export default function Blog() {
                   onClick={() => setSelectedCategory(category.id)}
                   className={`group flex items-center gap-3 px-6 py-4 rounded-xl font-medium text-auto-sm transition-all shadow-lg hover:shadow-xl border ${
                     selectedCategory === category.id
-                      ? 'bg-gradient-brand text-white border-transparent scale-105'
-                      : 'bg-white dark:bg-card text-muted-foreground hover:text-brand border-border/40 hover:border-brand/40 hover:bg-brand/5'
+                      ? 'bg-[#036A38] text-white border-transparent scale-105'
+                      : 'bg-white dark:bg-card text-muted-foreground hover:text-[#00984E] border-border/40 hover:border-[#00984E]/40 hover:bg-[#00984E]/5'
                   }`}
                   whileHover={{ scale: selectedCategory === category.id ? 1.05 : 1.02, y: -2 }}
                   whileTap={{ scale: 0.98 }}
@@ -262,7 +262,7 @@ export default function Blog() {
                     className={`text-xs transition-colors ${
                       selectedCategory === category.id
                         ? 'bg-white/20 text-white border-white/30'
-                        : 'group-hover:border-brand/40 group-hover:text-brand'
+                        : 'group-hover:border-[#00984E]/40 group-hover:text-[#00984E]'
                     }`}
                   >
                     {category.count}
@@ -279,8 +279,8 @@ export default function Blog() {
         <div className="container">
           <AnimatedSection className="mb-16">
             <div className="flex items-center gap-2 mb-8">
-              <TrendingUp className="h-5 w-5 text-brand" />
-              <h2 className="text-auto-2xl font-bold font-display text-brand">Featured Article</h2>
+              <TrendingUp className="h-5 w-5 text-[#00984E]" />
+              <h2 className="text-auto-2xl font-bold font-display text-[#00984E]">Featured Article</h2>
             </div>
             
             <motion.div
@@ -295,7 +295,7 @@ export default function Blog() {
                   
                   {/* Featured badge */}
                   <div className="absolute top-6 left-6">
-                    <Badge className="bg-gradient-brand text-white shadow-xl backdrop-blur-sm px-4 py-2 text-sm font-medium border-0">
+                    <Badge className="bg-gradient-to-r from-[#036A38] to-[#00984E] text-white shadow-xl backdrop-blur-sm px-4 py-2 text-sm font-medium border-0">
                       <TrendingUp className="h-4 w-4 mr-2" />
                       Featured Article
                     </Badge>
@@ -368,7 +368,7 @@ export default function Blog() {
       <section className="section-padding bg-muted/20">
         <div className="container">
           <AnimatedSection className="mb-16">
-            <h2 className="text-auto-3xl font-bold font-display text-brand mb-4">Latest Articles</h2>
+            <h2 className="text-auto-3xl font-bold font-display text-[#00984E] mb-4">Latest Articles</h2>
             <p className="text-auto-lg text-muted-foreground">
               Stay updated with the latest insights, technology updates, and community stories
             </p>
@@ -422,7 +422,7 @@ export default function Blog() {
                     {/* Streamlined content */}
                     <CardContent className="p-5 flex flex-col flex-grow">
                       {/* Title */}
-                      <h3 className="font-bold text-base leading-tight font-display mb-3 line-clamp-2 group-hover:text-brand transition-colors">
+                      <h3 className="font-bold text-base leading-tight font-display mb-3 line-clamp-2 group-hover:text-[#00984E] transition-colors">
                         {post.title}
                       </h3>
 
@@ -434,7 +434,7 @@ export default function Blog() {
                       {/* Bottom section */}
                       <div className="flex items-center justify-between pt-3 border-t border-border/30">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 bg-gradient-brand rounded-full flex items-center justify-center text-white font-bold text-xs">
+                          <div className="w-8 h-8 bg-gradient-to-r from-[#036A38] to-[#00984E] rounded-full flex items-center justify-center text-white font-bold text-xs">
                             {post.authorAvatar}
                           </div>
                           <div>
@@ -445,7 +445,7 @@ export default function Blog() {
 
                         <Link
                           to={`/blog/${post.id}`}
-                          className="inline-flex items-center gap-1 bg-brand/10 hover:bg-brand hover:text-white text-brand px-3 py-1.5 rounded-full transition-all font-medium text-xs group/btn"
+                          className="inline-flex items-center gap-1 bg-[#00984E]/10 hover:bg-[#00984E] hover:text-white text-[#00984E] px-3 py-1.5 rounded-full transition-all font-medium text-xs group/btn"
                         >
                           Read
                           <ArrowRight className="h-3 w-3 group-hover/btn:translate-x-0.5 transition-transform" />
@@ -474,7 +474,7 @@ export default function Blog() {
       <section className="section-padding">
         <div className="container">
           <AnimatedSection>
-            <Card className="border-0 shadow-2xl bg-gradient-to-br from-brand to-gradient-to text-white overflow-hidden">
+            <Card className="border-0 shadow-2xl text-white overflow-hidden panel-metrics" >
               <CardContent className="p-12 text-center relative">
                 <div className="absolute inset-0 bg-pattern opacity-20" />
                 <div className="relative z-10">
@@ -490,7 +490,7 @@ export default function Blog() {
                       placeholder="Enter your email"
                       className="bg-white/10 border-white/20 text-white placeholder:text-white/70 h-12"
                     />
-                    <Button className="bg-white text-brand hover:bg-white/90 h-12 px-6">
+                    <Button className="bg-white text-[#00984E] hover:bg-white/90 h-12 px-6">
                       Subscribe
                     </Button>
                   </div>

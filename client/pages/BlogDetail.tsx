@@ -251,7 +251,7 @@ export default function BlogDetail() {
             >
               <Link
                 to="/blog"
-                className="inline-flex items-center gap-2 text-muted-foreground hover:text-brand transition-colors mb-8 group"
+                className="inline-flex items-center gap-2 text-muted-foreground hover:text-[#00984E] transition-colors mb-8 group"
               >
                 <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
                 Back to Blog
@@ -259,7 +259,7 @@ export default function BlogDetail() {
 
               <Badge
                 variant="outline"
-                className="mb-6 border-brand/30 bg-brand-50 dark:bg-brand-950 text-brand dark:text-white px-6 py-3 text-auto-sm font-medium"
+                className="mb-6 border-[0.6px] border-[#00984E] bg-[rgba(3,106,56,0.4)] text-white px-6 py-3 text-auto-sm font-medium"
               >
                 <Sparkles className="h-4 w-4 mr-2" />
                 {blogPost.category}
@@ -282,10 +282,10 @@ export default function BlogDetail() {
                   <AnimatedSection key={index} delay={0.1 * index}>
                     <Card className="border-0 shadow-lg glass">
                       <CardContent className="p-6 text-center">
-                        <div className="w-12 h-12 bg-gradient-brand rounded-xl flex items-center justify-center mx-auto mb-4">
+                        <div className="w-12 h-12 bg-gradient-to-r from-[#036A38] to-[#00984E] rounded-xl flex items-center justify-center mx-auto mb-4">
                           <stat.icon className="h-6 w-6 text-white" />
                         </div>
-                        <div className="text-auto-base font-bold text-brand mb-1">
+                        <div className="text-auto-base font-bold text-[#00984E] mb-1">
                           {stat.value}
                         </div>
                         <p className="text-auto-sm text-muted-foreground">
@@ -320,7 +320,7 @@ export default function BlogDetail() {
                       />
                       <div>
                         <h3 className="font-bold text-lg text-foreground">{blogPost.author}</h3>
-                        <p className="text-brand font-medium">{blogPost.authorRole}</p>
+                        <p className="text-[#00984E] font-medium">{blogPost.authorRole}</p>
                         <p className="text-sm text-muted-foreground mt-1">{blogPost.authorBio}</p>
                       </div>
                     </div>
@@ -349,7 +349,7 @@ export default function BlogDetail() {
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {blogPost.tags.map((tag) => (
-                          <Badge key={tag} variant="secondary" className="px-3 py-1 hover:bg-brand/10 hover:text-brand transition-colors cursor-pointer">
+                          <Badge key={tag} variant="secondary" className="px-3 py-1 hover:bg-[#00984E]/10 hover:text-[#00984E] transition-colors cursor-pointer">
                             {tag}
                           </Badge>
                         ))}
@@ -404,7 +404,7 @@ export default function BlogDetail() {
                 <Card className="mt-12 border-0 shadow-2xl glass">
                   <CardContent className="p-8 lg:p-12">
                     <div className="flex items-center gap-3 mb-8">
-                      <MessageSquare className="h-6 w-6 text-brand" />
+                      <MessageSquare className="h-6 w-6 text-[#00984E]" />
                       <h3 className="text-2xl font-bold font-display">Comments ({comments.length})</h3>
                     </div>
 
@@ -475,11 +475,11 @@ export default function BlogDetail() {
                               {comment.content}
                             </p>
                             <div className="flex items-center gap-4">
-                              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-brand">
+                              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-[#00984E]">
                                 <ThumbsUp className="h-4 w-4 mr-1" />
                                 {comment.likes}
                               </Button>
-                              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-brand">
+                              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-[#00984E]">
                                 Reply
                               </Button>
                             </div>
@@ -500,7 +500,7 @@ export default function BlogDetail() {
                   <Card className="border-0 shadow-xl glass">
                     <CardContent className="p-6">
                       <h4 className="font-bold text-lg mb-6 flex items-center gap-2">
-                        <TrendingUp className="h-5 w-5 text-brand" />
+                        <TrendingUp className="h-5 w-5 text-[#00984E]" />
                         Article Stats
                       </h4>
                       <div className="space-y-4">
@@ -542,7 +542,7 @@ export default function BlogDetail() {
                   <Card className="border-0 shadow-xl glass">
                     <CardContent className="p-6">
                       <h4 className="font-bold text-lg mb-6 flex items-center gap-2">
-                        <BookOpen className="h-5 w-5 text-brand" />
+                        <BookOpen className="h-5 w-5 text-[#00984E]" />
                         Related Articles
                       </h4>
                       <div className="space-y-6">
@@ -560,11 +560,11 @@ export default function BlogDetail() {
                                 loading="lazy"
                               />
                               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                              <Badge className="absolute bottom-2 left-2 bg-brand/90 text-white text-xs">
+                              <Badge className="absolute bottom-2 left-2 bg-[#00984E]/90 text-white text-xs">
                                 {post.category}
                               </Badge>
                             </div>
-                            <h5 className="font-semibold text-sm leading-tight mb-2 group-hover:text-brand transition-colors">
+                            <h5 className="font-semibold text-sm leading-tight mb-2 group-hover:text-[#00984E] transition-colors">
                               {post.title}
                             </h5>
                             <p className="text-xs text-muted-foreground leading-relaxed mb-2">

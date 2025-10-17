@@ -115,13 +115,13 @@ export default function FAQs() {
       <Header />
 
       {/* Hero Section */}
-      <section className="section-padding bg-gradient-to-br from-brand/5 via-background to-gradient-to/5 relative overflow-hidden">
+      <section className="section-padding bg-gradient-to-br from-[#036A38]/5 via-background to-[#00984E]/5 relative overflow-hidden">
         <div className="absolute inset-0 hero-pattern opacity-30" />
         <div className="container relative">
           <AnimatedSection className="mx-auto max-w-4xl text-center flex flex-col items-center gap-3 sm:gap-4">
             <Badge
               variant="outline"
-              className="border-brand/30 bg-brand/10 text-brand lg:px-6 lg:py-3 px-3 py-2 text-auto-xs font-medium"
+              className="mb-2 border-[0.6px] border-[#00984E] bg-[rgba(3,106,56,0.4)] text-white lg:px-6 lg:py-3 px-3 py-2 text-auto-xs font-medium"
             >
               <HelpCircle className="w-4 h-4 mr-2" />
               Help Center
@@ -138,19 +138,21 @@ export default function FAQs() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-12">
               {stats.map((stat, index) => (
                 <AnimatedSection key={index} delay={0.1 * index}>
-                  <Card className="border-0 shadow-lg glass">
-                    <CardContent className="p-6 text-center">
-                      <div className="w-12 h-12 bg-gradient-brand rounded-xl flex items-center justify-center mx-auto mb-4">
-                        <stat.icon className="h-6 w-6 text-white" />
-                      </div>
-                      <div className="text-auto-2xl font-bold text-brand mb-1">
-                        {stat.number}
-                      </div>
-                      <p className="text-auto-sm text-muted-foreground">
-                        {stat.label}
-                      </p>
-                    </CardContent>
-                  </Card>
+                  <motion.div
+                    className="text-center p-6 rounded-2xl metrics-stat hover-lift"
+                    whileHover={{ scale: 1.05, y: -5 }}
+                    transition={{ type: "spring", stiffness: 300 }}
+                  >
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4 border-thin-green">
+                      <stat.icon className="h-6 w-6 text-[#00984E]" />
+                    </div>
+                    <div className="text-auto-2xl font-bold text-[#00984E] mb-1">
+                      {stat.number}
+                    </div>
+                    <p className="text-auto-sm text-muted-foreground">
+                      {stat.label}
+                    </p>
+                  </motion.div>
                 </AnimatedSection>
               ))}
             </div>
@@ -162,7 +164,7 @@ export default function FAQs() {
       <section className="section-padding">
         <div className="container">
           <AnimatedSection className="text-center mb-16">
-            <h2 className="text-auto-3xl font-bold font-display text-brand mb-4">
+            <h2 className="text-auto-3xl font-bold font-display text-[#00984E] mb-4">
               Browse by Category
             </h2>
             <p className="text-auto-lg text-muted-foreground max-w-2xl mx-auto">
@@ -173,12 +175,13 @@ export default function FAQs() {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
             {faqCategories.map((category, index) => (
               <AnimatedSection key={index} delay={0.1 * index}>
-                <Card className="border-0 shadow-xl h-full glass hover-lift">
+                <Card className="border-0 shadow-xl text-[#00984E] hover:shadow-2xl  transition-all duration-300 h-full overflow-hidden group  dark:text-white   text-center p-6 rounded-2xl metrics-stat hover-lift">
                   <CardContent className="p-8 text-center">
-                    <div className={`w-16 h-16 bg-gradient-to-br ${category.gradient} rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg`}>
-                      <category.icon className="h-8 w-8 text-white" />
+                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg border-thin-green  ring-1 ring-white/20">
+                      <category.icon className="h-8 w-8 text-[#00984E] " />
                     </div>
-                    <h3 className="text-auto-lg font-bold font-display text-brand mb-4">
+
+                    <h3 className="text-auto-lg font-bold font-display mb-4">
                       {category.title}
                     </h3>
                     <p className="text-auto-sm text-muted-foreground">
@@ -200,10 +203,10 @@ export default function FAQs() {
               <AnimatedSection key={category.title} delay={categoryIndex * 0.1}>
                 <div className="space-y-6">
                   <div className="flex items-center gap-4">
-                    <div className={`p-3 bg-gradient-to-br ${category.gradient} rounded-xl shadow-lg`}>
-                      <category.icon className="h-6 w-6 text-white" />
+                    <div className="p-3 bg-[rgba(255,255,255,0.08)] rounded-xl shadow-lg">
+                      <category.icon className="h-6 w-6 text-[#00984E] dark:text-white" />
                     </div>
-                    <h2 className="text-auto-2xl font-bold font-display text-brand">
+                    <h2 className="text-auto-2xl font-bold font-display text-[#00984E]">
                       {category.title}
                     </h2>
                   </div>
@@ -212,12 +215,12 @@ export default function FAQs() {
                     <CardContent className="p-0">
                       <Accordion type="single" collapsible className="w-full">
                         {category.questions.map((faq, index) => (
-                          <AccordionItem 
-                            key={index} 
+                          <AccordionItem
+                            key={index}
                             value={`${categoryIndex}-${index}`}
                             className="border-border/40 last:border-b-0"
                           >
-                            <AccordionTrigger className="px-6 py-5 text-left text-auto-base font-medium hover:text-brand transition-colors hover:bg-muted/30">
+                            <AccordionTrigger className="px-6 py-5 text-left text-auto-base font-medium hover:text-[#00984E] transition-colors hover:bg-[#036A38]/5">
                               {faq.question}
                             </AccordionTrigger>
                             <AccordionContent className="px-6 pb-6 text-auto-sm text-muted-foreground leading-relaxed">
@@ -239,11 +242,11 @@ export default function FAQs() {
       <section className="section-bottom-padding">
         <div className="container">
           <AnimatedSection>
-            <Card className="border-0 shadow-2xl bg-gradient-to-br from-brand to-gradient-to text-white overflow-hidden">
+            <Card className="border-0 shadow-2xl panel-metrics text-white overflow-hidden rounded-2xl">
               <CardContent className="p-12 text-center relative">
                 <div className="absolute inset-0 bg-pattern opacity-20" />
                 <div className="relative z-10">
-                  <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg backdrop-blur-sm">
+                  <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg bg-green-amber-280 ring-1 ring-white/20">
                     <MessageSquare className="h-8 w-8 text-white" />
                   </div>
                   <h2 className="text-auto-3xl font-bold font-display mb-4">
@@ -256,17 +259,17 @@ export default function FAQs() {
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                       <Link to="/contact">
-                        <Button className="bg-white text-brand hover:bg-white/90 shadow-lg hover:shadow-xl transition-all duration-200">
+                        <Button className="flex items-center justify-center gap-3 bg-white text-green-800 rounded-xl px-10 py-4 h-14 text-lg font-semibold transition-all duration-200 ease-out dark:bg-[#036A38] dark:text-white shadow-[0_4px_15px_rgba(3,106,56,0.3)] hover:shadow-[0_8px_25px_rgba(3,106,56,0.35)] hover:-translate-y-0.5">
                           <MessageSquare className="w-4 h-4 mr-2" />
                           Contact Support
                         </Button>
                       </Link>
                     </motion.div>
                     <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                      <Button variant="outline" className="border-white/30 text-white hover:bg-white hover:text-brand bg-transparent transition-all backdrop-blur-sm">
+                      <Link to="/faqs" className="flex items-center btn-ios-outline h-14 px-10 rounded-xl font-semibold text-auto-lg  btn-ios-outline text-auto-lg cursor-pointer">
                         <Mail className="w-4 h-4 mr-2" />
                         Email Us
-                      </Button>
+                      </Link>
                     </motion.div>
                   </div>
                 </div>

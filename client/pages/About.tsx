@@ -138,15 +138,15 @@ export default function About() {
       <Header />
 
       {/* Hero Section */}
-      <section className="section-padding bg-gradient-to-br from-brand/5 via-background to-gradient-to/5 relative overflow-hidden">
+      <section className="section-padding bg-gradient-to-br from-[#036A38]/5 via-background to-[#00984E]/5 relative overflow-hidden">
         <div className="absolute inset-0 hero-pattern opacity-30" />
         <div className="container relative">
           <AnimatedSection className="mx-auto max-w-4xl text-center">
             <Badge
               variant="outline"
-              className="mb-6 border-brand/30 bg-brand/10 text-brand px-6 py-3 text-auto-sm font-medium"
+              className="mb-6 border-[0.6px] text-[#00984E]  border-[#00984E] border-brand/40 bg-brand-50 dark:bg-brand-950  dark:text-white   px-6 py-3 text-auto-sm font-medium"
             >
-              <Building className="w-4 h-4 mr-2" />
+              <Building className="w-4 h-4 mr-2 text-[#00984E] text-brand  dark:text-white"  />
               About NINja Map
             </Badge>
             <h1 className="mb-6 text-auto-5xl font-bold tracking-tight font-display text-shimmer">
@@ -161,22 +161,24 @@ export default function About() {
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-12">
               {stats.map((stat, index) => (
-                <AnimatedSection key={index} delay={0.1 * index}>
-                  <Card className="border-0 shadow-lg glass">
-                    <CardContent className="p-6 text-center">
-                      <div className="w-12 h-12 bg-gradient-brand rounded-xl flex items-center justify-center mx-auto mb-4">
-                        <stat.icon className="h-6 w-6 text-white" />
-                      </div>
-                      <div className="text-auto-2xl font-bold text-brand mb-1">
-                        {stat.number}
-                      </div>
-                      <p className="text-auto-sm text-muted-foreground">
-                        {stat.label}
-                      </p>
-                    </CardContent>
-                  </Card>
-                </AnimatedSection>
-              ))}
+              <AnimatedSection key={index} delay={0.1 * index}>
+                <motion.div
+                  className="text-center p-6 rounded-2xl metrics-stat hover-lift"
+                  whileHover={{ scale: 1.05, y: -5 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4 border-thin-green">
+                    <stat.icon className="h-6 w-6 text-[#00984E] " />
+                  </div>
+                  <div className="text-auto-2xl font-bold text-[#00984E] mb-1">
+                    {stat.number}
+                  </div>
+                  <p className="text-auto-sm text-muted-foreground">
+                    {stat.label}
+                  </p>
+                </motion.div>
+              </AnimatedSection>
+            ))}
             </div>
           </AnimatedSection>
         </div>
@@ -191,7 +193,7 @@ export default function About() {
                 <Target className="w-4 h-4 mr-2" />
                 Our Mission
               </Badge>
-              <h2 className="text-auto-3xl font-bold font-display text-brand mb-6">
+              <h2 className="text-auto-3xl font-bold font-display text-[#00984E] mb-6">
                 Making Navigation Simple, Accurate, and Truly Nigerian
               </h2>
               <p className="text-auto-base text-muted-foreground leading-relaxed mb-6">
@@ -212,7 +214,7 @@ export default function About() {
                   "Cultural landmarks and local business integration"
                 ].map((feature, index) => (
                   <div key={index} className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                    <CheckCircle className="h-5 w-5 text-[#00984E] flex-shrink-0" />
                     <span className="text-auto-sm text-muted-foreground">{feature}</span>
                   </div>
                 ))}
@@ -239,7 +241,7 @@ export default function About() {
       <section className="section-padding bg-gradient-to-b from-muted/30 to-background">
         <div className="container">
           <AnimatedSection className="text-center mb-16">
-            <h2 className="text-auto-3xl font-bold font-display text-brand mb-4">
+            <h2 className="text-auto-3xl font-bold font-display text-[#00984E] mb-4">
               Our Core Values
             </h2>
             <p className="text-auto-lg text-muted-foreground max-w-2xl mx-auto">
@@ -247,22 +249,24 @@ export default function About() {
             </p>
           </AnimatedSection>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 items-stretch">
             {values.map((value, index) => (
               <AnimatedSection key={index} delay={0.1 * index}>
-                <Card className="border-0 shadow-xl h-full glass hover-lift">
-                  <CardContent className="p-8 text-center">
-                    <div className={`w-16 h-16 bg-gradient-to-br ${value.gradient} rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg`}>
-                      <value.icon className="h-8 w-8 text-white" />
-                    </div>
-                    <h3 className="text-auto-lg font-bold font-display text-brand mb-4">
-                      {value.title}
-                    </h3>
-                    <p className="text-auto-sm text-muted-foreground leading-relaxed">
-                      {value.description}
-                    </p>
-                  </CardContent>
-                </Card>
+                <motion.div
+                  className="h-full p-8 text-center rounded-2xl metrics-stat values-card hover-lift flex flex-col"
+                  whileHover={{ scale: 1.05, y: -5 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 border-thin-green shadow-lg">
+                    <value.icon className="h-8 w-8 text-[#00984E] " />
+                  </div>
+                  <h3 className="text-auto-lg font-bold font-display mb-4 text-foreground dark:text-white">
+                    {value.title}
+                  </h3>
+                  <p className="text-auto-sm text-muted-foreground leading-relaxed">
+                    {value.description}
+                  </p>
+                </motion.div>
               </AnimatedSection>
             ))}
           </div>
@@ -273,7 +277,7 @@ export default function About() {
       <section className="section-padding">
         <div className="container">
           <AnimatedSection className="text-center mb-16">
-            <h2 className="text-auto-3xl font-bold font-display text-brand mb-4">
+            <h2 className="text-auto-3xl font-bold font-display text-[#00984E] mb-4">
               Our Journey
             </h2>
             <p className="text-auto-lg text-muted-foreground max-w-2xl mx-auto">
@@ -282,29 +286,30 @@ export default function About() {
           </AnimatedSection>
 
           <div className="max-w-4xl mx-auto">
-            <div className="space-y-8">
+            <div className="space-y-2">
               {timeline.map((item, index) => (
                 <AnimatedSection key={index} delay={0.1 * index}>
                   <div className="relative flex items-start gap-8">
                     {/* Timeline line */}
                     {index < timeline.length - 1 && (
-                      <div className="absolute left-8 top-16 w-0.5 h-20 bg-gradient-to-b from-brand to-brand/20" />
+                      <div className="absolute left-8 top-16 w-[2px] h-10 bg-gradient-to-b from-[#00984E] to-[#FFB81C]" />
                     )}
                     
                     {/* Icon */}
-                    <div className={`w-16 h-16 bg-gradient-to-br ${item.color} rounded-2xl flex items-center justify-center text-white shadow-lg flex-shrink-0 relative z-10`}>
-                      <item.icon className="h-8 w-8" />
+                    <div className={`w-16 h-16 border-thin-green rounded-2xl flex items-center justify-center text-white shadow-lg flex-shrink-0 relative z-10`}>
+                      <item.icon className="h-8 w-8 text-[#00984E] " />
                     </div>
-                    
+
                     {/* Content */}
                     <div className="flex-1 pb-8">
                       <div className="flex items-center gap-4 mb-3">
                         <Badge variant="outline" className="text-auto-sm font-bold">
                           {item.year}
                         </Badge>
-                        <h3 className="text-auto-xl font-bold font-display text-brand">
-                          {item.title}
-                        </h3>
+                    <h3 className="text-auto-xl font-bold font-display text-dark dark:text-white">
+  {item.title}
+</h3>
+
                       </div>
                       <p className="text-auto-base text-muted-foreground leading-relaxed">
                         {item.description}
@@ -329,7 +334,7 @@ export default function About() {
               <Users className="w-4 h-4 mr-2" />
               Our Team
             </Badge>
-            <h2 className="text-auto-4xl font-bold font-display text-brand mb-6">
+            <h2 className="text-auto-4xl font-bold font-display text-[#00984E] mb-6">
               Meet the Visionaries Behind NINja Map
             </h2>
             <p className="text-auto-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
@@ -347,7 +352,7 @@ export default function About() {
                 image: "https://images.pexels.com/photos/6077859/pexels-photo-6077859.jpeg?auto=compress&cs=tinysrgb&w=600&h=800&fit=crop",
                 description: "With over 15 years of experience in mapping technology and AI, Dr. Ogundimu leads our vision to make navigation truly Nigerian. He previously led Google Maps initiatives in West Africa and holds a PhD in Computer Science from the University of Lagos.",
                 achievements: ["15+ years in mapping technology", "Former Google Maps West Africa Lead", "PhD Computer Science, University of Lagos", "50+ patents in navigation AI"],
-                gradient: "from-blue-600 to-purple-700"
+                gradient: "from-[#036A38] to-[#00984E]"
               },
               {
                 name: "Kemi Adeleke",
@@ -356,7 +361,7 @@ export default function About() {
                 image: "https://images.pexels.com/photos/5398929/pexels-photo-5398929.jpeg?auto=compress&cs=tinysrgb&w=600&h=800&fit=crop",
                 description: "Kemi brings world-class engineering expertise from her time at Microsoft Azure, where she architected cloud solutions for emerging markets. Her passion for scalable technology drives our platform's reliability across Nigeria's diverse infrastructure.",
                 achievements: ["10+ years in cloud architecture", "Former Microsoft Azure Nigeria", "BSc Computer Engineering, OAU", "Led 50+ person engineering team"],
-                gradient: "from-pink-600 to-red-700"
+                gradient: "from-[#FFB81C] to-[#FFD87A]"
               },
               {
                 name: "Ibrahim Yusuf",
@@ -365,7 +370,7 @@ export default function About() {
                 image: "https://images.pexels.com/photos/5921968/pexels-photo-5921968.jpeg?auto=compress&cs=tinysrgb&w=600&h=800&fit=crop",
                 description: "Ibrahim's deep understanding of Nigerian user behavior, developed during his time at Paystack, ensures our products truly serve Nigerian needs. He champions user-centric design that works for everyone from Lagos tech hubs to rural communities.",
                 achievements: ["8+ years in product management", "Former Paystack Product Lead", "MSc Business Admin, LBS", "Built products for 10M+ users"],
-                gradient: "from-green-600 to-blue-700"
+                gradient: "from-[#036A38] to-[#00984E]"
               }
             ].map((member, index) => (
               <AnimatedSection key={index} delay={index * 0.2}>
@@ -390,7 +395,7 @@ export default function About() {
                         <div className="absolute top-6 left-6">
                           <div className="bg-white/90 backdrop-blur-sm text-gray-900 px-4 py-2 rounded-full shadow-lg border border-white/20">
                             <div className="flex items-center gap-2">
-                              <Award className="h-4 w-4 text-brand" />
+                              <Award className="h-4 w-4 text-[#00984E]" />
                               <span className="text-sm font-medium">{member.company}</span>
                             </div>
                           </div>
@@ -415,10 +420,10 @@ export default function About() {
 
                         {/* Name and Title */}
                         <div className="mb-8">
-                          <h3 className="text-auto-3xl lg:text-auto-4xl font-bold font-display mb-2 text-foreground">
+                          <h3 className="text-auto-3xl lg:text-auto-4xl font-bold font-display mb-2 text-white">
                             {member.name}
                           </h3>
-                          <p className="text-auto-lg text-brand font-semibold">
+                          <p className="text-auto-lg text-white font-semibold">
                             {member.role}
                           </p>
                         </div>
@@ -434,7 +439,7 @@ export default function About() {
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {member.achievements.map((achievement, achIndex) => (
                               <div key={achIndex} className="flex items-center gap-3">
-                                <CheckCircle className="h-4 w-4 text-brand flex-shrink-0" />
+                                <CheckCircle className="h-4 w-4 text-white flex-shrink-0" />
                                 <span className="text-auto-sm text-muted-foreground">{achievement}</span>
                               </div>
                             ))}
@@ -451,7 +456,7 @@ export default function About() {
           {/* Team Stats */}
           <AnimatedSection delay={0.6}>
             <div className="mt-20 text-center">
-              <h3 className="text-auto-2xl font-bold font-display text-brand mb-8">
+              <h3 className="text-auto-2xl font-bold font-display text-[#00984E] mb-8">
                 Our Team by the Numbers
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
@@ -463,14 +468,14 @@ export default function About() {
                 ].map((stat, index) => (
                   <motion.div
                     key={index}
-                    className="text-center p-6 rounded-2xl bg-white/50 dark:bg-white/5 border border-white/20 glass hover-lift"
+                    className="text-center p-6 rounded-2xl metrics-stat hover-lift"
                     whileHover={{ scale: 1.05, y: -5 }}
                     transition={{ type: "spring", stiffness: 300 }}
                   >
-                    <div className="w-12 h-12 bg-gradient-brand rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                      <stat.icon className="h-6 w-6 text-white" />
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4 border-thin-green">
+                      <stat.icon className="h-6 w-6 text-[#00984E]" />
                     </div>
-                    <div className="text-auto-2xl font-bold text-brand mb-2 font-display">
+                    <div className="text-auto-2xl font-bold text-[#00984E] mb-2 font-display">
                       {stat.number}
                     </div>
                     <p className="text-auto-sm text-muted-foreground font-medium">
@@ -488,7 +493,10 @@ export default function About() {
       <section className="section-bottom-padding">
         <div className="container">
           <AnimatedSection>
-            <Card className="border-0 shadow-2xl bg-gradient-to-br from-brand to-gradient-to text-white overflow-hidden">
+<Card
+  className="border-0 shadow-2xl text-white overflow-hidden bg-[#036A38] panel-metrics">
+
+
               <CardContent className="p-12 text-center relative">
                 <div className="absolute inset-0 bg-[url('/api/placeholder/800/400')] opacity-10 bg-cover bg-center" />
                 <div className="relative z-10">
@@ -502,20 +510,20 @@ export default function About() {
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <motion.a
                       href="/download"
-                      className="inline-flex items-center gap-3 bg-white text-brand px-8 py-4 rounded-xl font-bold text-auto-base hover:bg-white/90 transition-all duration-200 shadow-lg"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                      className="bg-white  text-green-800  flex items-center text-auto-lg cursor-pointer rounded-xl px-6 py-3 font-medium transition-all duration-200 ease-out dark:bg-[#036A38] dark:text-white shadow-[0_4px_15px_rgba(3,106,56,0.3)] hover:shadow-[0_8px_25px_rgba(3,106,56,0.35)] hover:-translate-y-0.5"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                     >
-                      <Smartphone className="h-5 w-5" />
+                      <Smartphone className="mr-3 h-5 w-5 "  />
                       Download App
                     </motion.a>
                     <motion.a
                       href="/contact"
-                      className="inline-flex items-center gap-3 border-2 border-white text-white px-8 py-4 rounded-xl font-bold text-auto-base hover:bg-white hover:text-brand transition-all duration-200"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                      className="flex items-center btn-ios-outline text-auto-lg cursor-pointer"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                     >
-                      <Users className="h-5 w-5" />
+                      <Users className="mr-3 h-5 w-5" />
                       Partner With Us
                     </motion.a>
                   </div>

@@ -95,7 +95,7 @@ export default function Header({ showBackButton = true }: HeaderProps) {
             {/* Map Link - Primary CTA */}
             <Link
               to="/map"
-              className="flex items-center gap-2 text-auto-sm font-medium bg-gradient-brand text-white px-6 py-2 rounded-lg hover:opacity-90 transition-all shadow-md"
+              className="flex items-center gap-2 text-auto-sm font-medium bg-[#036A38] hover:bg-[#025C31] text-white px-6 py-2 rounded-lg transition-all shadow-md"
             >
               <Navigation className="h-4 w-4" />
               Open Map

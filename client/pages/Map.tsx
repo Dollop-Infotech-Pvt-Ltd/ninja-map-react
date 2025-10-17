@@ -602,7 +602,7 @@ function MapLibreMap({
       const img = document.createElement('img');
       img.src = '/mappin/map-pin.png';
       img.alt = 'Location pin';
-      img.style.height = '56px';
+      img.style.height = '72px';
       img.style.width = 'auto';
       img.style.display = 'block';
       img.style.objectFit = 'contain';
@@ -1380,7 +1380,6 @@ useEffect(() => {
     }
   }, [selectedTransport, transportModes, selectedRouteIndex, isVoiceNavigationEnabled, speakInstruction]);
   useEffect(() => { calculateRouteRef.current = calculateRoute; }, [calculateRoute]);
-  
   // Handle transport mode change - recalculate route
   const handleTransportModeChange = useCallback((newMode: string) => {
     setSelectedTransport(newMode);
@@ -1395,8 +1394,6 @@ useEffect(() => {
       setIsRouting(false);
     }
   }, [routePoints]);
-  
-
 
 const mapLayers = [
     {
@@ -1559,14 +1556,14 @@ const mapLayers = [
     }
     
     setIsSearching(true);
-    
+
     try {
       console.log(`${NOMINATIM_SEARCH_URL}?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1`);
-      
+
       const response = await fetch(
         `${NOMINATIM_SEARCH_URL}?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1`
       );
-      
+
       const data = await response.json();
       setSearchResults(data);
     } catch (error) {
@@ -1577,7 +1574,7 @@ const mapLayers = [
       setIsSearching(false);
     }
   }, []);
-  
+
   // Search for start point
   const performStartPointSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
