@@ -140,7 +140,7 @@ export default function Testimonials() {
               {stats.map((stat, index) => (
                 <AnimatedSection key={index} delay={0.1 * index}>
                   <motion.div
-                    className="text-center p-6 rounded-2xl metrics-stat hover-lift"
+                    className="text-center p-6 rounded-2xl usecase-card hover-lift"
                     whileHover={{ scale: 1.05, y: -5 }}
                     transition={{ type: "spring", stiffness: 300 }}
                   >

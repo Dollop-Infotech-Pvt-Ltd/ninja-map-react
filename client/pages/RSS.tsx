@@ -164,7 +164,7 @@ export default function RSS() {
               ].map((stat, index) => (
                 <AnimatedSection key={index} delay={0.1 * index}>
                   <motion.div
-                    className="text-center p-6 rounded-2xl metrics-stat hover-lift"
+                    className="text-center p-6 rounded-2xl usecase-card hover-lift"
                     whileHover={{ scale: 1.05, y: -5 }}
                     transition={{ type: "spring", stiffness: 300 }}
                   >
@@ -339,7 +339,7 @@ export default function RSS() {
             ].map((benefit, index) => (
               <AnimatedSection key={index} delay={index * 0.1}>
                 <motion.div
-                  className="h-full p-8 text-center rounded-2xl metrics-stat values-card hover-lift flex flex-col"
+                  className="h-full p-8 text-center rounded-2xl usecase-card values-card hover-lift flex flex-col"
                   whileHover={{ scale: 1.05, y: -5 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
@@ -379,7 +379,7 @@ export default function RSS() {
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
                   className="group"
                 >
-                  <Card className="panel-green hover-lift hover-panel-amber transition-all duration-300 h-full overflow-hidden">
+                  <Card className="usecase-card hover-lift hover-panel-amber transition-all duration-300 h-full overflow-hidden">
                     <CardHeader className="pb-6">
                       <div className="flex items-start justify-between mb-6">
                         <div className="w-12 h-12 rounded-xl flex items-center justify-center border-thin-green text-3xl group-hover:border-[#FFB81C]">

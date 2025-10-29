@@ -708,7 +708,7 @@ export default function Index() {
                   transition={{ type: "spring", stiffness: 300 }}
                   className="group h-full"
                 >
-                  <Card className="panel-green hover-lift h-full overflow-hidden">
+                  <Card className="usecase-card hover-lift h-full overflow-hidden">
                     <CardHeader className="pb-6">
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-6 border-thin-green`}>
                         <useCase.icon className="h-6 w-6 text-[#00984E]" />
@@ -784,7 +784,7 @@ export default function Index() {
                   transition={{ type: "spring", stiffness: 300 }}
                   className="group h-full"
                 >
-                  <Card className="panel-green hover-lift h-full overflow-hidden">
+                  <Card className="usecase-card hover-lift h-full overflow-hidden ">
                     <CardHeader className="pb-6">
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 border-thin-green`}>
                         <spec.icon className="h-6 w-6 text-[#00984E]" />
@@ -924,7 +924,7 @@ export default function Index() {
             ].map((stat, index) => (
               <AnimatedSection key={index} delay={index * 0.1}>
                 <motion.div
-                  className="text-center p-6 rounded-2xl metrics-stat hover-lift"
+                  className="text-center p-6 rounded-2xl usecase-card hover-lift"
                   whileHover={{ scale: 1.05, y: -5 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
@@ -973,7 +973,7 @@ export default function Index() {
                   transition={{ type: "spring", stiffness: 300 }}
                   className="group"
                 >
-                  <Card className="panel-green hover-lift hover-panel-amber transition-all duration-300 h-full overflow-hidden">
+                  <Card className="usecase-card hover-lift hover-panel-amber transition-all duration-300 h-full overflow-hidden">
                     <CardHeader className="pb-6">
                       <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-6 border-thin-green group-hover:border-[#FFB81C]">
                         <feature.icon className="h-6 w-6 text-[#00984E] group-hover:text-[#FFB81C]" />
@@ -1060,7 +1060,7 @@ export default function Index() {
 
                         {/* Floating badge */}
                         <div className="absolute top-6 left-6">
-                          <div className="bg-white/90 backdrop-blur-sm text-brand px-4 py-2 rounded-full shadow-lg border border-white/20">
+                          <div className="bg-white/90 backdrop-blur-sm text-[#036A38] px-4 py-2 rounded-full shadow-lg border border-white/20">
                             <div className="flex items-center gap-2">
                               <MapPin className="h-4 w-4" />
                               <span className="text-sm font-medium">{testimonials[currentTestimonial].location}</span>
@@ -1108,7 +1108,7 @@ export default function Index() {
                           <h3 className="text-auto-xl font-medium font-display mb-2">
                             {testimonials[currentTestimonial].name}
                           </h3>
-                          <p className="text-auto-lg text-brand font-regular mb-1">
+                          <p className="text-auto-lg  text-[#036A38] font-regular mb-1">
                             {testimonials[currentTestimonial].role}
                           </p>
                           <p className="text-auto-base text-muted-foreground">
@@ -1174,7 +1174,7 @@ export default function Index() {
 
             <div className="flex flex-col sm:flex-row gap-8 justify-center mb-16">
               <motion.div
-                className="bg-white text-[#036A38] border border-[#036A38] rounded-xl px-8 py-4 shadow-2xl font-display text-auto-xl font-medium transition-all duration-200 hover:shadow-3xl hover:brightness-105 cursor-pointer flex items-center justify-center"
+                className=" dark:bg-[#036A38] dark:text-[white] bg-[white] text-[#036A38]  border border-[#036A38] rounded-xl px-8 py-4 shadow-2xl font-display text-auto-xl font-medium transition-all duration-200 hover:shadow-3xl hover:brightness-105 cursor-pointer flex items-center justify-center"
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
               >

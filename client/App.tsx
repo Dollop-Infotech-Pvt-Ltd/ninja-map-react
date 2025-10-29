@@ -38,6 +38,7 @@ const App = () => {
         <BrowserRouter>
           <ScrollToTop />
           <Routes>
+            
             <Route path="/" element={<Index />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />

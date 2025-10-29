@@ -123,13 +123,13 @@ export default function Terms() {
       <Header />
 
       {/* Hero Section */}
-      <section className="section-padding bg-gradient-to-br from-brand/5 via-background to-gradient-to/5 relative overflow-hidden">
+      <section className="section-padding bg-gradient-to-br from-[#036A38]/5 via-background to-[#00984E]/5 relative overflow-hidden">
         <div className="absolute inset-0 hero-pattern opacity-30" />
         <div className="container relative">
           <AnimatedSection className="mx-auto max-w-4xl text-center">
             <Badge
               variant="outline"
-              className="mb-6 border-brand/30 bg-brand/10 text-brand px-6 py-3 text-auto-sm font-medium"
+              className="mb-6 border-[0.6px] border-[#00984E] bg-[rgba(3,106,56,0.4)] text-white px-6 py-3 text-auto-sm font-medium"
             >
               <ScrollText className="w-4 h-4 mr-2" />
               Terms & Conditions
@@ -150,12 +150,12 @@ export default function Terms() {
                 { label: "Version", value: "2.1", icon: Eye }
               ].map((stat, index) => (
                 <AnimatedSection key={index} delay={0.1 * index}>
-                  <Card className="border-0 shadow-lg glass">
+                  <Card className="border-0 shadow-lg glass usecase-card">
                     <CardContent className="p-6 text-center">
-                      <div className="w-12 h-12 bg-gradient-brand rounded-xl flex items-center justify-center mx-auto mb-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-[#036A38] to-[#00984E] rounded-xl flex items-center justify-center mx-auto mb-4">
                         <stat.icon className="h-6 w-6 text-white" />
                       </div>
-                      <div className="text-auto-base font-bold text-brand mb-1">
+                      <div className="text-auto-base font-bold text-[#00984E] mb-1">
                         {stat.value}
                       </div>
                       <p className="text-auto-sm text-muted-foreground">
@@ -182,8 +182,8 @@ export default function Terms() {
                 whileTap={{ scale: 0.98 }}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-auto-sm transition-all whitespace-nowrap ${
                   activeSection === section.id
-                    ? 'bg-brand text-white shadow-lg'
-                    : 'text-muted-foreground hover:text-brand hover:bg-brand/5'
+                    ? 'bg-[#00984E] text-white shadow-lg'
+                    : 'text-muted-foreground hover:text-[#00984E] hover:bg-[#00984E]/5'
                 }`}
               >
                 <section.icon className="h-4 w-4" />
@@ -208,14 +208,14 @@ export default function Terms() {
                   <Card className="border-0 shadow-xl glass-strong">
                     <CardContent className="p-8 lg:p-12">
                       <div className="flex items-center gap-4 mb-8">
-                        <div className="w-16 h-16 bg-gradient-brand rounded-2xl flex items-center justify-center shadow-lg">
+                        <div className="w-16 h-16 bg-gradient-to-br from-[#036A38] to-[#00984E] rounded-2xl flex items-center justify-center shadow-lg">
                           <section.icon className="h-8 w-8 text-white" />
                         </div>
                         <div>
-                          <h2 className="text-auto-2xl font-bold font-display text-brand">
+                          <h2 className="text-auto-2xl font-bold font-display text-[#00984E]">
                             {section.title}
                           </h2>
-                          <div className={`w-16 h-1 bg-brand rounded-full mt-2 ${
+                          <div className={`w-16 h-1 bg-[#00984E] rounded-full mt-2 ${
                             activeSection === section.id ? 'animate-pulse' : ''
                           }`} />
                         </div>
@@ -248,33 +248,33 @@ export default function Terms() {
       <section className="section-bottom-padding">
         <div className="container">
           <AnimatedSection>
-            <Card className="border-0 shadow-2xl bg-gradient-to-br from-brand to-gradient-to text-white overflow-hidden">
-              <CardContent className="p-12 text-center relative">
-                <div className="absolute inset-0 bg-pattern opacity-20" />
-                <div className="relative z-10">
+            <Card className="border-0 shadow-2xl panel-metrics text-white overflow-hidden rounded-2xl">
+              <CardContent className="p-16 text-center relative">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(255,255,255,0.1),transparent)]" />
+                <div className="relative z-10 max-w-3xl mx-auto">
                   <h3 className="text-auto-3xl font-bold font-display mb-4">
                     Have Questions About These Terms?
                   </h3>
-                  <p className="text-auto-lg opacity-90 mb-8 max-w-2xl mx-auto">
+                  <p className="text-auto-lg opacity-90 mb-10 leading-relaxed">
                     Our legal team is available to clarify any aspect of these terms and conditions.
                   </p>
-                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <motion.a
-                      href="/contact"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="inline-flex items-center gap-2 bg-white text-brand px-6 py-3 rounded-lg hover:bg-white/90 transition-all font-medium text-auto-sm shadow-lg hover:shadow-xl"
-                    >
-                      Contact Legal Team
-                    </motion.a>
-                    <motion.a
-                      href="/privacy"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="inline-flex items-center gap-2 border border-white/30 text-white px-6 py-3 rounded-lg hover:bg-white/10 transition-all font-medium text-auto-sm"
-                    >
-                      Read Privacy Policy
-                    </motion.a>
+                  <div className="flex flex-col sm:flex-row gap-6 justify-center">
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                      <a
+                        href="/contact"
+                        className="bg-white text-[#036A38] flex items-center text-auto-lg cursor-pointer rounded-xl px-8 py-4 font-medium transition-all duration-200 ease-out shadow-[0_4px_15px_rgba(3,106,56,0.3)] hover:shadow-[0_8px_25px_rgba(3,106,56,0.35)] hover:-translate-y-0.5"
+                      >
+                        Contact Legal Team
+                      </a>
+                    </motion.div>
+                    <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.95 }}>
+                      <a
+                        href="/privacy"
+                        className="flex items-center btn-ios-outline text-auto-lg cursor-pointer"
+                      >
+                        Read Privacy Policy
+                      </a>
+                    </motion.div>
                   </div>
                 </div>
               </CardContent>

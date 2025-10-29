@@ -2272,7 +2272,7 @@ const mapLayers = [
           }
           return next;
         });
-      }
+      } 
       // Trigger recompute
       calculateRouteFromPoints();
     } else {

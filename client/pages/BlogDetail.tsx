@@ -243,7 +243,7 @@ export default function BlogDetail() {
       <section className="section-padding bg-gradient-to-br from-brand/5 via-background to-gradient-to/5 relative overflow-hidden">
         <div className="absolute inset-0 hero-pattern opacity-30" />
         <div className="container relative">
-          <AnimatedSection className="mx-auto max-w-4xl text-center">
+          <AnimatedSection className="mx-auto max-w-4xl text-center gap-2">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -259,7 +259,7 @@ export default function BlogDetail() {
 
               <Badge
                 variant="outline"
-                className="mb-6 border-[0.6px] border-[#00984E] bg-[rgba(3,106,56,0.4)] text-white px-6 py-3 text-auto-sm font-medium"
+                className="ml-3 md:ml-4 mb-6 border-[0.6px] border-[#00984E] bg-[rgba(3,106,56,0.4)] text-white px-6 py-3 text-auto-sm font-medium"
               >
                 <Sparkles className="h-4 w-4 mr-2" />
                 {blogPost.category}
@@ -280,7 +280,7 @@ export default function BlogDetail() {
                   { icon: Eye, label: "Views", value: blogPost.views.toLocaleString() }
                 ].map((stat, index) => (
                   <AnimatedSection key={index} delay={0.1 * index}>
-                    <Card className="border-0 shadow-lg glass">
+                    <Card className="border-0 shadow-lg glass usecase-card">
                       <CardContent className="p-6 text-center">
                         <div className="w-12 h-12 bg-gradient-to-r from-[#036A38] to-[#00984E] rounded-xl flex items-center justify-center mx-auto mb-4">
                           <stat.icon className="h-6 w-6 text-white" />
@@ -441,7 +441,7 @@ export default function BlogDetail() {
                         required
                         error={errors.comment}
                       />
-                      <ActionButton type="submit" icon={Send} className="mt-6">
+                      <ActionButton type="submit" icon={Send} className="mt-6 bg-[#036A38]">
                         Post Comment
                       </ActionButton>
                     </form>

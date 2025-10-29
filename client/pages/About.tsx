@@ -163,7 +163,7 @@ export default function About() {
               {stats.map((stat, index) => (
               <AnimatedSection key={index} delay={0.1 * index}>
                 <motion.div
-                  className="text-center p-6 rounded-2xl metrics-stat hover-lift"
+                  className="text-center p-6 rounded-2xl usecase-card hover-lift"
                   whileHover={{ scale: 1.05, y: -5 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
@@ -224,7 +224,7 @@ export default function About() {
             <AnimatedSection delay={0.2}>
               <div className="relative">
                 <div className="aspect-square rounded-2xl bg-gradient-to-br from-brand/20 to-gradient-to/20 p-8 glass">
-                  <div className="w-full h-full bg-gradient-to-br from-brand to-gradient-to rounded-xl flex items-center justify-center text-white">
+                  <div className="w-full h-full bg-gradient-to-br from-[#036A38] to-[#00984E] rounded-xl flex items-center justify-center text-white">
                     <MapPin className="h-24 w-24" />
                   </div>
                 </div>
@@ -253,7 +253,7 @@ export default function About() {
             {values.map((value, index) => (
               <AnimatedSection key={index} delay={0.1 * index}>
                 <motion.div
-                  className="h-full p-8 text-center rounded-2xl metrics-stat values-card hover-lift flex flex-col"
+                  className="h-full p-8 text-center rounded-2xl usecase-card values-card hover-lift flex flex-col"
                   whileHover={{ scale: 1.05, y: -5 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
@@ -468,7 +468,7 @@ export default function About() {
                 ].map((stat, index) => (
                   <motion.div
                     key={index}
-                    className="text-center p-6 rounded-2xl metrics-stat hover-lift"
+                    className="text-center p-6 rounded-2xl usecase-card hover-lift"
                     whileHover={{ scale: 1.05, y: -5 }}
                     transition={{ type: "spring", stiffness: 300 }}
                   >

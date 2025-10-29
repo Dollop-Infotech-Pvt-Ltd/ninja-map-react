@@ -513,7 +513,7 @@ export default function AuthModals({ isOpen, onClose, initialMode = "login" }: A
     setIsLoading(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.info(`${provider} authentication`, "This feature will be available soon.");
+      toast.success(`${provider} authentication`, "This feature will be available soon.");
     } catch (error) {
       toast.error("Authentication failed", "Please try again or use email/password.");
     } finally {
@@ -617,8 +617,8 @@ export default function AuthModals({ isOpen, onClose, initialMode = "login" }: A
       disabled={isLoading}
       className={`w-full flex items-center justify-center gap-3 h-12 text-sm font-medium transition-all duration-200 ${
         provider === 'Google'
-          ? 'hover:bg-red-50 hover:border-red-200 dark:hover:bg-red-950/20'
-          : 'hover:bg-blue-50 hover:border-blue-200 dark:hover:bg-blue-950/20'
+          ? 'hover:bg-green-50 hover:border-green-200 dark:hover:bg-green-950/20'
+          : 'hover:bg-yellow-50 hover:border-yellow-200 dark:hover:bg-yellow-950/20'
       }`}
     >
       <Icon className="h-5 w-5" />
@@ -681,7 +681,7 @@ export default function AuthModals({ isOpen, onClose, initialMode = "login" }: A
           </div>
 
           {/* Content */}
-          <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
+          <div className="overflow-y-auto max-h-[calc(90vh-80px)] scrollbar-thin authmodal-scroll">
             <div className="p-6">
               <AnimatePresence mode="wait">
                 {mode === "login" && (
@@ -694,10 +694,10 @@ export default function AuthModals({ isOpen, onClose, initialMode = "login" }: A
                     transition={{ duration: 0.15, ease: "easeOut" }}
                   >
                     <div className="text-center mb-8">
-                      <div className="w-16 h-16 bg-gradient-to-br from-[#036A38] to-[#FFB81C] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                      <div className="w-16 h-16 bg-[#036A38] border-thin-green rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
                         <Shield className="h-8 w-8 text-white" />
                       </div>
-                      <h2 id="modal-title" className="text-2xl font-bold font-display text-brand mb-2">
+                      <h2 id="modal-title" className="text-2xl font-bold font-display text-[#036A38] mb-2">
                         Welcome Back
                       </h2>
                       <p className="text-sm text-muted-foreground">
@@ -773,7 +773,7 @@ export default function AuthModals({ isOpen, onClose, initialMode = "login" }: A
                           <button
                             type="button"
                             onClick={() => setMode("forgot")}
-                            className="text-sm text-brand hover:text-brand/80 transition-colors font-medium"
+                            className="text-sm text-[#036A38] hover:text-brand/80 transition-colors font-medium"
                           >
                             Forgot password?
                           </button>
@@ -783,6 +783,7 @@ export default function AuthModals({ isOpen, onClose, initialMode = "login" }: A
                           type="submit"
                           loading={isLoading}
                           fullWidth
+                          className="bg-none bg-[#036A38] hover:opacity-90 focus:ring-[#036A38]/30"
                         >
                           {isLoading ? "Signing in..." : (
                             <>
@@ -799,7 +800,7 @@ export default function AuthModals({ isOpen, onClose, initialMode = "login" }: A
                           <button 
                             type="button"
                             onClick={() => setMode("signup")} 
-                            className="text-brand hover:text-brand/80 transition-colors font-medium"
+                            className="text-[#036A38] hover:text-brand/80 transition-colors font-medium"
                           >
                             Sign up
                           </button>
@@ -819,10 +820,10 @@ export default function AuthModals({ isOpen, onClose, initialMode = "login" }: A
                     transition={{ duration: 0.15, ease: "easeOut" }}
                   >
                     <div className="text-center mb-8">
-                      <div className="w-16 h-16 bg-gradient-to-br from-[#036A38] to-[#FFB81C] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                      <div className="w-16 h-16 bg-[#036A38] border-thin-green  rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
                         <Sparkles className="h-8 w-8 text-white" />
                       </div>
-                      <h2 id="modal-title" className="text-2xl font-bold font-display text-brand mb-2">
+                      <h2 id="modal-title" className="text-2xl font-bold  font-display text-[#036A38] mb-2">
                         Create Account
                       </h2>
                       <p className="text-sm text-muted-foreground">
@@ -944,11 +945,11 @@ export default function AuthModals({ isOpen, onClose, initialMode = "login" }: A
                             label={
                               <span className="text-muted-foreground leading-relaxed">
                                 I agree to the{" "}
-                                <a href="/terms" className="text-brand hover:text-brand/80 transition-colors" target="_blank" rel="noopener noreferrer">
+                                <a href="/terms" className="text-[#036A38] hover:text-brand/80 transition-colors" target="_blank" rel="noopener noreferrer">
                                   Terms of Service
                                 </a>{" "}
                                 and{" "}
-                                <a href="/privacy" className="text-brand hover:text-brand/80 transition-colors" target="_blank" rel="noopener noreferrer">
+                                <a href="/privacy" className="text-[#036A38] hover:text-brand/80 transition-colors" target="_blank" rel="noopener noreferrer">
                                   Privacy Policy
                                 </a>
                               </span>
@@ -962,6 +963,7 @@ export default function AuthModals({ isOpen, onClose, initialMode = "login" }: A
                           icon={Crown}
                           iconPosition="right"
                           fullWidth
+                          className="bg-none bg-[#036A38] hover:opacity-90 focus:ring-[#036A38]/30"
                         >
                           {isLoading ? "Creating account..." : "Create Account"}
                         </ActionButton>
@@ -973,7 +975,7 @@ export default function AuthModals({ isOpen, onClose, initialMode = "login" }: A
                           <button 
                             type="button"
                             onClick={() => setMode("login")} 
-                            className="text-brand hover:text-brand/80 transition-colors font-medium"
+                            className="text-[#036A38] hover:text-brand/80 transition-colors font-medium"
                           >
                             Sign in
                           </button>
@@ -1032,6 +1034,7 @@ export default function AuthModals({ isOpen, onClose, initialMode = "login" }: A
                         icon={Mail}
                         iconPosition="right"
                         fullWidth
+                        className="bg-none bg-[#036A38] hover:opacity-90 focus:ring-[#036A38]/30"
                       >
                         {isLoading ? "Sending..." : "Send Verification Code"}
                       </ActionButton>
@@ -1113,6 +1116,7 @@ export default function AuthModals({ isOpen, onClose, initialMode = "login" }: A
                         disabled={formData.otp.length !== 6}
                         icon={Check}
                         fullWidth
+                        className="bg-none bg-[#036A38] hover:opacity-90 focus:ring-[#036A38]/30"
                       >
                         {isLoading ? "Verifying..." : "Verify & Continue"}
                       </ActionButton>
@@ -1194,6 +1198,7 @@ export default function AuthModals({ isOpen, onClose, initialMode = "login" }: A
                         icon={Check}
                         iconPosition="right"
                         fullWidth
+                        className="bg-none bg-[#036A38] hover:opacity-90 focus:ring-[#036A38]/30"
                       >
                         {isLoading ? "Updating..." : "Update Password"}
                       </ActionButton>
@@ -1212,7 +1217,7 @@ export default function AuthModals({ isOpen, onClose, initialMode = "login" }: A
                   >
                     <div className="text-center">
                       <div className="w-20 h-20 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <CheckCircle className="h-10 w-10 text-green-600 dark:text-green-400" />
+                        <CheckCircle className="h-10 w-10 text-[#036A38] dark:text-[#036A38]" />
                       </div>
                       <h2 id="modal-title" className="text-2xl font-bold font-display text-brand mb-4">
                         {initialMode === "signup" ? "Welcome to NINja Map!" : "Password Updated!"}
@@ -1228,6 +1233,7 @@ export default function AuthModals({ isOpen, onClose, initialMode = "login" }: A
                         <ActionButton
                           onClick={onClose}
                           fullWidth
+                          className="bg-none bg-[#036A38] hover:opacity-90 focus:ring-[#036A38]/30"
                         >
                           {initialMode === "signup" ? "Start Navigating" : "Sign In Now"}
                           <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
@@ -1253,7 +1259,7 @@ export default function AuthModals({ isOpen, onClose, initialMode = "login" }: A
             <div className="px-6 pb-6 pt-4 border-t border-border bg-muted/30">
               <div className="text-center text-xs text-muted-foreground space-y-2">
                 <div className="flex items-center justify-center gap-2">
-                  <Shield className="h-3 w-3 text-green-500" />
+                  <Shield className="h-3 w-3 text-[#036A38]" />
                   <span>Secured by 256-bit SSL encryption</span>
                 </div>
                 <p>

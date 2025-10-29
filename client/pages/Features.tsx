@@ -44,11 +44,11 @@ export default function Features() {
       description: "Advanced machine learning algorithms optimized for Nigerian roads, landmarks, and traffic patterns.",
       features: [
         "Smart route optimization",
-        "Predictive traffic analysis", 
+        "Predictive traffic analysis",
         "Local pattern recognition",
         "Dynamic re-routing"
       ],
-      gradient: "from-yellow-500 to-orange-600"
+      gradient: "from-[#036A38] to-[#00984E]"
     },
     {
       icon: Wifi,
@@ -60,7 +60,7 @@ export default function Features() {
         "Automatic map updates",
         "Zero data usage navigation"
       ],
-      gradient: "from-blue-500 to-purple-600"
+      gradient: "from-[#036A38] to-[#00984E]"
     },
     {
       icon: Navigation,
@@ -72,7 +72,7 @@ export default function Features() {
         "Road closure alerts",
         "Best time to travel"
       ],
-      gradient: "from-green-500 to-blue-600"
+      gradient: "from-[#036A38] to-[#00984E]"
     },
     {
       icon: Users,
@@ -84,7 +84,7 @@ export default function Features() {
         "Road condition updates",
         "Community verification"
       ],
-      gradient: "from-purple-500 to-indigo-600"
+      gradient: "from-[#036A38] to-[#00984E]"
     }
   ];
 
@@ -116,25 +116,25 @@ export default function Features() {
       title: "Voice Guidance",
       description: "Clear, locally-adapted voice instructions in English and Nigerian Pidgin",
       icon: Volume2,
-      gradient: "from-pink-500 to-rose-600"
+      gradient: "from-[#036A38] to-[#00984E]"
     },
     {
       title: "Cultural Landmarks",
       description: "Navigate using familiar Nigerian landmarks and cultural reference points",
       icon: Landmark,
-      gradient: "from-indigo-500 to-blue-600"
+      gradient: "from-[#036A38] to-[#00984E]"
     },
     {
       title: "Fleet Management",
       description: "Professional tools for businesses managing vehicle fleets across Nigeria",
       icon: Truck,
-      gradient: "from-orange-500 to-red-600"
+      gradient: "from-[#036A38] to-[#00984E]"
     },
     {
       title: "API Integration",
       description: "Powerful APIs for developers to integrate Nigerian mapping into their applications",
       icon: Code,
-      gradient: "from-teal-500 to-green-600"
+      gradient: "from-[#036A38] to-[#00984E]"
     }
   ];
 
@@ -143,13 +143,13 @@ export default function Features() {
       <Header />
 
       {/* Hero Section */}
-      <section className="section-padding bg-gradient-to-br from-brand/5 via-background to-gradient-to/5 relative overflow-hidden">
+      <section className="section-padding bg-gradient-to-br from-[#036A38]/5 via-background to-[#00984E]/5 relative overflow-hidden">
         <div className="absolute inset-0 hero-pattern opacity-30" />
         <div className="container relative">
           <AnimatedSection className="mx-auto max-w-4xl text-center">
             <Badge
               variant="outline"
-              className="mb-6 border-brand/30 bg-brand/10 text-brand px-6 py-3 text-auto-sm font-medium"
+              className="mb-6 border-[0.6px] border-[#00984E] bg-[rgba(3,106,56,0.4)] text-white px-6 py-3 text-auto-sm font-medium"
             >
               <Zap className="w-4 h-4 mr-2" />
               Product Features
@@ -163,15 +163,15 @@ export default function Features() {
             </p>
             
             {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-12">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-12 ">
               {stats.map((stat, index) => (
                 <AnimatedSection key={index} delay={0.1 * index}>
-                  <Card className="border-0 shadow-lg glass">
+                  <Card className="border-0 shadow-lg glass usecase-card">
                     <CardContent className="p-6 text-center">
-                      <div className="w-12 h-12 bg-gradient-brand rounded-xl flex items-center justify-center mx-auto mb-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-[#036A38] to-[#00984E] rounded-xl flex items-center justify-center mx-auto mb-4">
                         <stat.icon className="h-6 w-6 text-white" />
                       </div>
-                      <div className="text-auto-2xl font-bold text-brand mb-1">
+                      <div className="text-auto-2xl font-bold text-[#00984E] mb-1">
                         {stat.number}
                       </div>
                       <p className="text-auto-sm text-muted-foreground">
@@ -190,7 +190,7 @@ export default function Features() {
       <section className="section-padding">
         <div className="container">
           <AnimatedSection className="text-center mb-16">
-            <h2 className="text-auto-3xl font-bold font-display text-brand mb-4">
+            <h2 className="text-auto-3xl font-bold font-display text-[#00984E] mb-4">
               Core Features
             </h2>
             <p className="text-auto-lg text-muted-foreground max-w-2xl mx-auto">
@@ -240,7 +240,7 @@ export default function Features() {
                       <div className="flex-1 p-8 bg-gradient-to-b from-background via-muted/10 to-background">
                         <div className="space-y-6">
                           <div className="flex items-center gap-3 mb-6">
-                            <div className={`w-8 h-8 bg-gradient-to-r ${feature.gradient} rounded-lg flex items-center justify-center shadow-lg`}>
+                            <div className="w-8 h-8 bg-gradient-to-r from-[#036A38] to-[#00984E] rounded-lg flex items-center justify-center shadow-lg">
                               <Star className="h-4 w-4 text-white" />
                             </div>
                             <h4 className="text-auto-lg font-bold text-foreground font-display">
@@ -252,14 +252,14 @@ export default function Features() {
                             {feature.features.map((item, i) => (
                               <motion.div
                                 key={i}
-                                className="group/item flex items-start gap-4 p-4 rounded-xl bg-brand/5 hover:bg-muted/50 transition-all transition-ease duration-200 border border-transparent hover:border-brand/20"
+                                className="group/item flex items-start gap-4 p-4 rounded-xl bg-[#036A38]/5 hover:bg-muted/50 transition-all transition-ease duration-200 border border-transparent hover:border-[#00984E]/20"
                                 whileHover={{ x: 4 }}
                               >
-                                <div className={`w-7 h-7 bg-gradient-to-r ${feature.gradient} rounded-full flex items-center justify-center flex-shrink-0 shadow-md group-hover/item:scale-110 transition-transform`}>
+                                <div className="w-7 h-7 bg-gradient-to-r from-[#036A38] to-[#00984E] rounded-full flex items-center justify-center flex-shrink-0 shadow-md group-hover/item:scale-110 transition-transform">
                                   <CheckCircle className="h-4 w-4 text-white" />
                                 </div>
                                 <div>
-                                  <span className="text-auto-sm text-foreground font-medium leading-relaxed group-hover/item:text-brand transition-colors">
+                                  <span className="text-auto-sm text-foreground font-medium leading-relaxed group-hover/item:text-[#00984E] transition-colors">
                                     {item}
                                   </span>
                                 </div>
@@ -284,7 +284,7 @@ export default function Features() {
                                 <span className="text-auto-xs">Learn more</span>
                               </div>
                               <motion.button
-                                className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r ${feature.gradient} text-white font-semibold shadow-lg hover:shadow-xl transition-all text-auto-sm`}
+                                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#036A38] to-[#00984E] text-white font-semibold shadow-lg hover:shadow-xl transition-all text-auto-sm"
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                               >
@@ -309,7 +309,7 @@ export default function Features() {
       <section className="section-padding bg-gradient-to-b from-muted/30 to-background">
         <div className="container">
           <AnimatedSection className="text-center mb-16">
-            <h2 className="text-auto-3xl font-bold font-display text-brand mb-4">
+            <h2 className="text-auto-3xl font-bold font-display text-[#00984E] mb-4">
               Why Choose NINja Map?
             </h2>
             <p className="text-auto-lg text-muted-foreground max-w-2xl mx-auto">
@@ -320,10 +320,10 @@ export default function Features() {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {benefits.map((benefit, index) => (
               <AnimatedSection key={index} delay={0.1 * index}>
-                <Card className="border-0 shadow-xl text-center h-full glass hover-lift">
+                <Card className="border-0 shadow-xl text-center h-full glass hover-lift usecase-card">
                   <CardContent className="p-8">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-brand/10 p-4 flex items-center justify-center">
-                      <benefit.icon className="h-8 w-8 text-brand" />
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-[#00984E]/10 p-4 flex items-center justify-center">
+                      <benefit.icon className="h-8 w-8 text-[#00984E]" />
                     </div>
                     <h3 className="font-bold text-auto-base mb-3 font-display">
                       {benefit.title}
@@ -344,11 +344,11 @@ export default function Features() {
         <div className="container">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <AnimatedSection>
-              <Badge variant="outline" className="mb-6 text-auto-sm">
+              <Badge variant="outline" className="mb-6 text-auto-sm border-[#00984E] bg-[rgba(3,106,56,0.1)] text-[#00984E]">
                 <Rocket className="w-4 h-4 mr-2" />
                 Advanced Features
               </Badge>
-              <h2 className="text-auto-3xl font-bold font-display text-brand mb-6">
+              <h2 className="text-auto-3xl font-bold font-display text-[#00984E] mb-6">
                 Everything You Need for Nigerian Navigation
               </h2>
               <p className="text-auto-base text-muted-foreground leading-relaxed mb-6">
@@ -367,8 +367,8 @@ export default function Features() {
                   "Real-time community updates and safety reports",
                   "Enterprise-grade fleet management tools"
                 ].map((feature, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                  <div key={index} className="flex items-center gap-3 ">
+                    <CheckCircle className="h-5 w-5 text-[#00984E] flex-shrink-0" />
                     <span className="text-auto-sm text-muted-foreground">{feature}</span>
                   </div>
                 ))}
@@ -378,9 +378,9 @@ export default function Features() {
             <AnimatedSection delay={0.2}>
               <div className="grid md:grid-cols-2 gap-6">
                 {advancedFeatures.map((feature, index) => (
-                  <Card key={index} className="border-0 shadow-lg glass hover-lift">
+                  <Card key={index} className="border-0 shadow-lg glass hover-lift usecase-card">
                     <CardContent className="p-6 text-center">
-                      <div className={`w-12 h-12 bg-gradient-to-br ${feature.gradient} rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg`}>
+                      <div className="w-12 h-12 bg-gradient-to-br from-[#036A38] to-[#00984E] rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
                         <feature.icon className="h-6 w-6 text-white" />
                       </div>
                       <h3 className="font-bold text-auto-sm mb-2 font-display">
@@ -402,8 +402,8 @@ export default function Features() {
       <section className="section-padding">
         <div className="container">
           <AnimatedSection>
-            <Card className="border-0 shadow-2xl bg-gradient-to-br from-brand to-gradient-to text-white overflow-hidden">
-              <CardContent className="p-12 text-center relative">
+            <Card className="border-0 shadow-2xl  text-white overflow-hidden panel-metrics">
+              <CardContent className="p-12 text-center relative ">
                 <div className="absolute inset-0 bg-pattern opacity-20" />
                 <div className="relative z-10">
                   <h2 className="text-auto-3xl font-bold font-display mb-4">
@@ -413,25 +413,25 @@ export default function Features() {
                     Join millions of Nigerians who trust NINja Map for their daily navigation needs. 
                     Download now and discover the difference.
                   </p>
-                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <motion.a
-                      href="/download"
-                      className="inline-flex items-center gap-3 bg-white text-brand px-8 py-4 rounded-xl font-bold text-auto-base hover:bg-white/90 transition-all duration-200 shadow-lg"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <Download className="h-5 w-5" />
-                      Download for Android
-                    </motion.a>
-                    <motion.a
-                      href="/download"
-                      className="inline-flex items-center gap-3 bg-white text-brand px-8 py-4 rounded-xl font-bold text-auto-base hover:bg-white/90 transition-all duration-200 shadow-lg"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <Download className="h-5 w-5" />
-                      Download for iOS
-                    </motion.a>
+                  <div className="flex flex-col sm:flex-row gap-6 justify-center">
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                      <a
+                        href="/download"
+                        className="bg-white text-[#036A38] flex items-center text-auto-lg cursor-pointer rounded-xl px-8 py-4 font-medium transition-all duration-200 ease-out shadow-[0_4px_15px_rgba(3,106,56,0.3)] hover:shadow-[0_8px_25px_rgba(3,106,56,0.35)] hover:-translate-y-0.5"
+                      >
+                        <Download className="w-5 h-5 mr-2" />
+                        Download for Android
+                      </a>
+                    </motion.div>
+                    <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.95 }}>
+                      <a
+                        href="/download"
+                        className="flex items-center btn-ios-outline text-auto-lg cursor-pointer"
+                      >
+                        <Download className="w-5 h-5 mr-2" />
+                        Download for iOS
+                      </a>
+                    </motion.div>
                   </div>
                   <div className="mt-6">
                     <Link

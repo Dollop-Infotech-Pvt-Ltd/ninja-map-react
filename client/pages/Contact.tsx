@@ -178,7 +178,7 @@ export default function Contact() {
               {stats.map((stat, index) => (
                 <AnimatedSection key={index} delay={0.1 * index}>
                   <motion.div
-                    className="text-center p-6 rounded-2xl metrics-stat hover-lift"
+                    className="text-center p-6 rounded-2xl usecase-card hover-lift"
                     whileHover={{ scale: 1.05, y: -5 }}
                     transition={{ type: "spring", stiffness: 300 }}
                   >
@@ -214,7 +214,7 @@ export default function Contact() {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {contactMethods.map((method, index) => (
               <AnimatedSection key={index} delay={0.1 * index}>
-                <Card className="border-0 shadow-xl text-[#00984E] hover:shadow-2xl transition-all duration-300 h-full overflow-hidden group dark:text-white text-center p-6 rounded-2xl metrics-stat hover-lift">
+                <Card className="border-0 shadow-xl text-[#00984E] hover:shadow-2xl transition-all duration-300 h-full overflow-hidden group dark:text-white text-center p-6 rounded-2xl usecase-card hover-lift">
                   <CardContent className="p-8 text-center">
                     <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg border-thin-green ring-1 ring-white/20">
                       <method.icon className="h-8 w-8 text-[#00984E]" />
@@ -245,11 +245,11 @@ export default function Contact() {
       </section>
 
       {/* Contact Form & Office Info */}
-      <section className="section-padding bg-gradient-to-b from-muted/30 to-background">
+      <section className="section-padding bg-gradient-to-b from-muted/30 to-background ">
         <div className="container">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <div className="grid lg:grid-cols-2 gap-16 items-stretch">
             {/* Contact Form */}
-            <AnimatedSection>
+            <AnimatedSection className="h-full flex flex-col">
               <h2 className="text-auto-3xl font-bold font-display text-[#00984E] mb-6">
                 Send us a Message
               </h2>
@@ -258,8 +258,8 @@ export default function Contact() {
                 Our support team is committed to providing you with the best assistance.
               </p>
 
-              <Card className="border-0 shadow-2xl glass">
-                <CardContent className="p-8">
+              <Card className="border-0 shadow-2xl glass usecase-card h-full">
+                <CardContent className="p-8 h-full">
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid md:grid-cols-2 gap-6">
                       <UnifiedInput
@@ -354,7 +354,7 @@ export default function Contact() {
                       icon={Send}
                       fullWidth
                       style={{
-                        background: "linear-gradient(280.64deg, rgba(255, 184, 28, 0.2) 0.53%, rgba(3, 106, 56, 0.2) 99.04%)",
+                        background: "#036A38",
                       }}
                     >
                       Send Message
@@ -365,9 +365,9 @@ export default function Contact() {
             </AnimatedSection>
 
             {/* Office Info */}
-            <AnimatedSection delay={0.2}>
-              <div className="relative">
-                <div className="aspect-square rounded-2xl bg-gradient-to-br from-[#036A38]/20 to-[#00984E]/20 p-8 glass">
+            <AnimatedSection delay={0.2} className="h-full">
+              <div className="relative h-full">
+                <div className="h-full rounded-2xl bg-gradient-to-br from-[#036A38]/20 to-[#00984E]/20 p-8 glass">
                   <div className="p-8 w-full h-full bg-gradient-to-br from-[#036A38] to-[#00984E] rounded-xl flex items-center justify-center text-white">
                     <div className="text-center">
                       <Building className="h-24 w-24 mx-auto mb-6" />
@@ -422,7 +422,7 @@ export default function Contact() {
                   </p>
                   <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
                     <motion.div 
-                      className="bg-[#00984E] rounded-xl p-6 backdrop-blur-sm"
+                      className="bg-[#00984E 10%] rounded-xl p-6 backdrop-blur-sm"
                       whileHover={{ scale: 1.05 }}
                     >
                       <MessageSquare className="h-8 w-8 mx-auto mb-3" />
@@ -430,7 +430,7 @@ export default function Contact() {
                       <p className="text-auto-sm opacity-90">Available 9 AM - 9 PM WAT</p>
                     </motion.div>
                     <motion.div 
-                      className="bg-[#00984E] rounded-xl p-6 backdrop-blur-sm"
+                      className="bg-[#00984E 10%] rounded-xl p-6 backdrop-blur-sm"
                       whileHover={{ scale: 1.05 }}
                     >
                       <Phone className="h-8 w-8 mx-auto mb-3" />
@@ -438,7 +438,7 @@ export default function Contact() {
                       <p className="text-auto-sm opacity-90">+234 801 234 5678</p>
                     </motion.div>
                     <motion.div 
-                      className="bg-[#00984E] rounded-xl p-6 backdrop-blur-sm"
+                      className="bg-[#00984E 10%] rounded-xl p-6 backdrop-blur-sm"
                       whileHover={{ scale: 1.05 }}
                     >
                       <Globe className="h-8 w-8 mx-auto mb-3" />

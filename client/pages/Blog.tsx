@@ -490,9 +490,9 @@ export default function Blog() {
                       placeholder="Enter your email"
                       className="bg-white/10 border-white/20 text-white placeholder:text-white/70 h-12"
                     />
-                    <Button className="bg-white text-[#00984E] hover:bg-white/90 h-12 px-6">
+                    <Link to={"/"} className=" inline-flex items-center gap-2 bg-white text-[#00984E] dark:bg-[#00984E] dark:text-white px-6 py-3 rounded-lg hover:opacity-90 transition-all font-medium text-auto-sm shadow-lg hover:shadow-xl">
                       Subscribe
-                    </Button>
+                      </Link>
                   </div>
                 </div>
               </CardContent>

@@ -40,7 +40,7 @@ export default function CommunityGuidelines() {
         "Help new users learn the platform",
         "Avoid discriminatory or offensive language"
       ],
-      gradient: "from-red-500 to-pink-600"
+      gradient: "from-[#036A38] to-[#00984E]"
     },
     {
       icon: CheckCircle,
@@ -52,7 +52,7 @@ export default function CommunityGuidelines() {
         "Don't share rumors or unconfirmed information",
         "Include specific location details when possible"
       ],
-      gradient: "from-blue-500 to-purple-600"
+      gradient: "from-[#036A38] to-[#00984E]"
     },
     {
       icon: Shield,
@@ -64,7 +64,7 @@ export default function CommunityGuidelines() {
         "Don't take photos while driving",
         "Report dangerous situations to authorities when appropriate"
       ],
-      gradient: "from-green-500 to-blue-600"
+      gradient: "from-[#036A38] to-[#00984E]"
     },
     {
       icon: MapPin,
@@ -76,26 +76,26 @@ export default function CommunityGuidelines() {
         "Alert others to police checkpoints respectfully",
         "Avoid off-topic or personal messages"
       ],
-      gradient: "from-purple-500 to-indigo-600"
+      gradient: "from-[#036A38] to-[#00984E]"
     }
   ];
 
   const violations = [
     {
       severity: "Minor",
-      color: "text-yellow-600 bg-yellow-50 border-yellow-200",
+      color: "text-white bg-[#00984E] border-yellow-200",
       examples: ["Mild inappropriate language", "Off-topic reports", "Duplicate reports"],
       consequence: "Warning and content removal"
     },
     {
       severity: "Moderate", 
-      color: "text-orange-600 bg-orange-50 border-orange-200",
+      color: "text-white bg-[#00984E] border-orange-200",
       examples: ["Spam or promotional content", "Harassment of other users", "Deliberately false reports"],
       consequence: "Temporary suspension (1-7 days)"
     },
     {
       severity: "Severe",
-      color: "text-red-600 bg-red-50 border-red-200", 
+      color: "text-white bg-[#00984E] border-red-200", 
       examples: ["Hate speech or discrimination", "Threats or violent content", "Sharing personal information"],
       consequence: "Permanent account suspension"
     }
@@ -106,13 +106,13 @@ export default function CommunityGuidelines() {
       <Header />
 
       {/* Hero Section */}
-      <section className="section-padding bg-gradient-to-br from-brand/5 via-background to-gradient-to/5 relative overflow-hidden">
+      <section className="section-padding bg-gradient-to-br from-[#036A38]/5 via-background to-[#00984E]/5 relative overflow-hidden">
         <div className="absolute inset-0 hero-pattern opacity-30" />
         <div className="container relative">
           <AnimatedSection className="mx-auto max-w-4xl text-center">
             <Badge
               variant="outline"
-              className="mb-6 border-brand/30 bg-brand/10 text-brand px-6 py-3 text-auto-sm font-medium"
+              className="mb-6 border-[0.6px] border-[#00984E] bg-[rgba(3,106,56,0.4)] text-white px-6 py-3 text-auto-sm font-medium"
             >
               <Users className="w-4 h-4 mr-2" />
               Community Guidelines
@@ -129,12 +129,12 @@ export default function CommunityGuidelines() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-12">
               {stats.map((stat, index) => (
                 <AnimatedSection key={index} delay={0.1 * index}>
-                  <Card className="border-0 shadow-lg glass">
+                  <Card className="border-0 shadow-lg glass usecase-card">
                     <CardContent className="p-6 text-center">
-                      <div className="w-12 h-12 bg-gradient-brand rounded-xl flex items-center justify-center mx-auto mb-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-[#036A38] to-[#00984E] rounded-xl flex items-center justify-center mx-auto mb-4">
                         <stat.icon className="h-6 w-6 text-white" />
                       </div>
-                      <div className="text-auto-2xl font-bold text-brand mb-1">
+                      <div className="text-auto-2xl font-bold text-[#00984E] mb-1">
                         {stat.number}
                       </div>
                       <p className="text-auto-sm text-muted-foreground">
@@ -153,7 +153,7 @@ export default function CommunityGuidelines() {
       <section className="section-padding">
         <div className="container">
           <AnimatedSection className="text-center mb-16">
-            <h2 className="text-auto-3xl font-bold font-display text-brand mb-4">
+            <h2 className="text-auto-3xl font-bold font-display text-[#00984E] mb-4">
               Our Community Guidelines
             </h2>
             <p className="text-auto-lg text-muted-foreground max-w-2xl mx-auto">
@@ -190,8 +190,8 @@ export default function CommunityGuidelines() {
                       {/* Rules Section */}
                       <div className="flex-1 p-8">
                         <div className="space-y-0">
-                          <h4 className="text-auto-lg font-semibold text-brand mb-6 flex items-center gap-2">
-                            <CheckCircle className="h-5 w-5 text-brand" />
+                          <h4 className="text-auto-lg font-semibold text-[#00984E] mb-6 flex items-center gap-2">
+                            <CheckCircle className="h-5 w-5 text-[#00984E]" />
                             Key Guidelines
                           </h4>
 
@@ -225,7 +225,7 @@ export default function CommunityGuidelines() {
       <section className="section-padding bg-gradient-to-b from-muted/30 to-background">
         <div className="container">
           <AnimatedSection className="text-center mb-16">
-            <h2 className="text-auto-3xl font-bold font-display text-brand mb-4">
+            <h2 className="text-auto-3xl font-bold font-display text-[#00984E] mb-4">
               Violations and Consequences
             </h2>
             <p className="text-auto-lg text-muted-foreground max-w-2xl mx-auto">
@@ -236,7 +236,7 @@ export default function CommunityGuidelines() {
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto mb-16">
             {violations.map((violation, index) => (
               <AnimatedSection key={index} delay={0.1 * index}>
-                <Card className="border-0 shadow-xl h-full glass">
+                <Card className="border-0 shadow-xl h-full glass usecase-card  text-[#00984E]">
                   <CardContent className="p-8">
                     <div className={`inline-block px-4 py-2 rounded-full text-auto-sm font-medium mb-6 ${violation.color}`}>
                       {violation.severity} Violation
@@ -244,7 +244,7 @@ export default function CommunityGuidelines() {
                     <h3 className="font-bold text-auto-base mb-4">Examples:</h3>
                     <ul className="space-y-2 mb-6">
                       {violation.examples.map((example, i) => (
-                        <li key={i} className="text-auto-sm text-muted-foreground">
+                        <li key={i} className="text-auto-sm text-muted-foreground ">
                           • {example}
                         </li>
                       ))}
@@ -260,9 +260,9 @@ export default function CommunityGuidelines() {
           </div>
 
           <AnimatedSection delay={0.4}>
-            <Card className="border-brand/20 bg-brand/5 glass shadow-xl max-w-3xl mx-auto">
+            <Card className="border-[#00984E]/20 bg-[#00984E]/5 glass shadow-xl max-w-3xl mx-auto">
               <CardContent className="p-8 text-center">
-                <AlertTriangle className="h-12 w-12 mx-auto mb-6 text-brand" />
+                <AlertTriangle className="h-12 w-12 mx-auto mb-6 text-[#FFB81C]" />
                 <h3 className="text-auto-xl font-bold mb-4 font-display">
                   Appeals Process
                 </h3>
@@ -273,7 +273,7 @@ export default function CommunityGuidelines() {
                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                   <Link
                     to="/contact"
-                    className="inline-flex items-center gap-2 bg-gradient-brand text-white px-6 py-3 rounded-lg hover:opacity-90 transition-all font-medium text-auto-sm shadow-lg hover:shadow-xl"
+                    className="inline-flex items-center gap-2 bg-gradient-to-r from-[#036A38] to-[#00984E] text-white px-6 py-3 rounded-lg hover:opacity-90 transition-all font-medium text-auto-sm shadow-lg hover:shadow-xl"
                   >
                     <MessageSquare className="h-4 w-4" />
                     Contact Support
@@ -289,21 +289,21 @@ export default function CommunityGuidelines() {
       <section className="section-bottom-padding">
         <div className="container">
           <AnimatedSection>
-            <Card className="border-0 shadow-2xl bg-gradient-to-br from-brand to-gradient-to text-white overflow-hidden">
-              <CardContent className="p-12 text-center relative">
-                <div className="absolute inset-0 bg-pattern opacity-20" />
-                <div className="relative z-10">
+            <Card className="border-0 shadow-2xl panel-metrics text-white overflow-hidden rounded-2xl">
+              <CardContent className="p-16 text-center relative">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(255,255,255,0.1),transparent)]" />
+                <div className="relative z-10 max-w-3xl mx-auto">
                   <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg backdrop-blur-sm">
                     <Flag className="h-8 w-8 text-white" />
                   </div>
                   <h2 className="text-auto-3xl font-bold font-display mb-4">
                     How to Report Violations
                   </h2>
-                  <p className="text-auto-lg opacity-90 max-w-3xl mx-auto mb-8">
-                    Help us maintain a positive community by reporting content that violates these guidelines. 
+                  <p className="text-auto-lg opacity-90 max-w-3xl mx-auto mb-10 leading-relaxed">
+                    Help us maintain a positive community by reporting content that violates these guidelines.
                     Your reports help keep NINja Map safe for everyone.
                   </p>
-                  <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                  <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-10">
                     <div className="bg-white/10 rounded-xl p-6 backdrop-blur-sm text-left">
                       <h3 className="font-bold text-auto-base mb-3">In the App:</h3>
                       <ul className="space-y-2 text-auto-sm opacity-90">
@@ -323,16 +323,14 @@ export default function CommunityGuidelines() {
                       </ul>
                     </div>
                   </div>
-                  <div className="mt-8">
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                      <Link
-                        to="/contact"
-                        className="inline-flex items-center gap-2 bg-white text-brand px-6 py-3 rounded-lg hover:bg-white/90 transition-all font-medium text-auto-sm shadow-lg"
-                      >
-                        Report Community Issue
-                      </Link>
-                    </motion.div>
-                  </div>
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <a
+                      href="/contact"
+                      className="bg-white text-[#036A38] inline-flex items-center text-auto-lg cursor-pointer rounded-xl px-8 py-4 font-medium transition-all duration-200 ease-out shadow-[0_4px_15px_rgba(3,106,56,0.3)] hover:shadow-[0_8px_25px_rgba(3,106,56,0.35)] hover:-translate-y-0.5"
+                    >
+                      Report Community Issue
+                    </a>
+                  </motion.div>
                 </div>
               </CardContent>
             </Card>
