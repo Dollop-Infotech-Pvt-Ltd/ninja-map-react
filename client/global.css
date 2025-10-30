@@ -578,16 +578,40 @@
   }
 
   /* Enterprise metrics container: green→amber gradient with gradient border */
-  .panel-metrics {
-    position: relative;
-    border-radius: 1.5rem;
-    background: linear-gradient(100.52deg, #036A38 67.24%, #FFB81C 100%);
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
-  }
+.panel-metrics {
+  position: relative;
+  border-radius: 1.5rem;
+background:    linear-gradient(
+    140deg,
+    hsl(151deg 94% 21%) 0%,
+    hsl(143deg 91% 22%) 14%,
+    hsl(135deg 89% 22%) 26%,
+    hsl(127deg 86% 22%) 35%,
+    hsl(119deg 82% 22%) 44%,
+    hsl(111deg 79% 23%) 51%,
+    hsl(103deg 76% 23%) 58%,
+    hsl(95deg 73% 23%) 64%,
+    hsl(87deg 70% 24%) 70%,
+    hsl(79deg 67% 24%) 76%,
+    hsl(71deg 64% 24%) 82%,
+    hsl(63deg 61% 24%) 88%,
+    hsl(55deg 58% 25%) 97%
+ 
+  );
+
+
+
+
+;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+}
+
+
+
   .dark .panel-metrics {
     background: linear-gradient(280.64deg, rgba(255, 184, 28, 0.2) 0.53%, rgba(3, 106, 56, 0.2) 99.04%);
   }
-  .panel-metrics::before {
+  .dark .panel-metrics::before {
     content: "";
     position: absolute;
     inset: 0;

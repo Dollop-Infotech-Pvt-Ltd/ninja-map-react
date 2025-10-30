@@ -1153,9 +1153,9 @@ export default function Index() {
       </section>
 
       {/* Enhanced Download CTA */}
-      <section className="cta-gradient-bg section-padding text-white relative overflow-hidden">
+      <section className="cta-gradient-bg section-padding text-white relative overflow-hidden ">
         <div className="container relative">
-          <AnimatedSection className="mx-auto max-w-5xl text-center">
+          <AnimatedSection className="mx-auto max-w-5xl text-center ">
             <Badge
               variant="outline"
               className="mb-8 text-white text-lg px-6 py-3 rounded-full bg-white/10 border border-white/20"
