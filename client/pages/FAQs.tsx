@@ -266,7 +266,7 @@ export default function FAQs() {
                       </Link>
                     </motion.div>
                     <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                      <Link to="/faqs" className="flex items-center btn-ios-outline h-14 px-10 rounded-xl font-semibold text-auto-lg  btn-ios-outline text-auto-lg cursor-pointer">
+                      <Link to="/faqs" className="flex items-center btn-ios-outline h-14 px-10 rounded-xl font-semibold text-auto-lg  btn-ios-outline text-auto-lg cursor-pointer btn-ios-outline bg-[#1E7A50] text-white border border-[#1E7A50]  py-4 shadow-2xl font-display text-auto-xl  justify-center hover:brightness-110 dark:bg-transparent dark:border-0">
                         <Mail className="w-4 h-4 mr-2" />
                         Email Us
                       </Link>

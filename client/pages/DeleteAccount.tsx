@@ -554,7 +554,7 @@ export default function DeleteAccount() {
                     <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.95 }}>
                       <a
                         href="/"
-                        className="inline-flex items-center gap-3 btn-ios-outline h-14 btn-ios-outline px-10 rounded-xl font-semibold transition-all"
+                        className="inline-flex items-center gap-3 btn-ios-outline h-14 btn-ios-outline px-10 rounded-xl font-semibold transition-all btn-ios-outline bg-[#1E7A50] text-white border border-[#1E7A50] py-4 shadow-2xl font-display text-auto-xl cursor-pointer  justify-center hover:brightness-110 dark:bg-transparent dark:border-0"
                       >
                         Explore Features
                       </a>

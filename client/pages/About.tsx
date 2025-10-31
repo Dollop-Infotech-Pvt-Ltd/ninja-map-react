@@ -519,7 +519,7 @@ export default function About() {
                     </motion.a>
                     <motion.a
                       href="/contact"
-                      className="flex items-center btn-ios-outline text-auto-lg cursor-pointer"
+                      className="btn-ios-outline bg-[#1E7A50] text-white border border-[#1E7A50] rounded-xl px-8 py-4 shadow-2xl font-display text-auto-xl font-medium cursor-pointer flex items-center justify-center hover:brightness-110 dark:bg-transparent dark:border-0"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >

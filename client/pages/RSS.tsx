@@ -463,7 +463,7 @@ export default function RSS() {
                     <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.95 }}>
                       <Link
                         to="/blog"
-                        className="flex items-center btn-ios-outline text-auto-lg cursor-pointer"
+                        className="flex items-center btn-ios-outline text-auto-lg cursor-pointer btn-ios-outline bg-[#1E7A50] text-white border border-[#1E7A50] rounded-xl px-8 py-4 shadow-2xl font-display text-auto-xl font-medium  justify-center hover:brightness-110 dark:bg-transparent dark:border-0"
                       >
                         <BookOpen className="w-5 h-5 mr-2" />
                         Browse Blog

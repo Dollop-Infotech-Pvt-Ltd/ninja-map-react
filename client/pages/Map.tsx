@@ -179,6 +179,17 @@ function extractServerErrorMessage(error: unknown): string {
   return 'Unknown server error.';
 }
 
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 interface SearchResult {
   place_id: string;
   display_name: string;
@@ -289,7 +300,9 @@ function MapLibreMap({
   instructionPoint,
   onRouteClick,
   onRouteMarkerDrag,
-  isDark
+  isDark,
+  selectedTransport,
+  walkingPaths
 }: {
   onMapLoad: (map: maplibregl.Map) => void;
   userLocation: [number, number] | null;
@@ -306,6 +319,8 @@ function MapLibreMap({
   onRouteClick: (index: number) => void;
   onRouteMarkerDrag: (index: number, lat: number, lng: number) => void;
   isDark?: boolean;
+  selectedTransport?: string;
+  walkingPaths?: any[];
 }) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
@@ -712,6 +727,8 @@ function MapLibreMap({
       if (routeGeometries.length > 0) {
         const selectedIdx = Math.min(Math.max(selectedRouteIndex, 0), routeGeometries.length - 1);
       const mainColor = '#4285F4';
+      const isPedestrianRoute = selectedTransport === 'foot';
+      const dashArray = isPedestrianRoute ? [3, 3] : [2, 1];
 
         // First add all alternate routes (so selected can be drawn on top later)
         routeGeometries.forEach((geometry, i) => {
@@ -726,41 +743,45 @@ function MapLibreMap({
             data: geometry
           });
 
-          // Soft shadow
-          map.current!.addLayer({
-            id: shadowLayerId,
-            type: 'line',
-            source: sourceId,
-            layout: { 'line-join': 'round', 'line-cap': 'round' },
-            paint: {
-              'line-color': '#0f172a',
-            'line-width': 6,
-            'line-opacity': 0.25,
-            'line-blur': 1.5,
-            'line-translate': [0, 1]
+          // Soft shadow (skip for pedestrian routes)
+          if (!isPedestrianRoute) {
+            map.current!.addLayer({
+              id: shadowLayerId,
+              type: 'line',
+              source: sourceId,
+              layout: { 'line-join': 'round', 'line-cap': 'round' },
+              paint: {
+                'line-color': '#0f172a',
+              'line-width': 6,
+              'line-opacity': 0.25,
+              'line-blur': 1.5,
+              'line-translate': [0, 1]
+            }
+            });
           }
-          });
 
           // Muted/blurred alternate route
           map.current!.addLayer({
-            id: layerId,
-            type: 'line',
-            source: sourceId,
-            layout: { 'line-join': 'round', 'line-cap': 'round' },
-            paint: {
-              'line-color': '#7BAAF7',
-              'line-width': 4,
-              'line-opacity': 0.7,
-              'line-blur': 0.5,
-              'line-dasharray': [2, 1]
-            }
-          });
+          id: layerId,
+          type: 'line',
+          source: sourceId,
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: {
+            'line-color': '#7BAAF7',
+            'line-width': isPedestrianRoute ? 5 : 4,
+            'line-opacity': 0.7,
+            'line-blur': 0.5,
+            'line-dasharray': isPedestrianRoute ? [0.5, 3] : [2, 1]
+          }
+        });
 
           map.current!.on('click', layerId, () => onRouteClick(i));
           map.current!.on('mouseenter', layerId, () => { map.current!.getCanvas().style.cursor = 'pointer'; });
           map.current!.on('mouseleave', layerId, () => { map.current!.getCanvas().style.cursor = ''; });
 
-          routeLayers.current.push({ id: shadowLayerId, source: sourceId });
+          if (!isPedestrianRoute) {
+            routeLayers.current.push({ id: shadowLayerId, source: sourceId });
+          }
           routeLayers.current.push({ id: layerId, source: sourceId });
         });
 
@@ -773,18 +794,20 @@ function MapLibreMap({
 
         map.current!.addSource(sourceId, { type: 'geojson', data: geometry });
 
-        map.current!.addLayer({
-          id: shadowLayerId,
-          type: 'line',
-          source: sourceId,
-          layout: { 'line-join': 'round', 'line-cap': 'round' },
-          paint: {
-            'line-color': '#FFFFFF',
-            'line-width': 10,
-            'line-opacity': 1,
-            'line-blur': 0.5
-          }
-        });
+        if (!isPedestrianRoute) {
+          map.current!.addLayer({
+            id: shadowLayerId,
+            type: 'line',
+            source: sourceId,
+            layout: { 'line-join': 'round', 'line-cap': 'round' },
+            paint: {
+              'line-color': '#FFFFFF',
+              'line-width': 10,
+              'line-opacity': 1,
+              'line-blur': 0.5
+            }
+          });
+        }
 
         map.current!.addLayer({
           id: layerId,
@@ -793,9 +816,10 @@ function MapLibreMap({
           layout: { 'line-join': 'round', 'line-cap': 'round' },
           paint: {
             'line-color': color,
-            'line-width': 6,
+            'line-width': isPedestrianRoute ? 5 : 6,
             'line-opacity': 1,
-            'line-blur': 0
+            'line-blur': 0,
+            ...(isPedestrianRoute && { 'line-dasharray': [0.5, 3] })
           }
         });
 
@@ -803,10 +827,44 @@ function MapLibreMap({
         map.current!.on('mouseenter', layerId, () => { map.current!.getCanvas().style.cursor = 'pointer'; });
         map.current!.on('mouseleave', layerId, () => { map.current!.getCanvas().style.cursor = ''; });
 
-        routeLayers.current.push({ id: shadowLayerId, source: sourceId });
+        if (!isPedestrianRoute) {
+          routeLayers.current.push({ id: shadowLayerId, source: sourceId });
+        }
         routeLayers.current.push({ id: layerId, source: sourceId });
       }
-      
+
+      // Add walking paths for destinations far from road (>100m)
+      if (walkingPaths && walkingPaths.length > 0) {
+        walkingPaths.forEach((walkingPath, index) => {
+          const sourceId = `walking-path-${index}`;
+          const layerId = `walking-path-${index}`;
+
+          try {
+            map.current!.addSource(sourceId, {
+              type: 'geojson',
+              data: walkingPath.geometry
+            });
+
+            map.current!.addLayer({
+              id: layerId,
+              type: 'line',
+              source: sourceId,
+              layout: { 'line-join': 'round', 'line-cap': 'round' },
+              paint: {
+                'line-color': '#FFB81C',
+                'line-width': 4,
+                'line-opacity': 0.8,
+                'line-dasharray': [0.5, 3]
+              }
+            });
+
+            routeLayers.current.push({ id: layerId, source: sourceId });
+          } catch (e) {
+            console.warn('Error adding walking path:', e);
+          }
+        });
+      }
+
       // Fit bounds to show entire route
       try {
         const selected = routeGeometries[selectedRouteIndex];
@@ -828,7 +886,7 @@ function MapLibreMap({
     } catch (error) {
       console.warn('Error in route visualization:', error);
     }
-  }, [routePoints, routeGeometries, selectedRouteIndex, onRouteClick, isDirectionsOpen]);
+  }, [routePoints, routeGeometries, selectedRouteIndex, onRouteClick, isDirectionsOpen, selectedTransport, walkingPaths]);
 
   return (
     <div
@@ -871,6 +929,7 @@ export default function Map() {
   const [directionSteps, setDirectionSteps] = useState<DirectionStep[]>([]);
   const [isRouteStepsVisible, setIsRouteStepsVisible] = useState(false);
   const [isDirectionsInstructionMode, setIsDirectionsInstructionMode] = useState(false);
+  const [walkingPaths, setWalkingPaths] = useState<any[]>([]);
   const [directionsSnapshot, setDirectionsSnapshot] = useState<{
     fromLocation: string;
     toLocation: string;
@@ -1157,9 +1216,15 @@ useEffect(() => {
 
       const body = {
         locations,
-        costing,
+        costing: selectedMode.profile,
         directions_options: { units: 'kilometers' },
-        alternates: allowAlternatives ? 2 : 0
+        alternates: allowAlternatives ? 2 : 0,
+        costing_options: {
+          [selectedMode.profile]: {
+            "use_ferry": 0.0,
+            "ferry_cost": 300000
+          }
+        }
       } as any;
 
       console.log(`Calculating route with costing: ${costing}`);
@@ -1230,8 +1295,11 @@ useEffect(() => {
         });
       }
 
+      const destinationCoords = points[points.length - 1]?.coordinates;
+      const walkingPathsData: any[] = [];
+
       if (trips.length > 0) {
-        const routes = trips.map((trip) => {
+        const routes = trips.map((trip, tripIndex) => {
           const summary = trip?.summary || {};
           const timeSec = Number(summary.time ?? 0);
           const lengthKm = Number(summary.length ?? 0);
@@ -1279,6 +1347,30 @@ useEffect(() => {
             geometry: { type: 'LineString', coordinates: coords as any }
           };
 
+          if (destinationCoords && coords.length > 0) {
+            const lastRouteCoord = coords[coords.length - 1];
+            const destLat = destinationCoords[0];
+            const destLng = destinationCoords[1];
+            const lastLat = lastRouteCoord[1];
+            const lastLng = lastRouteCoord[0];
+
+            const distance = calculateDistance(lastLat, lastLng, destLat, destLng);
+            if (distance > 100) {
+              walkingPathsData.push({
+                routeIndex: tripIndex,
+                geometry: {
+                  type: 'Feature',
+                  properties: {},
+                  geometry: {
+                    type: 'LineString',
+                    coordinates: [[lastLng, lastLat], [destLng, destLat]]
+                  }
+                },
+                distance: distance
+              });
+            }
+          }
+
           return {
             distance: lengthKm * 1000,
             time: timeSec * 1000,
@@ -1311,37 +1403,15 @@ useEffect(() => {
         }
 
         setRouteGeometries(routes.map(r => r.geometry));
+        setWalkingPaths(walkingPathsData);
 
-        try {
-          const summaries = await Promise.all(
-            transportModes.map(async (m) => {
-              try {
-                const b = {
-                  locations,
-                  costing: m.profile,
-                  directions_options: { units: 'kilometers' }
-                };
-                const url2 = `${VALHALLA_ROUTE_URL}?json=${encodeURIComponent(JSON.stringify(b))}`;
-                const resp = await fetch(url2, { method: 'GET' });
-                if (!resp.ok) return { id: m.id, timeMs: Number.NaN, distanceM: Number.NaN };
-                const d = await resp.json();
-                const trip = d?.trip;
-                const sum = trip?.summary;
-                if (!sum) return { id: m.id, timeMs: Number.NaN, distanceM: Number.NaN };
-                return { id: m.id, timeMs: Number(sum.time) * 1000, distanceM: Number(sum.length) * 1000 };
-              } catch {
-                return { id: m.id, timeMs: Number.NaN, distanceM: Number.NaN };
-              }
-            })
-          );
-          const map: Record<string, { timeMs: number; distanceM: number }> = {};
-          summaries.forEach((s) => {
-            if (s) map[s.id] = { timeMs: s.timeMs, distanceM: s.distanceM };
-          });
-          setModeSummaries(map);
-        } catch (e) {
-          console.warn('Failed to fetch mode summaries', e);
-        }
+        const selectedModeId = modeId ?? selectedTransport;
+        const summaryMap: Record<string, { timeMs: number; distanceM: number }> = {};
+        summaryMap[selectedModeId] = {
+          timeMs: selected.time,
+          distanceM: selected.distance
+        };
+        setModeSummaries(summaryMap);
       } else {
         console.warn('No route found in response');
       }
@@ -1372,6 +1442,7 @@ useEffect(() => {
       setDirectionSteps([]);
       setIsRouteStepsVisible(false);
       setActiveInstructionIndex(null);
+      setWalkingPaths([]);
       setActiveInstructionLocation(null);
       setCurrentStepIndex(0);
       toast.error('Route calculation failed', resolvedErrorMessage);
@@ -4006,6 +4077,8 @@ const mapLayers = [
           onRouteClick={selectRoute}
           onRouteMarkerDrag={handleRouteMarkerDrag}
           isDark={isDark}
+          selectedTransport={selectedTransport}
+          walkingPaths={walkingPaths}
         />
       </div>
     </div>

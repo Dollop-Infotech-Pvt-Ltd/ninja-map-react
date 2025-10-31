@@ -290,7 +290,7 @@ export default function Privacy() {
                     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                       <a
                         href="/account/privacy"
-                        className="bg-white text-[#036A38] flex items-center text-auto-lg cursor-pointer rounded-xl px-8 py-4 font-medium transition-all duration-200 ease-out shadow-[0_4px_15px_rgba(3,106,56,0.3)] hover:shadow-[0_8px_25px_rgba(3,106,56,0.35)] hover:-translate-y-0.5"
+                        className= "bg-white text-[#036A38] flex  dark:bg-[#036A38] dark:text-[white] items-center text-auto-lg cursor-pointer rounded-xl px-8 py-4 font-medium transition-all duration-200 ease-out shadow-[0_4px_15px_rgba(3,106,56,0.3)] hover:shadow-[0_8px_25px_rgba(3,106,56,0.35)] hover:-translate-y-0.5"
                       >
                         <Settings className="w-5 h-5 mr-2" />
                         Privacy Settings
@@ -299,7 +299,7 @@ export default function Privacy() {
                     <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.95 }}>
                       <a
                         href="/contact?subject=privacy"
-                        className="flex items-center btn-ios-outline text-auto-lg cursor-pointer"
+                        className="flex items-center btn-ios-outline text-auto-lg cursor-pointer  btn-ios-outline text-auto-lg  btn-ios-outline bg-[#1E7A50] text-white border border-[#1E7A50] rounded-xl px-8 py-4 shadow-2xl font-display text-auto-xl font-medium  justify-center hover:brightness-110 dark:bg-transparent dark:border-0"
                       >
                         <MapPin className="w-5 h-5 mr-2" />
                         Contact DPO
@@ -307,7 +307,7 @@ export default function Privacy() {
                     </motion.div>
                     <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.95 }}>
                       <button
-                        className="flex items-center btn-ios-outline text-auto-lg cursor-pointer"
+                        className="flex items-center btn-ios-outline text-auto-lg cursor-pointer  btn-ios-outline text-auto-lg  btn-ios-outline bg-[#1E7A50] text-white border border-[#1E7A50] rounded-xl px-8 py-4 shadow-2xl font-display text-auto-xl font-medium  justify-center hover:brightness-110 dark:bg-transparent dark:border-0"
                       >
                         <Download className="w-5 h-5 mr-2" />
                         Download Data

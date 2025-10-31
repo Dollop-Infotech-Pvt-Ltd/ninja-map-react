@@ -469,13 +469,13 @@ export default function Status() {
                   </p>
                   <div className="flex flex-col sm:flex-row gap-6 justify-center">
                     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <button className="bg-white text-[#036A38] inline-flex items-center text-auto-lg cursor-pointer rounded-xl px-8 py-4 font-medium transition-all duration-200 ease-out shadow-[0_4px_15px_rgba(3,106,56,0.3)] hover:shadow-[0_8px_25px_rgba(3,106,56,0.35)] hover:-translate-y-0.5">
+                      <button className="bg-white text-[#036A38] dark:bg-[#036A38] dark:text-white inline-flex items-center text-auto-lg cursor-pointer rounded-xl px-8 py-4 font-medium transition-all duration-200 ease-out shadow-[0_4px_15px_rgba(3,106,56,0.3)] hover:shadow-[0_8px_25px_rgba(3,106,56,0.35)] hover:-translate-y-0.5">
                         <Mail className="w-5 h-5 mr-2" />
                         Subscribe to Updates
                       </button>
                     </motion.div>
                     <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.95 }}>
-                      <button className="flex items-center btn-ios-outline text-auto-lg cursor-pointer">
+                      <button className="flex items-center btn-ios-outline text-auto-lg cursor-pointer  btn-ios-outline h-14 px-10 rounded-xl font-semibold text-auto-lg  btn-ios-outline text-auto-lg  btn-ios-outline bg-[#1E7A50] text-white border border-[#1E7A50]  py-4 shadow-2xl font-display text-auto-xl  justify-center hover:brightness-110 dark:bg-transparent dark:border-0">
                         <Rss className="w-5 h-5 mr-2" />
                         RSS Feed
                       </button>
