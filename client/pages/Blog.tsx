@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,26 +6,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
   BookOpen, 
-  Calendar, 
   Clock, 
-  User, 
   Search, 
-  Tag,
   ArrowRight,
   Filter,
   TrendingUp,
-  MapPin,
-  Zap,
-  Users,
   Heart,
-  MessageSquare,
-  Share2,
   Eye
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AnimatedSection from "@/components/AnimatedSection";
+import { get } from "@/lib/http";
+import { BlogResponse, BlogArticle } from "@shared/api";
+import Loader from "@/components/Loader";
 
 // Real image component for blog posts
 const BlogImage = ({ type, className }: { type: string; className?: string }) => {
@@ -67,122 +62,139 @@ const BlogImage = ({ type, className }: { type: string; className?: string }) =>
 export default function Blog() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [featuredArticle, setFeaturedArticle] = useState<BlogArticle | null>(null);
+  const [articles, setArticles] = useState<BlogArticle[]>([]);
+  const [allCategories, setAllCategories] = useState<Array<{ id: string; name: string; count: number }>>([]);
+  const [error, setError] = useState<string | null>(null);
 
-  const categories = [
-    { id: "all", name: "All Posts", count: 42 },
-    { id: "navigation", name: "Navigation", count: 15 },
-    { id: "technology", name: "Technology", count: 12 },
-    { id: "community", name: "Community", count: 8 },
-    { id: "updates", name: "Updates", count: 7 }
-  ];
+  useEffect(() => {
+    // Fetch all categories on mount
+    fetchAllCategories();
+  }, []);
 
-  const featuredPost = {
-    id: 1,
-    title: "The Future of Navigation in Nigeria: AI-Powered Mapping Revolution",
-    excerpt: "Discover how artificial intelligence is transforming the way Nigerians navigate their cities, from Lagos traffic optimization to rural pathway mapping.",
-    content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit...",
-    author: "Dr. Adebayo Johnson",
-    authorRole: "Chief Technology Officer",
-    authorAvatar: "AJ",
-    publishDate: "2024-01-15",
-    readTime: "8 min read",
-    category: "Technology",
-    imageType: "ai-tech",
-    tags: ["AI", "Navigation", "Technology", "Nigeria"],
-    views: 12500,
-    likes: 145,
-    comments: 23
+  useEffect(() => {
+    // Fetch blog data when category changes
+    fetchBlogData(selectedCategory);
+  }, [selectedCategory]);
+
+  const fetchAllCategories = async () => {
+    try {
+      // Fetch all posts to get category counts
+      const response = await get<BlogResponse>(
+        "/api/blogs/get-all?pageSize=100&pageNumber=0&sortDirection=ASC&sortKey=createdDate"
+      );
+
+      if (response.success && response.data) {
+        const allArticles = [...response.data.featuredArticles, ...response.data.latestArticles];
+        const categoryMap = new Map<string, number>();
+        
+        allArticles.forEach(article => {
+          const cat = article.category;
+          categoryMap.set(cat, (categoryMap.get(cat) || 0) + 1);
+        });
+
+        const cats = [
+          { id: "all", name: "All Posts", count: allArticles.length },
+          ...Array.from(categoryMap.entries()).map(([cat, count]) => ({
+            id: cat.toLowerCase(),
+            name: cat.charAt(0) + cat.slice(1).toLowerCase().replace(/_/g, ' '),
+            count
+          }))
+        ];
+        
+        setAllCategories(cats);
+      }
+    } catch (err: any) {
+      console.error("Failed to fetch categories:", err);
+    }
   };
 
-  const blogPosts = [
-    {
-      id: 2,
-      title: "Community-Driven Mapping: How Nigerian Drivers Shape Our Platform",
-      excerpt: "Learn how real-time reports from over 2.5 million Nigerian drivers help create the most accurate navigation experience.",
-      author: "Kemi Okafor",
-      authorRole: "Community Manager",
-      authorAvatar: "KO",
-      publishDate: "2024-01-12",
-      readTime: "5 min read",
-      category: "Community",
-      imageType: "community",
-      tags: ["Community", "Mapping", "Real-time"],
-      views: 8200,
-      likes: 89,
-      comments: 15
-    },
-    {
-      id: 3,
-      title: "Offline Navigation: Staying Connected When Networks Fail",
-      excerpt: "Explore how NINja Map's offline capabilities ensure you never get lost, even in areas with poor network coverage.",
-      author: "Ibrahim Musa",
-      authorRole: "Product Manager",
-      authorAvatar: "IM",
-      publishDate: "2024-01-10",
-      readTime: "6 min read",
-      category: "Technology",
-      imageType: "offline-tech",
-      tags: ["Offline", "Technology", "Mobile"],
-      views: 6800,
-      likes: 72,
-      comments: 12
-    },
-    {
-      id: 4,
-      title: "Supporting Local Businesses Through Better Navigation",
-      excerpt: "How accurate mapping and local business integration help boost Nigeria's economy one route at a time.",
-      author: "Folake Adeniyi",
-      authorRole: "Business Development",
-      authorAvatar: "FA",
-      publishDate: "2024-01-08",
-      readTime: "4 min read",
-      category: "Community",
-      imageType: "business",
-      tags: ["Business", "Economy", "Local"],
-      views: 5200,
-      likes: 65,
-      comments: 8
-    },
-    {
-      id: 5,
-      title: "Traffic Intelligence: Predicting Lagos Rush Hour with AI",
-      excerpt: "Deep dive into how machine learning algorithms analyze traffic patterns to predict optimal travel times.",
-      author: "David Okonkwo",
-      authorRole: "Data Scientist",
-      authorAvatar: "DO",
-      publishDate: "2024-01-05",
-      readTime: "7 min read",
-      category: "Technology",
-      imageType: "traffic-ai",
-      tags: ["AI", "Traffic", "Lagos", "Prediction"],
-      views: 9500,
-      likes: 112,
-      comments: 18
-    },
-    {
-      id: 6,
-      title: "Safety First: Real-Time Incident Reporting Across Nigeria",
-      excerpt: "Learn how community-reported incidents help keep Nigerian roads safer for everyone.",
-      author: "Aisha Suleiman",
-      authorRole: "Safety Coordinator",
-      authorAvatar: "AS",
-      publishDate: "2024-01-03",
-      readTime: "5 min read",
-      category: "Community",
-      imageType: "safety",
-      tags: ["Safety", "Reporting", "Community"],
-      views: 4100,
-      likes: 58,
-      comments: 9
-    }
-  ];
+  const fetchBlogData = async (category?: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Build query params - if category is "all" or not provided, don't include category filter
+      const categoryParam = category && category !== "all" ? `&category=${category.toUpperCase()}` : "";
+      const response = await get<BlogResponse>(
+        `/api/blogs/get-all?pageSize=10&pageNumber=0&sortDirection=DESC&sortKey=createdDate${categoryParam}`
+      );
 
-  const filteredPosts = blogPosts.filter(post => {
+      if (response.success && response.data) {
+        // Set featured article (first one from featuredArticles array)
+        if (response.data.featuredArticles.length > 0) {
+          setFeaturedArticle(response.data.featuredArticles[0]);
+        } else {
+          setFeaturedArticle(null);
+        }
+        
+        // Set latest articles
+        setArticles(response.data.latestArticles);
+      }
+    } catch (err: any) {
+      console.error("Failed to fetch blog data:", err);
+      setError(err.message || "Failed to load blog posts");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Helper function to get author initials
+  const getAuthorInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map(n => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  // Helper function to get image type based on category
+  const getImageType = (category: string) => {
+    const typeMap: Record<string, string> = {
+      "NAVIGATION": "ai-tech",
+      "TECHNOLOGY": "traffic-ai",
+      "COMMUNITY": "community",
+      "UPDATES": "business"
+    };
+    return typeMap[category] || "ai-tech";
+  };
+
+  // Filter by search only (category filtering is done via API)
+  const filteredPosts = articles.filter(post => {
     const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         post.excerpt.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === "all" || post.category.toLowerCase() === selectedCategory;
-    return matchesSearch && matchesCategory;
+                         post.previewContent.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
   });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader isVisible={true} />
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-red-500 mb-4">Error Loading Blog</h2>
+            <p className="text-muted-foreground mb-6">{error}</p>
+            <Button onClick={() => fetchBlogData(selectedCategory)}>Try Again</Button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -244,7 +256,7 @@ export default function Blog() {
           </AnimatedSection>
 
           <div className="flex flex-wrap items-center justify-center gap-4 max-w-4xl mx-auto">
-            {categories.map((category, index) => (
+            {allCategories.map((category, index) => (
               <AnimatedSection key={category.id} delay={index * 0.1}>
                 <motion.button
                   onClick={() => setSelectedCategory(category.id)}
@@ -275,94 +287,107 @@ export default function Blog() {
       </section>
 
       {/* Featured Post - Redesigned */}
-      <section className="section-padding">
-        <div className="container">
-          <AnimatedSection className="mb-16">
-            <div className="flex items-center gap-2 mb-8">
-              <TrendingUp className="h-5 w-5 text-[#00984E]" />
-              <h2 className="text-auto-2xl font-bold font-display text-[#00984E]">Featured Article</h2>
-            </div>
-            
-            <motion.div
-              whileHover={{ y: -6 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            >
-              <Card className="border-0 shadow-2xl overflow-hidden glass-strong hover-glow group relative">
-                {/* Full-width image background */}
-                <div className="relative  overflow-hidden">
-                  <BlogImage type={featuredPost.imageType} className="w-full h-[450px] group-hover:scale-105 transition-transform duration-700" />
-                  <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/20" />
-                  
-                  {/* Featured badge */}
-                  <div className="absolute top-6 left-6">
-                    <Badge className="bg-gradient-to-r from-[#036A38] to-[#00984E] text-white shadow-xl backdrop-blur-sm px-4 py-2 text-sm font-medium border-0">
-                      <TrendingUp className="h-4 w-4 mr-2" />
-                      Featured Article
-                    </Badge>
-                  </div>
+      {featuredArticle && (
+        <section className="section-padding">
+          <div className="container">
+            <AnimatedSection className="mb-16">
+              <div className="flex items-center gap-2 mb-8">
+                <TrendingUp className="h-5 w-5 text-[#00984E]" />
+                <h2 className="text-auto-2xl font-bold font-display text-[#00984E]">Featured Article</h2>
+              </div>
+              
+              <motion.div
+                whileHover={{ y: -6 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              >
+                <Card className="border-0 shadow-2xl overflow-hidden glass-strong hover-glow group relative">
+                  {/* Full-width image background */}
+                  <div className="relative overflow-hidden">
+                    <BlogImage 
+                      type={getImageType(featuredArticle.category)} 
+                      className="w-full h-[450px] group-hover:scale-105 transition-transform duration-700" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/20" />
+                    
+                    {/* Featured badge */}
+                    <div className="absolute top-6 left-6">
+                      <Badge className="bg-gradient-to-r from-[#036A38] to-[#00984E] text-white shadow-xl backdrop-blur-sm px-4 py-2 text-sm font-medium border-0">
+                        <TrendingUp className="h-4 w-4 mr-2" />
+                        Featured Article
+                      </Badge>
+                    </div>
 
-                  {/* Content overlay */}
-                  <div className="absolute inset-0 flex items-end">
-                    <div className="p-8 lg:p-12 text-white w-full">
-                        <div className="flex items-center gap-3 mb-4">
-                          <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-sm px-3 py-1">
-                            {featuredPost.category}
-                          </Badge>
-                          <span className="text-sm opacity-90">
-                            {new Date(featuredPost.publishDate).toLocaleDateString()}
-                          </span>
-                          <span className="text-sm opacity-90">•</span>
-                          <span className="text-sm opacity-90">{featuredPost.readTime}</span>
-                        </div>
-
-                        <h3 className="text-auto-3xl lg:text-auto-4xl font-bold font-display my-6 leading-tight">
-                          {featuredPost.title}
-                        </h3>
-
-                        <p className="text-auto-lg opacity-90 leading-relaxed mb-8 line-clamp-2">
-                          {featuredPost.excerpt}
-                        </p>
-
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg border border-white/30">
-                              {featuredPost.authorAvatar}
-                            </div>
-                            <div>
-                              <div className="font-bold text-auto-base">{featuredPost.author}</div>
-                              <div className="text-auto-sm opacity-80">{featuredPost.authorRole}</div>
-                            </div>
+                    {/* Content overlay */}
+                    <div className="absolute inset-0 flex items-end">
+                      <div className="p-8 lg:p-12 text-white w-full">
+                          <div className="flex items-center gap-3 mb-4">
+                            <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-sm px-3 py-1">
+                              {featuredArticle.category}
+                            </Badge>
+                            <span className="text-sm opacity-90">
+                              {new Date(featuredArticle.postDate).toLocaleDateString()}
+                            </span>
+                            <span className="text-sm opacity-90">•</span>
+                            <span className="text-sm opacity-90">{featuredArticle.readTimeMinutes} min read</span>
                           </div>
 
-                          <div className="flex items-center gap-6">
-                            <div className="flex items-center gap-4 text-sm opacity-90">
-                              <div className="flex items-center gap-1">
-                                <Eye className="h-4 w-4" />
-                                <span>{featuredPost.views.toLocaleString()}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Heart className="h-4 w-4" />
-                                <span>{featuredPost.likes}</span>
+                          <h3 className="text-auto-3xl lg:text-auto-4xl font-bold font-display my-6 leading-tight">
+                            {featuredArticle.title}
+                          </h3>
+
+                          <p className="text-auto-lg opacity-90 leading-relaxed mb-8 line-clamp-2">
+                            {featuredArticle.previewContent}
+                          </p>
+
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              {featuredArticle.author.profilePicture ? (
+                                <img 
+                                  src={featuredArticle.author.profilePicture} 
+                                  alt={featuredArticle.author.name}
+                                  className="w-12 h-12 rounded-full object-cover shadow-lg border-2 border-white/30"
+                                />
+                              ) : (
+                                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg border border-white/30">
+                                  {getAuthorInitials(featuredArticle.author.name)}
+                                </div>
+                              )}
+                              <div>
+                                <div className="font-bold text-auto-base">{featuredArticle.author.name}</div>
+                                <div className="text-auto-sm opacity-80">{featuredArticle.author.designation}</div>
                               </div>
                             </div>
-                            
-                            <Link
-                              to={`/blog/${featuredPost.id}`}
-                              className="inline-flex items-center gap-2 bg-white/20 hover:bg-white hover:text-gray-900 text-white px-6 py-3 rounded-full transition-all font-medium backdrop-blur-sm border border-white/30 group-hover:scale-105"
-                            >
-                              Read Article
-                              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                            </Link>
+
+                            <div className="flex items-center gap-6">
+                              <div className="flex items-center gap-4 text-sm opacity-90">
+                                <div className="flex items-center gap-1">
+                                  <Eye className="h-4 w-4" />
+                                  <span>{featuredArticle.views.toLocaleString()}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Heart className="h-4 w-4" />
+                                  <span>{featuredArticle.likes}</span>
+                                </div>
+                              </div>
+                              
+                              <Link
+                                to={`/blog/${featuredArticle.id}`}
+                                className="inline-flex items-center gap-2 bg-white/20 hover:bg-white hover:text-gray-900 text-white px-6 py-3 rounded-full transition-all font-medium backdrop-blur-sm border border-white/30 group-hover:scale-105"
+                              >
+                                Read Article
+                                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                              </Link>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </Card>
-            </motion.div>
-          </AnimatedSection>
-        </div>
-      </section>
+                </Card>
+              </motion.div>
+            </AnimatedSection>
+          </div>
+        </section>
+      )}
 
       {/* Blog Posts Grid */}
       <section className="section-padding bg-muted/20">
@@ -385,7 +410,7 @@ export default function Blog() {
                   <Card className="border-0 shadow-lg hover:shadow-2xl transition-all duration-300 h-full glass overflow-hidden group">
                     {/* Modern image section */}
                     <div className="relative overflow-hidden h-48">
-                      <BlogImage type={post.imageType} className="w-full h-full" />
+                      <BlogImage type={getImageType(post.category)} className="w-full h-full" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
 
                       {/* Top badges */}
@@ -395,7 +420,7 @@ export default function Blog() {
                         </Badge>
                         <div className="flex items-center gap-1 text-xs text-white bg-black/70 backdrop-blur-sm px-2 py-1 rounded-full">
                           <Clock className="h-3 w-3" />
-                          {post.readTime}
+                          {post.readTimeMinutes} min
                         </div>
                       </div>
 
@@ -413,7 +438,7 @@ export default function Blog() {
                             </div>
                           </div>
                           <span className="opacity-90 font-medium">
-                            {new Date(post.publishDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            {new Date(post.postDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           </span>
                         </div>
                       </div>
@@ -428,18 +453,26 @@ export default function Blog() {
 
                       {/* Excerpt */}
                       <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2 mb-4 flex-grow">
-                        {post.excerpt}
+                        {post.previewContent}
                       </p>
 
                       {/* Bottom section */}
                       <div className="flex items-center justify-between pt-3 border-t border-border/30">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 bg-gradient-to-r from-[#036A38] to-[#00984E] rounded-full flex items-center justify-center text-white font-bold text-xs">
-                            {post.authorAvatar}
-                          </div>
+                          {post.author.profilePicture ? (
+                            <img 
+                              src={post.author.profilePicture} 
+                              alt={post.author.name}
+                              className="w-8 h-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 bg-gradient-to-r from-[#036A38] to-[#00984E] rounded-full flex items-center justify-center text-white font-bold text-xs">
+                              {getAuthorInitials(post.author.name)}
+                            </div>
+                          )}
                           <div>
-                            <div className="font-medium text-xs text-foreground">{post.author}</div>
-                            <div className="text-xs text-muted-foreground">{post.authorRole}</div>
+                            <div className="font-medium text-xs text-foreground">{post.author.name}</div>
+                            <div className="text-xs text-muted-foreground">{post.author.designation}</div>
                           </div>
                         </div>
 

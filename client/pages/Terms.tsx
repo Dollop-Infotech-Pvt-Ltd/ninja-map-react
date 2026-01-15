@@ -1,16 +1,61 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { FileText, Clock, Shield, AlertTriangle, Users, Building, CheckCircle, ScrollText, Eye } from "lucide-react";
+import { FileText, Clock, Shield, AlertTriangle, Users, Building, CheckCircle, ScrollText, Eye, Loader2, Settings, Database, Share2, Lock, Cookie } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AnimatedSection from "@/components/AnimatedSection";
+import { get } from "@/lib/http";
+import { PolicyResponse, PolicyDocument } from "@shared/api";
 
 export default function Terms() {
   const [activeSection, setActiveSection] = useState("introduction");
+  const [termsData, setTermsData] = useState<PolicyDocument[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const sectionsRef = useRef<{ [key: string]: HTMLElement | null }>({});
   const navRef = useRef<HTMLDivElement>(null);
+
+  // Fetch Terms and Conditions data
+  useEffect(() => {
+    const fetchTermsData = async () => {
+      try {
+        setLoading(true);
+        const response = await get<PolicyResponse>(
+          "/api/policies/get-all?documentType=TERMS_AND_CONDITIONS&pageSize=10&pageNumber=0&sortDirection=ASC&sortKey=createdDate"
+        );
+        setTermsData(response.content);
+        setError(null);
+      } catch (err) {
+        console.error("Failed to fetch terms data:", err);
+        setError("Failed to load terms information. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTermsData();
+  }, []);
+
+  // Map icon names from API to actual icon components
+  const getIconComponent = (title: string) => {
+    const iconMap: { [key: string]: any } = {
+      "Introduction": FileText,
+      "Usage Policy": Users,
+      "Service Limitations": AlertTriangle,
+      "Privacy & Data": Shield,
+      "Payment Terms": Building,
+      "Changes & Updates": Clock,
+      "Data Collection": Database,
+      "How We Use Your Data": Settings,
+      "Data Sharing": Share2,
+      "Data Security": Lock,
+      "Cookies & Tracking": Cookie,
+      "Your Rights": Users
+    };
+    return iconMap[title] || FileText;
+  };
 
   const sections = [
     {
@@ -86,7 +131,12 @@ export default function Terms() {
     const handleScroll = () => {
       const scrollPosition = window.scrollY + 200; // Offset for better UX
 
-      for (const section of sections) {
+      // Use dynamic terms data if available, otherwise use static sections
+      const sectionsToCheck = termsData.length > 0 
+        ? termsData.map(t => ({ id: t.title.toLowerCase().replace(/\s+/g, '-') }))
+        : sections;
+
+      for (const section of sectionsToCheck) {
         const element = sectionsRef.current[section.id];
         if (element) {
           const { offsetTop, offsetHeight } = element;
@@ -102,7 +152,7 @@ export default function Terms() {
     handleScroll(); // Check initial position
 
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [termsData]);
 
   // Smooth scroll to section
   const scrollToSection = (sectionId: string) => {
@@ -174,22 +224,47 @@ export default function Terms() {
       <section className="sticky top-[64px] z-30 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="container">
           <div ref={navRef} className="flex items-center gap-2 py-4 overflow-x-auto scrollbar-thin scrollbar-thumb-brand/30 scrollbar-track-transparent">
-            {sections.map((section, index) => (
-              <motion.button
-                key={section.id}
-                onClick={() => scrollToSection(section.id)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-auto-sm transition-all whitespace-nowrap ${
-                  activeSection === section.id
-                    ? 'bg-[#00984E] text-white shadow-lg'
-                    : 'text-muted-foreground hover:text-[#00984E] hover:bg-[#00984E]/5'
-                }`}
-              >
-                <section.icon className="h-4 w-4" />
-                {section.title}
-              </motion.button>
-            ))}
+            {/* Show dynamic tabs if API data is loaded, otherwise show static tabs */}
+            {!loading && termsData.length > 0 ? (
+              termsData.map((term) => {
+                const sectionId = term.title.toLowerCase().replace(/\s+/g, '-');
+                const IconComponent = getIconComponent(term.title);
+                
+                return (
+                  <motion.button
+                    key={term.id}
+                    onClick={() => scrollToSection(sectionId)}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-auto-sm transition-all whitespace-nowrap ${
+                      activeSection === sectionId
+                        ? 'bg-[#00984E] text-white shadow-lg'
+                        : 'text-muted-foreground hover:text-[#00984E] hover:bg-[#00984E]/5'
+                    }`}
+                  >
+                    <IconComponent className="h-4 w-4" />
+                    {term.title}
+                  </motion.button>
+                );
+              })
+            ) : (
+              sections.map((section) => (
+                <motion.button
+                  key={section.id}
+                  onClick={() => scrollToSection(section.id)}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-auto-sm transition-all whitespace-nowrap ${
+                    activeSection === section.id
+                      ? 'bg-[#00984E] text-white shadow-lg'
+                      : 'text-muted-foreground hover:text-[#00984E] hover:bg-[#00984E]/5'
+                  }`}
+                >
+                  <section.icon className="h-4 w-4" />
+                  {section.title}
+                </motion.button>
+              ))
+            )}
           </div>
         </div>
       </section>
@@ -198,7 +273,93 @@ export default function Terms() {
       <section className="section-padding">
         <div className="container">
           <div className="max-w-4xl mx-auto space-y-16">
-            {sections.map((section, index) => (
+            {/* Loading State */}
+            {loading && (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="h-12 w-12 animate-spin text-[#00984E]" />
+              </div>
+            )}
+
+            {/* Error State */}
+            {error && !loading && (
+              <AnimatedSection>
+                <Card className="border-0 shadow-xl glass-strong">
+                  <CardContent className="p-12 text-center">
+                    <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+                    <h3 className="text-auto-xl font-bold mb-2">Unable to Load Content</h3>
+                    <p className="text-muted-foreground">{error}</p>
+                  </CardContent>
+                </Card>
+              </AnimatedSection>
+            )}
+
+            {/* Dynamic API Content */}
+            {!loading && !error && termsData.length > 0 && termsData.map((term, index) => {
+              const IconComponent = getIconComponent(term.title);
+              const sectionId = term.title.toLowerCase().replace(/\s+/g, '-');
+              
+              return (
+                <div
+                  key={term.id}
+                  ref={(el) => (sectionsRef.current[sectionId] = el)}
+                  id={sectionId}
+                >
+                  <AnimatedSection delay={0.1 * index}>
+                    <Card className="border-0 shadow-xl glass-strong">
+                      <CardContent className="p-8 lg:p-12">
+                        <div className="flex items-start gap-4 mb-8">
+                          {term.image ? (
+                            <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden bg-gradient-to-br from-[#036A38] to-[#00984E]">
+                              <img 
+                                src={term.image} 
+                                alt={term.title}
+                                className="w-10 h-10 object-contain"
+                                onError={(e) => {
+                                  // Fallback to icon if image fails to load
+                                  e.currentTarget.style.display = 'none';
+                                  const parent = e.currentTarget.parentElement;
+                                  if (parent) {
+                                    const icon = document.createElement('div');
+                                    icon.innerHTML = `<svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>`;
+                                    parent.appendChild(icon.firstChild!);
+                                  }
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-16 h-16 bg-gradient-to-br from-[#036A38] to-[#00984E] rounded-2xl flex items-center justify-center shadow-lg">
+                              <IconComponent className="h-8 w-8 text-white" />
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <h2 className="text-auto-2xl font-bold font-display text-[#00984E]">
+                              {term.title}
+                            </h2>
+                            <div className={`w-16 h-1 bg-[#00984E] rounded-full mt-2 ${
+                              activeSection === sectionId ? 'animate-pulse' : ''
+                            }`} />
+                          </div>
+                        </div>
+
+                        <div className="space-y-6">
+                          <motion.p
+                            initial={{ opacity: 0, y: 10 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            className="text-auto-base text-muted-foreground leading-relaxed"
+                          >
+                            {term.description}
+                          </motion.p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </AnimatedSection>
+                </div>
+              );
+            })}
+
+            {/* Static Fallback Sections (shown if API fails or returns no data) */}
+            {!loading && !error && termsData.length === 0 && sections.map((section, index) => (
               <div
                 key={section.id}
                 ref={(el) => (sectionsRef.current[section.id] = el)}

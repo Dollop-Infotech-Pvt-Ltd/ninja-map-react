@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,6 @@ import {
   Building,
   Globe,
   CheckCircle,
-  ExternalLink,
   Star,
   HelpCircle,
   Settings,
@@ -31,6 +30,8 @@ import { useFormValidation } from "@/components/ui/unified-input";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AnimatedSection from "@/components/AnimatedSection";
+import { post } from "@/lib/http";
+import { ContactFormData, ContactResponse, InquiryType } from "@shared/api";
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -80,8 +81,27 @@ export default function Contact() {
     setIsSubmitting(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Map form type to API inquiry type
+      const inquiryTypeMap: Record<string, InquiryType> = {
+        general: "GENERAL_SUPPORT",
+        technical: "TECHNICAL_SUPPORT",
+        business: "BUSINESS_PARTNERSHIP",
+        privacy: "PRIVACY_DATA",
+        feedback: "FEEDBACK"
+      };
+
+      const payload: ContactFormData = {
+        fullName: formData.name,
+        emailAddress: formData.email,
+        inquiryType: inquiryTypeMap[formData.type] || "GENERAL_SUPPORT",
+        subject: formData.subject,
+        message: formData.message
+      };
+
+      const response = await post<ContactResponse, ContactFormData>(
+        "/api/contact-us/submit",
+        payload
+      );
 
       toast.success("Message sent successfully!", "We'll get back to you within 24 hours.");
 
@@ -93,8 +113,9 @@ export default function Contact() {
         type: "general"
       });
       setErrors({});
-    } catch (error) {
-      toast.serverError("Failed to send message", "Please check your connection and try again.");
+    } catch (error: any) {
+      const errorMessage = error?.message || "Failed to send message";
+      toast.serverError("Failed to send message", errorMessage);
     } finally {
       setIsSubmitting(false);
     }
