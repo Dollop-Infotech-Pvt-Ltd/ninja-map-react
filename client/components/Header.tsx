@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import AuthModals from "./AuthModals";
 import { refreshAuthToken, setAuthToken, hasAuthCookies } from "@/lib/http";
 import { useNavigate } from 'react-router-dom';
+import { useLoggedInUser } from "@/hooks/use-logged-in-user";
 
 interface HeaderProps {
   showBackButton?: boolean;
@@ -17,6 +18,7 @@ export default function Header({ showBackButton = true }: HeaderProps) {
   const { isOpen, mode, openLogin, openSignup, closeModal } = useAuthModal();
   const [mounted, setMounted] = useState(false);
   const { theme, setTheme, isDark } = useTheme();
+  const { user } = useLoggedInUser();
   const [userLoggedIn, setUserLoggedIn] = useState<boolean>(() => {
     try {
       return hasAuthCookies();
@@ -105,9 +107,17 @@ export default function Header({ showBackButton = true }: HeaderProps) {
             <div className="hidden md:flex items-center gap-2">
               {userLoggedIn ? (
                 <div className="flex items-center gap-2">
-                  <Link to="/dashboard" className="flex items-center gap-2 text-auto-sm font-medium text-foreground px-3 py-2 rounded-lg hover:bg-muted/50">
-                    <User className="w-5 h-5" />
-                    <span>Profile</span>
+                  <Link to="/profile" className="flex items-center gap-2 text-auto-sm font-medium text-foreground px-3 py-2 rounded-lg hover:bg-muted/50">
+                    {user?.profilePicture ? (
+                      <img 
+                        src={user.profilePicture} 
+                        alt="Profile" 
+                        className="w-5 h-5 rounded-full object-cover"
+                      />
+                    ) : (
+                      <User className="w-5 h-5" />
+                    )}
+                    <span>{user?.firstName || 'Profile'}</span>
                   </Link>
                   <button
                     onClick={() => {

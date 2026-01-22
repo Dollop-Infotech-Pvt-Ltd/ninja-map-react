@@ -1,7 +1,7 @@
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 
 // Base URL priority: Vite env -> provided IP -> fallback
-const DEFAULT_BASE_URL = "http://192.168.1.7:7002";
+const DEFAULT_BASE_URL = "http://192.168.1.95:7002";
 const BASE_URL: string = typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_API_BASE_URL
   ? (import.meta as any).env.VITE_API_BASE_URL
   : DEFAULT_BASE_URL;
@@ -165,7 +165,7 @@ export function getCsrf() {
  */
 export async function refreshAuthToken(endpoint = "/api/auth/refresh-token") {
   try {
-    const res = await http.get<{ success?: boolean; message?: string; http?: string; data?: string; statusCode?: number }>(endpoint, { timeout: 10000 });
+    const res = await http.post<{ success?: boolean; message?: string; http?: string; data?: string; statusCode?: number }>(endpoint, { timeout: 10000 });
     const body = res.data as any;
 
     const token = typeof body?.data === "string" ? body.data : (body?.token || body?.accessToken || null);

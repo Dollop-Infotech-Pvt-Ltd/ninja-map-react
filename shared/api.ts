@@ -163,3 +163,155 @@ export interface DeleteAccountConfirmResponse {
   http?: string;
   statusCode: number;
 }
+
+/**
+ * Customer Stories API types
+ */
+export type CustomerStoryCategory = 
+  | "BUSINESS" 
+  | "TRANSPORT" 
+  | "HEALTHCARE" 
+  | "PERSONAL"
+  | "OTHER";
+
+export interface CustomerStoryRequest {
+  title: string;
+  description: string;
+  category: CustomerStoryCategory;
+  location: string;
+  authorBio: string;
+  authorProfilePic?: File;
+  authorEmail: string;
+  authorName: string;
+  organisationName: string;
+}
+
+export interface CustomerStoryResponse {
+  success: boolean;
+  message: string;
+  http?: string;
+  statusCode: number;
+}
+
+export interface CustomerStoryAuthor {
+  name: string;
+  email: string;
+  designation: string | null;
+  organisationName: string | null;
+  profilePicture: string | null;
+  bio: string;
+}
+
+export interface CustomerStoryStats {
+  views: number | null;
+  likes: number;
+  comments: number | null;
+  shares: number | null;
+}
+
+export interface CustomerStory {
+  id: string;
+  title: string;
+  description: string;
+  category: CustomerStoryCategory;
+  rating: number;
+  location: string;
+  author: CustomerStoryAuthor;
+  stats: CustomerStoryStats;
+  createdDate: string;
+  updatedDate: string;
+  isActive: boolean;
+}
+
+export interface CustomerStoriesResponse {
+  content: CustomerStory[];
+  pageNumber: number;
+  pageSize: number;
+  totalElements: number;
+  totalPages: number;
+  numberOfElements: number;
+  firstPage: boolean;
+  lastPage: boolean;
+}
+/**
+ * User Profile API types
+ */
+export interface UpdateProfileRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  mobileNumber: string;
+  bio?: string;
+  gender?: "MALE" | "FEMALE" | "OTHER" | "PREFER_NOT_TO_SAY";
+  profilePicture?: File;
+}
+
+export interface UpdateProfileResponse {
+  success: boolean;
+  message: string;
+  user?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    mobileNumber: string;
+    bio?: string;
+    gender?: string;
+    profilePicture?: string;
+  };
+}
+
+export interface UpdatePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface UpdatePasswordResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface ChangePasswordRequest {
+  oldPassword: string;
+  newPassword: string;
+}
+
+export interface ChangePasswordResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface LoggedInUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  mobileNumber: string;
+  profilePicture: string | null;
+  isActive: boolean;
+  bio: string | null;
+  gender: string | null;
+  joiningDate: string;
+  role: string;
+}
+
+export interface UserProfile {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  location: string;
+  bio?: string;
+  profilePicture?: string;
+  joinDate: string;
+  isActive: boolean;
+  lastLoginDate?: string;
+}
+
+export interface GetProfileResponse {
+  success: boolean;
+  message: string;
+  user?: UserProfile;
+}
