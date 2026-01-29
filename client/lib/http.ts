@@ -1,5 +1,62 @@
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 
+// Grid Generation API Types (updated to match new API structure)
+export interface GridBounds {
+  leftBottomLat: number;
+  leftBottomLon: number;
+  leftTopLat: number;
+  leftTopLon: number;
+  rightTopLat: number;
+  rightTopLon: number;
+  rightBottomLat: number;
+  rightBottomLon: number;
+}
+
+export interface GridCell {
+  row: number;
+  col: number;
+  bottomLeft: {
+    latitude: number;
+    longitude: number;
+  };
+  bottomRight: {
+    latitude: number;
+    longitude: number;
+  };
+  topLeft: {
+    latitude: number;
+    longitude: number;
+  };
+  topRight: {
+    latitude: number;
+    longitude: number;
+  };
+  polyline: Array<{
+    latitude: number;
+    longitude: number;
+  }>;
+  center: {
+    latitude: number;
+    longitude: number;
+  };
+  blockCode: string;
+  cellId: string;
+  areaSquareMeters: number;
+  polylineAsArray: number[][];
+}
+
+export interface GridGenerationResponse {
+  gridCells: GridCell[];
+  totalRows: number;
+  totalColumns: number;
+  totalHeightMeters: number;
+  totalWidthMeters: number;
+  gridDimensions: string;
+  totalCells: number;
+  summary: string;
+  totalAreaSquareMeters: number;
+}
+
 // Base URL priority: Vite env -> provided IP -> fallback
 const DEFAULT_BASE_URL = "http://192.168.1.95:7002";
 const BASE_URL: string = typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_API_BASE_URL
@@ -22,14 +79,17 @@ export const http = axios.create({
 });
 
 http.interceptors.request.use((config) => {
-  config.headers = config.headers ?? {};
+  // Ensure headers exist and are properly typed
+  if (!config.headers) {
+    config.headers = {} as any;
+  }
 
   if (authToken) {
-    (config.headers as Record<string, string>)["Authorization"] = `Bearer ${authToken}`;
+    config.headers["Authorization"] = `Bearer ${authToken}`;
   }
 
   if (csrfToken && csrfHeaderName) {
-    (config.headers as Record<string, string>)[csrfHeaderName] = csrfToken;
+    config.headers[csrfHeaderName] = csrfToken;
   }
 
   return config;
@@ -254,6 +314,65 @@ function initClientAuth() {
 
 if (typeof window !== "undefined") {
   initClientAuth();
+}
+
+
+
+/**
+ * Generate grid cells for a given geographic area
+ * @param bounds - The geographic bounds for grid generation
+ * @param baseUrl - Optional base URL override (defaults to 192.168.1.78:7002)
+ * @returns Promise<GridGenerationResponse>
+ */
+export async function generateGrid(
+  bounds: GridBounds,
+  baseUrl?: string
+): Promise<GridGenerationResponse> {
+  const gridApiUrl = baseUrl || "http://192.168.1.78:7002";
+  const endpoint = `${gridApiUrl}/api/grid/polylines-with-codes`;
+  
+  console.log('🔄 Calling grid generation API:', endpoint);
+  console.log('📍 Using dynamic bounds from map:', bounds);
+  console.log('🕐 Timestamp:', new Date().toISOString());
+  console.log('🔧 API Version: v5.0 - Dynamic bounds from map view');
+  
+  try {
+    const response = await axios.post<GridGenerationResponse>(
+      endpoint,
+      bounds, // Using actual bounds from map
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        timeout: 30000, // 30 second timeout for grid generation
+        withCredentials: false, // Disable credentials for CORS
+      }
+    );
+    
+    console.log('✅ Grid generation successful:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Grid generation failed:', error);
+    
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      const message = error.response?.data?.message || error.message || 'Grid generation failed';
+      
+      console.error('📊 Error details:', {
+        status,
+        message,
+        url: endpoint,
+        data: error.response?.data
+      });
+      
+      const wrappedError = new Error(message) as Error & { status?: number; data?: unknown };
+      wrappedError.status = status;
+      wrappedError.data = error.response?.data;
+      throw wrappedError;
+    }
+    throw error;
+  }
 }
 
 export default http;

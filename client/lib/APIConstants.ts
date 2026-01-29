@@ -18,5 +18,18 @@ export const TILE_STYLES = {
 export const NOMINATIM_SEARCH_URL = `${NOMINATIM_BASE}/search`;
 export const NOMINATIM_REVERSE_URL = `${NOMINATIM_BASE}/reverse`;
 
+// New Map Search API - Use local proxy to avoid CORS issues
+export const MAP_SEARCH_BASE = "";  // Use relative URL for proxy
+export const MAP_SEARCH_URL = `/api/map/search`;
+export const MAP_REVERSE_URL = `/api/map/reverse-geocoding`;
+
 export const VALHALLA_ROUTE_URL = `${VALHALLA_BASE}/route`;
 export const VALHALLA_OPTIMIZED_ROUTE_URL = `${VALHALLA_BASE}/optimized_route`;
+
+// Grid API
+export const GRID_API_BASE = "http://192.168.1.78:7002";
+export const GRID_API_URL = `${GRID_API_BASE}/api/grid/polylines-with-codes`;
+
+// Custom Routing API - New detailed routing service
+export const CUSTOM_ROUTE_API_BASE = "http://192.168.1.95:7002";
+export const CUSTOM_ROUTE_API_URL = `${CUSTOM_ROUTE_API_BASE}/api/map/route`;

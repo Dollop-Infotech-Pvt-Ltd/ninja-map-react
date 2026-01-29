@@ -11,6 +11,39 @@ export interface DemoResponse {
   message: string;
 }
 
+// Grid API types
+export interface GridCellCoordinates {
+  latitude: number;
+  longitude: number;
+}
+
+export interface GridCellBounds {
+  bottomLeft: GridCellCoordinates;
+  bottomRight: GridCellCoordinates;
+  topRight: GridCellCoordinates;
+  topLeft: GridCellCoordinates;
+  center: GridCellCoordinates;
+}
+
+export interface GridCellInfo {
+  rowIndex: number;
+  colIndex: number;
+}
+
+export interface GridApiResponse {
+  gridCell: GridCellInfo & GridCellBounds & {
+    cellId: string;
+    areaSquareMeters: number;
+  };
+  blockCode: string;
+  center: GridCellCoordinates;
+}
+
+// Alternative response format that might come from the API
+export interface GridApiArrayResponse {
+  cellsWithCodes: GridApiResponse[];
+}
+
 /**
  * FAQ API types
  */
@@ -314,4 +347,159 @@ export interface GetProfileResponse {
   success: boolean;
   message: string;
   user?: UserProfile;
+}
+
+/**
+ * Grid Generation API types
+ */
+export interface GridBounds {
+  leftBottom: {
+    latitude: number;
+    longitude: number;
+  };
+  leftTop: {
+    latitude: number;
+    longitude: number;
+  };
+  rightTop: {
+    latitude: number;
+    longitude: number;
+  };
+  rightBottom: {
+    latitude: number;
+    longitude: number;
+  };
+}
+
+export interface GridCell {
+  row: number;
+  col: number;
+  bottomLeft: {
+    latitude: number;
+    longitude: number;
+  };
+  bottomRight: {
+    latitude: number;
+    longitude: number;
+  };
+  topLeft: {
+    latitude: number;
+    longitude: number;
+  };
+  topRight: {
+    latitude: number;
+    longitude: number;
+  };
+  polyline: Array<{
+    latitude: number;
+    longitude: number;
+  }>;
+  center: {
+    latitude: number;
+    longitude: number;
+  };
+  blockCode: string;
+  cellId: string;
+  areaSquareMeters: number;
+  polylineAsArray: number[][];
+}
+
+export interface GridGenerationResponse {
+  gridCells: GridCell[];
+  totalRows: number;
+  totalColumns: number;
+  totalHeightMeters: number;
+  totalWidthMeters: number;
+  gridDimensions: string;
+  totalCells: number;
+  summary: string;
+  totalAreaSquareMeters: number;
+}
+
+/**
+ * New Routing API types
+ */
+export interface RouteLocation {
+  type: string;
+  lat: number;
+  lon: number;
+  side_of_street?: string;
+  original_index: number;
+}
+
+export interface RouteManeuver {
+  type: number;
+  instruction: string;
+  verbal_succinct_transition_instruction?: string;
+  verbal_pre_transition_instruction?: string;
+  verbal_post_transition_instruction?: string;
+  verbal_transition_alert_instruction?: string;
+  verbal_multi_cue?: boolean;
+  time: number;
+  length: number;
+  cost: number;
+  begin_shape_index: number;
+  end_shape_index: number;
+  rough?: boolean;
+  street_names?: string[];
+  travel_mode: string;
+  travel_type: string;
+}
+
+export interface RouteLegSummary {
+  has_time_restrictions: boolean;
+  has_toll: boolean;
+  has_highway: boolean;
+  has_ferry: boolean;
+  min_lat: number;
+  min_lon: number;
+  max_lat: number;
+  max_lon: number;
+  time: number;
+  length: number;
+  cost: number;
+}
+
+export interface RouteLeg {
+  maneuvers: RouteManeuver[];
+  summary: RouteLegSummary;
+  shape: string;
+}
+
+export interface RouteTrip {
+  locations: RouteLocation[];
+  legs: RouteLeg[];
+  summary: RouteLegSummary;
+  status_message: string;
+  status: number;
+  units: string;
+  language: string;
+}
+
+export interface RouteRequest {
+  from: {
+    lat: number;
+    lon: number;
+    search_term: string;
+    search_radius: number;
+  };
+  via?: Array<{
+    lat: number;
+    lon: number;
+    search_term: string;
+    search_radius: number;
+  }>;
+  to: {
+    lat: number;
+    lon: number;
+    search_term: string;
+    search_radius: number;
+  };
+  costing: string;
+  use_ferry: number;
+  ferry_cost: number;
+}
+
+export interface RouteResponse {
+  trip: RouteTrip;
 }

@@ -1,5 +1,5 @@
-import { get, put, post } from "./http";
-import { LoggedInUser, UserProfile, GetProfileResponse, UpdateProfileRequest, UpdateProfileResponse } from "@shared/api";
+import { get, put, post, generateGrid, GridBounds, GridGenerationResponse } from "./http";
+import type { LoggedInUser, GetProfileResponse, UpdateProfileResponse } from "../../shared/api";
 
 /**
  * Fetch the currently logged-in user data
@@ -82,4 +82,43 @@ export async function changeUserPassword(data: {
     // Re-throw the error to be handled by the mutation
     throw error;
   }
+}
+
+/**
+ * Generate grid cells for a geographic area
+ * @param bounds - The geographic bounds for grid generation
+ * @returns Promise<GridGenerationResponse>
+ */
+export async function generateMapGrid(bounds: GridBounds): Promise<GridGenerationResponse> {
+  console.log('🔄 generateMapGrid called with bounds:', bounds);
+  try {
+    const result = await generateGrid(bounds);
+    console.log('✅ generateMapGrid successful:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ generateMapGrid failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Helper function to create grid bounds from coordinates
+ * @param southWest - Bottom-left coordinate
+ * @param northEast - Top-right coordinate
+ * @returns GridBounds object
+ */
+export function createGridBounds(
+  southWest: { latitude: number; longitude: number },
+  northEast: { latitude: number; longitude: number }
+): GridBounds {
+  return {
+    leftBottomLat: southWest.latitude,
+    leftBottomLon: southWest.longitude,
+    leftTopLat: northEast.latitude,
+    leftTopLon: southWest.longitude,
+    rightTopLat: northEast.latitude,
+    rightTopLon: northEast.longitude,
+    rightBottomLat: southWest.latitude,
+    rightBottomLon: northEast.longitude,
+  };
 }
