@@ -8,6 +8,9 @@ import { UnifiedTextarea, UnifiedInput } from "@/components/ui/unified-input";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useTheme } from "@/hooks/use-theme";
 import { useEnhancedToast } from "@/hooks/use-enhanced-toast";
+import { GridOverlay } from "@/components/GridOverlay";
+// Import grid API test functions for browser console testing
+import "@/lib/gridApiTest";
 import {
   MapPin,
   Navigation,
@@ -46,12 +49,14 @@ import {
   Utensils,
   Box,
   AlertTriangle,
-  Mountain
+  Mountain,
+  Grid3X3
 } from "lucide-react";
 import maplibregl from 'maplibre-gl';
 import type { StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { TILE_STYLES, NOMINATIM_SEARCH_URL, NOMINATIM_REVERSE_URL, VALHALLA_ROUTE_URL, VALHALLA_OPTIMIZED_ROUTE_URL } from "@/lib/APIConstants";
+import { TILE_STYLES, VALHALLA_ROUTE_URL, VALHALLA_OPTIMIZED_ROUTE_URL, CUSTOM_ROUTE_API_URL } from "@/lib/APIConstants";
+import { searchPlaces, reverseGeocode, type SearchResult } from "@/lib/mapSearchApi";
 
 // Helper function to decode polyline
 function decodePolyline(encoded: string): [number, number][] {
@@ -336,9 +341,6 @@ function MapLibreMap({
     if (!mapContainer.current) return;
     
     try {
-      console.log('Initializing map...');
-      console.log('Container element:', mapContainer.current);
-      console.log('MapLibre GL version:', maplibregl.getVersion());
       
       // Check if the container exists
       if (!mapContainer.current) {
@@ -348,7 +350,6 @@ function MapLibreMap({
       
       // Try to initialize map with vector style, fallback to simple style if needed
       let initialStyle = mapStyles.vector;
-      console.log('Using initial style:', initialStyle);
       
       map.current = new maplibregl.Map({
         container: mapContainer.current,
@@ -363,7 +364,6 @@ function MapLibreMap({
       });
       
       currentStyleId.current = typeof initialStyle === 'string' ? initialStyle : 'initial';
-      console.log('Map instance created:', map.current);
       
       // Map click handler for reverse geocoding
       map.current.on('click', (e) => {
@@ -372,7 +372,6 @@ function MapLibreMap({
       
       // Map loading events
       map.current.on('load', () => {
-        console.log('Map loaded successfully');
         onMapLoad(map.current!);
       });
       
@@ -393,7 +392,6 @@ function MapLibreMap({
         });
         // If there's a style loading/fetch error, try fallback
         if (err && (msg.includes('style') || msg.includes('fetch'))) {
-          console.log('Style loading failed, trying fallback OSM style...');
           try {
             map.current?.setStyle(fallbackStyle);
             currentStyleId.current = 'fallback-osm';
@@ -401,11 +399,10 @@ function MapLibreMap({
             console.error('Fallback style also failed:', fallbackError);
           }
         }
-        console.log('Make sure TileServer GL is running at http://192.168.1.11:8080');
       });
       
       map.current.on('styledata', () => {
-        console.log('Map style loaded');
+        // Map style loaded
       });
       
       map.current.on('styleimagemissing', (e) => {
@@ -417,7 +414,7 @@ function MapLibreMap({
       });
       
       map.current.on('sourcedataloading', (e) => {
-        console.log('Source data loading:', e.sourceId);
+        // Source data loading
       });
     } catch (error) {
       console.error('Error initializing map:', error);
@@ -426,7 +423,6 @@ function MapLibreMap({
     return () => {
       if (map.current) {
         try {
-          console.log('Cleaning up map...');
           if (instructionMarker.current) {
             instructionMarker.current.remove();
             instructionMarker.current = null;
@@ -485,7 +481,6 @@ function MapLibreMap({
         }
         // Only call setStyle if the style actually changes
         if (desiredId && currentStyleId.current !== desiredId && desiredStyle) {
-          console.log('Switching to style:', mapLayer, desiredId);
           map.current.setStyle(desiredStyle);
           currentStyleId.current = desiredId;
         }
@@ -493,7 +488,6 @@ function MapLibreMap({
         console.error('Error updating map style:', error);
         // Fallback to vector style, then to simple OSM style if needed
         try {
-          console.log('Trying vector style fallback...');
           map.current.setStyle(mapStyles.vector);
           currentStyleId.current = mapStyles.vector;
         } catch (fallbackError) {
@@ -979,6 +973,18 @@ export default function Map() {
   const [isStartInputFocused, setIsStartInputFocused] = useState(false);
   const [isEndInputFocused, setIsEndInputFocused] = useState(false);
 
+  // Grid overlay state - automatically enabled when grid layer is selected
+  const [isGridVisible, setIsGridVisible] = useState(false);
+
+  // Update grid visibility when layer changes
+  useEffect(() => {
+    if (mapLayer === "grid") {
+      setIsGridVisible(true);
+    } else {
+      setIsGridVisible(false);
+    }
+  }, [mapLayer]);
+
   // Per-waypoint UI/search state
   const [waypointInputFocus, setWaypointInputFocus] = useState<Record<number, boolean>>({});
   const [waypointResultsMap, setWaypointResultsMap] = useState<Record<number, SearchResult[]>>({});
@@ -1200,6 +1206,7 @@ useEffect(() => {
   }, [isVoiceNavigationEnabled]);
   
   // Valhalla routing with JSON body
+  // New detailed routing API integration
   const calculateRoute = useCallback(async (points: RoutePoint[], modeId?: string) => {
     if (points.length < 2) return;
 
@@ -1207,235 +1214,101 @@ useEffect(() => {
     setRouteError(null);
     setAvailableRoutes([]);
     setRouteGeometries([]);
+    
     try {
       const selectedMode = transportModes.find(mode => mode.id === (modeId ?? selectedTransport));
-      const costing = selectedMode?.profile || 'auto';
-
-      const allowAlternatives = points.length === 2;
-      const locations = points.map(p => ({ lat: p.coordinates[0], lon: p.coordinates[1], type: 'break', name: p.address }));
-
-      const body = {
-        locations,
-        costing: selectedMode.profile,
-        directions_options: { units: 'kilometers' },
-        alternates: allowAlternatives ? 2 : 0,
-        costing_options: {
-          [selectedMode.profile]: {
-            "use_ferry": 0.0,
-            "ferry_cost": 300000
-          }
-        }
-      } as any;
-
-      console.log(`Calculating route with costing: ${costing}`);
-      console.log('Route body:', body);
-
-      const url = `${VALHALLA_ROUTE_URL}?json=${encodeURIComponent(JSON.stringify(body))}`;
-      const response = await fetch(url, { method: 'GET' });
-      let data: any;
+      const transportMode = modeId ?? selectedTransport;
       
-      if (!response.ok) {
-        let errorText = 'Unknown error';
-        let errorJson: any = null;
-        try {
-          const text = await response.text();
-          errorText = text;
-          try { errorJson = JSON.parse(text); } catch {}
-        } catch (e) {
-          console.warn('Could not read error response:', e);
-        }
-        console.error('Routing error response:', errorText);
-        const ghMessage: string =
-          typeof errorJson?.message === 'string' ? errorJson.message : (typeof errorText === 'string' ? errorText : '');
-        const ghHints: any[] = Array.isArray(errorJson?.hints) ? errorJson.hints : [];
-        const distanceExceeded =
-          (typeof ghMessage === 'string' && ghMessage.toLowerCase().includes('too far from point')) ||
-          ghHints.some((h: any) => String(h?.details || '').includes('PointDistanceExceededException'));
-        if (distanceExceeded) {
-          const human = 'Selected points are too far apart. Try adding an intermediate waypoint or choose closer points.';
-          setRouteError(human);
-          setAvailableRoutes([]);
-          setRouteGeometries([]);
-          setRouteInfo(null);
-          setDirectionSteps([]);
-          toast.error('Points too far apart', 'Please add more destinations or pick closer locations.');
-          return;
-        }
-        const messageSource = errorJson && typeof errorJson === 'object' ? errorJson : errorText;
-        let resolvedMessage = extractServerErrorMessage(messageSource);
-        if (!resolvedMessage || resolvedMessage === 'Unknown server error.') {
-          const statusSummary = `${response.status} ${response.statusText}`.trim();
-          resolvedMessage = statusSummary ? `Routing failed: ${statusSummary}` : 'Routing failed.';
-        }
-        const routingError = new Error(resolvedMessage);
-        (routingError as any).status = response.status;
-        (routingError as any).statusText = response.statusText;
-        (routingError as any).raw = errorText;
-        (routingError as any).details = errorJson;
-        throw routingError;
-      } else {
-        data = await response.json();
-        console.log('Route data received:', data);
-      }
+      // Use the new routing API
+      const { calculateRoute: newCalculateRoute } = await import('@/lib/routingApi');
+      const routes = await newCalculateRoute(points, transportMode);
       
-      const maneuversToSign = (type: number) => {
-        if (type === 8 || type === 9) return -2; // left
-        if (type === 10 || type === 11) return 2; // right
-        if (type === 15) return 4; // roundabout
-        return 0; // continue/default
-      };
-
-      const trips: any[] = [];
-      if (data?.trip) {
-        trips.push(data.trip);
-      }
-      if (Array.isArray(data?.alternates)) {
-        data.alternates.forEach((alt: any) => {
-          if (alt?.trip) trips.push(alt.trip);
-        });
+      if (routes.length === 0) {
+        throw new Error('No routes found');
       }
 
+      // Process routes for the existing UI
+      const processedRoutes = routes.map(route => ({
+        distance: route.distance,
+        time: route.time,
+        instructions: route.instructions,
+        geometry: route.geometry
+      }));
+
+      // Sort by time ascending
+      processedRoutes.sort((a, b) => (a.time ?? Infinity) - (b.time ?? Infinity));
+      
+      setAvailableRoutes(processedRoutes);
+      setSelectedRouteIndex(0);
+
+      const selectedRoute = processedRoutes[0];
+      const steps = selectedRoute.instructions || [];
+      
+      setRouteInfo({
+        distance: (selectedRoute.distance / 1000).toFixed(1),
+        time: Math.round(selectedRoute.time / 60000),
+        instructions: steps,
+        totalRoutes: processedRoutes.length
+      });
+
+      setDirectionSteps(steps);
+      setIsRouteStepsVisible(false);
+      setActiveInstructionIndex(null);
+      setActiveInstructionLocation(null);
+      setCurrentStepIndex(0);
+      
+      // Voice navigation for first instruction
+      if (isVoiceNavigationEnabled && steps.length > 0) {
+        speakInstruction(steps[0].instruction);
+      }
+
+      setRouteGeometries(processedRoutes.map(r => r.geometry));
+      
+      // Check for walking paths (destinations far from road)
       const destinationCoords = points[points.length - 1]?.coordinates;
       const walkingPathsData: any[] = [];
+      
+      if (destinationCoords && selectedRoute.geometry.geometry.coordinates.length > 0) {
+        const routeCoords = selectedRoute.geometry.geometry.coordinates;
+        const lastRouteCoord = routeCoords[routeCoords.length - 1];
+        const destLat = destinationCoords[0];
+        const destLng = destinationCoords[1];
+        const lastLat = lastRouteCoord[1];
+        const lastLng = lastRouteCoord[0];
 
-      if (trips.length > 0) {
-        const routes = trips.map((trip, tripIndex) => {
-          const summary = trip?.summary || {};
-          const timeSec = Number(summary.time ?? 0);
-          const lengthKm = Number(summary.length ?? 0);
-
-          const legs = Array.isArray(trip?.legs) ? trip.legs : [];
-
-          let coords: [number, number][] = [];
-          if (typeof trip?.shape === 'string') {
-            coords = decodePolyline6(trip.shape).map((c) => [c[0], c[1]]);
-          } else if (legs.length > 0) {
-            legs.forEach((leg: any) => {
-              if (typeof leg?.shape === 'string') {
-                const decoded = decodePolyline6(leg.shape).map((c) => [c[0], c[1]] as [number, number]);
-                coords.push(...decoded);
+        const distance = calculateDistance(lastLat, lastLng, destLat, destLng);
+        if (distance > 100) {
+          walkingPathsData.push({
+            routeIndex: 0,
+            geometry: {
+              type: 'Feature',
+              properties: {},
+              geometry: {
+                type: 'LineString',
+                coordinates: [[lastLng, lastLat], [destLng, destLat]]
               }
-            });
-          }
-
-          const steps: DirectionStep[] = [];
-          legs.forEach((leg: any) => {
-            const mans = Array.isArray(leg?.maneuvers) ? leg.maneuvers : [];
-            mans.forEach((m: any) => {
-              const beginIndexRaw = typeof m?.begin_shape_index === 'number' ? m.begin_shape_index : null;
-              const beginIndex = beginIndexRaw != null && coords.length > 0
-                ? Math.min(Math.max(beginIndexRaw, 0), coords.length - 1)
-                : null;
-              let coord = beginIndex != null ? coords[beginIndex] : coords[0];
-              if ((!coord || coord.length < 2) && typeof m?.lon === 'number' && typeof m?.lat === 'number') {
-                coord = [Number(m.lon), Number(m.lat)];
-              }
-
-              steps.push({
-                instruction: m?.instruction || 'Continue',
-                distance: typeof m?.length === 'number' ? m.length * 1000 : 0,
-                time: typeof m?.time === 'number' ? m.time * 1000 : 0,
-                sign: maneuversToSign(Number(m?.type ?? 0)),
-                coordinates: coord ? [coord[1], coord[0]] : undefined
-              });
-            });
+            },
+            distance: distance
           });
-
-          const geometry = {
-            type: 'Feature',
-            properties: {},
-            geometry: { type: 'LineString', coordinates: coords as any }
-          };
-
-          if (destinationCoords && coords.length > 0) {
-            const lastRouteCoord = coords[coords.length - 1];
-            const destLat = destinationCoords[0];
-            const destLng = destinationCoords[1];
-            const lastLat = lastRouteCoord[1];
-            const lastLng = lastRouteCoord[0];
-
-            const distance = calculateDistance(lastLat, lastLng, destLat, destLng);
-            if (distance > 100) {
-              walkingPathsData.push({
-                routeIndex: tripIndex,
-                geometry: {
-                  type: 'Feature',
-                  properties: {},
-                  geometry: {
-                    type: 'LineString',
-                    coordinates: [[lastLng, lastLat], [destLng, destLat]]
-                  }
-                },
-                distance: distance
-              });
-            }
-          }
-
-          return {
-            distance: lengthKm * 1000,
-            time: timeSec * 1000,
-            instructions: steps,
-            geometry
-          };
-        });
-
-        // Sort by time asc
-        routes.sort((a, b) => (a.time ?? Infinity) - (b.time ?? Infinity));
-        setAvailableRoutes(routes);
-        setSelectedRouteIndex(0);
-
-        const selected = routes[0];
-        const steps = (selected.instructions || []) as DirectionStep[];
-        setRouteInfo({
-          distance: (selected.distance / 1000).toFixed(1),
-          time: Math.round(selected.time / 60000),
-          instructions: steps,
-          totalRoutes: routes.length
-        });
-
-        setDirectionSteps(steps);
-        setIsRouteStepsVisible(false);
-        setActiveInstructionIndex(null);
-        setActiveInstructionLocation(null);
-        setCurrentStepIndex(0);
-        if (isVoiceNavigationEnabled && steps.length > 0) {
-          speakInstruction(steps[0].instruction);
         }
-
-        setRouteGeometries(routes.map(r => r.geometry));
-        setWalkingPaths(walkingPathsData);
-
-        const selectedModeId = modeId ?? selectedTransport;
-        const summaryMap: Record<string, { timeMs: number; distanceM: number }> = {};
-        summaryMap[selectedModeId] = {
-          timeMs: selected.time,
-          distanceM: selected.distance
-        };
-        setModeSummaries(summaryMap);
-      } else {
-        console.warn('No route found in response');
       }
+      
+      setWalkingPaths(walkingPathsData);
+
+      // Update mode summaries
+      const summaryMap: Record<string, { timeMs: number; distanceM: number }> = {};
+      summaryMap[transportMode] = {
+        timeMs: selectedRoute.time,
+        distanceM: selectedRoute.distance
+      };
+      setModeSummaries(summaryMap);
+      
     } catch (error) {
-      console.error('Routing failed:', error);
-      const rawErrorMessage = extractServerErrorMessage(error);
-      const statusSummary = (() => {
-        const status = (error as { status?: number; statusText?: string } | undefined)?.status;
-        const statusText = (error as { status?: number; statusText?: string } | undefined)?.statusText;
-        if (typeof status === 'number') {
-          return `${status}${statusText ? ` ${statusText}` : ''}`.trim();
-        }
-        if (typeof statusText === 'string' && statusText.trim()) {
-          return statusText.trim();
-        }
-        return '';
-      })();
-      const resolvedErrorMessage =
-        rawErrorMessage && rawErrorMessage !== 'Unknown server error.'
-          ? rawErrorMessage
-          : statusSummary
-            ? `Route calculation failed: ${statusSummary}`
-            : 'Route calculation failed.';
-      setRouteError(resolvedErrorMessage);
+      console.error('New routing API failed:', error);
+      
+      const errorMessage = error instanceof Error ? error.message : 'Route calculation failed';
+      
+      setRouteError(errorMessage);
       setRouteGeometries([]);
       setAvailableRoutes([]);
       setRouteInfo(null);
@@ -1445,7 +1318,8 @@ useEffect(() => {
       setWalkingPaths([]);
       setActiveInstructionLocation(null);
       setCurrentStepIndex(0);
-      toast.error('Route calculation failed', resolvedErrorMessage);
+      
+      toast.error('Route calculation failed', errorMessage);
     } finally {
       setIsRouting(false);
     }
@@ -1481,6 +1355,37 @@ const mapLayers = [
           <path d="M0 70 L120 70" stroke="#ffffff" strokeWidth="2"/>
           <path d="M40 0 L40 100" stroke="#ffffff" strokeWidth="3"/>
           <path d="M80 0 L80 100" stroke="#ffffff" strokeWidth="2"/>
+          {/* Buildings */}
+          <rect x="10" y="10" width="20" height="15" fill="#e8e4db"/>
+          <rect x="50" y="35" width="15" height="10" fill="#e8e4db"/>
+          <rect x="85" y="55" width="25" height="20" fill="#e8e4db"/>
+          <rect x="15" y="75" width="18" height="18" fill="#e8e4db"/>
+          {/* Park */}
+          <circle cx="95" cy="20" r="12" fill="#c8e6c9"/>
+        </svg>
+      )
+    },
+    {
+      id: "grid",
+      name: "Grid View",
+      icon: Grid3X3,
+      description: "OSM with Grid",
+      preview: (
+        <svg viewBox="0 0 120 100" className="w-full h-full">
+          <rect width="120" height="100" fill="#f4f3f0"/>
+          {/* Streets */}
+          <path d="M0 30 L120 30" stroke="#ffffff" strokeWidth="4"/>
+          <path d="M0 50 L120 50" stroke="#ffffff" strokeWidth="3"/>
+          <path d="M0 70 L120 70" stroke="#ffffff" strokeWidth="2"/>
+          <path d="M40 0 L40 100" stroke="#ffffff" strokeWidth="3"/>
+          <path d="M80 0 L80 100" stroke="#ffffff" strokeWidth="2"/>
+          {/* Grid overlay - pure green with low opacity */}
+          <defs>
+            <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#00FF00" strokeWidth="1" opacity="0.3"/>
+            </pattern>
+          </defs>
+          <rect width="120" height="100" fill="url(#grid)"/>
           {/* Buildings */}
           <rect x="10" y="10" width="20" height="15" fill="#e8e4db"/>
           <rect x="50" y="35" width="15" height="10" fill="#e8e4db"/>
@@ -1629,17 +1534,10 @@ const mapLayers = [
     setIsSearching(true);
 
     try {
-      console.log(`${NOMINATIM_SEARCH_URL}?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1`);
-
-      const response = await fetch(
-        `${NOMINATIM_SEARCH_URL}?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1`
-      );
-
-      const data = await response.json();
-      setSearchResults(data);
+      const results = await searchPlaces(query, 10);
+      setSearchResults(results);
     } catch (error) {
       console.error('Search failed:', error);
-      console.log('Make sure Nominatim is running at http://192.168.1.11:8080');
       setSearchResults([]);
     } finally {
       setIsSearching(false);
@@ -1656,12 +1554,8 @@ const mapLayers = [
     setIsStartPointSearching(true);
     
     try {
-      const response = await fetch(
-        `${NOMINATIM_SEARCH_URL}?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1`
-      );
-      
-      const data = await response.json();
-      setStartPointResults(Array.isArray(data) ? data : []);
+      const results = await searchPlaces(query, 8);
+      setStartPointResults(results);
     } catch (error) {
       console.error('Start point search failed:', error);
       setStartPointResults([]);
@@ -1680,12 +1574,8 @@ const mapLayers = [
     setIsEndPointSearching(true);
     
     try {
-      const response = await fetch(
-        `${NOMINATIM_SEARCH_URL}?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1`
-      );
-      
-      const data = await response.json();
-      setEndPointResults(Array.isArray(data) ? data : []);
+      const results = await searchPlaces(query, 8);
+      setEndPointResults(results);
     } catch (error) {
       console.error('End point search failed:', error);
       setEndPointResults([]);
@@ -1704,12 +1594,8 @@ const mapLayers = [
     setIsWaypointSearching(true);
     
     try {
-      const response = await fetch(
-        `${NOMINATIM_SEARCH_URL}?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1`
-      );
-      
-      const data = await response.json();
-      setWaypointSearchResults(Array.isArray(data) ? data : []);
+      const results = await searchPlaces(query, 8);
+      setWaypointSearchResults(results);
     } catch (error) {
       console.error('Waypoint search failed:', error);
       setWaypointSearchResults([]);
@@ -1843,11 +1729,8 @@ const mapLayers = [
     }
     setWaypointSearchingMap(prev => ({ ...prev, [index]: true }));
     try {
-      const resp = await fetch(
-        `${NOMINATIM_SEARCH_URL}?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1&namedetails=1&countrycodes=ng`
-      );
-      const data = await resp.json();
-      setWaypointResultsMap(prev => ({ ...prev, [index]: Array.isArray(data) ? data : [] }));
+      const results = await searchPlaces(query, 8);
+      setWaypointResultsMap(prev => ({ ...prev, [index]: results }));
     } catch (e) {
       console.warn('Waypoint search failed:', e);
       setWaypointResultsMap(prev => ({ ...prev, [index]: [] }));
@@ -1992,20 +1875,15 @@ const mapLayers = [
   // Handle map click with reverse geocoding
   const handleMapClick = useCallback(async (lng: number, lat: number) => {
     try {
-      const response = await fetch(
-        `${NOMINATIM_REVERSE_URL}?format=json&lat=${lat}&lon=${lng}&addressdetails=1`
-      );
-
-      const data = await response.json();
-
-      if (data.display_name) {
+      const data = await reverseGeocode(lat, lng);
+      if (data.display) {
         // If user simply clicks map (not picking start/end/waypoint) show compact details overlay like Google Maps
         if (!isSelectingStartFromMap && !isSelectingEndFromMap && !isSelectingWaypointFromMap) {
           setMarkerDetails({
             coordinates: [lat, lng],
-            address: data.display_name,
-            name: data.display_name.split(',')[0],
-            type: data.type || data.category
+            address: data.display,
+            name: data.display.split(',')[0],
+            type: data.type
           });
           // hide search UI when pinning
           try { setSearchResults([]); setSearchQuery(""); } catch {}
@@ -2015,20 +1893,20 @@ const mapLayers = [
         if (isSelectingStartFromMap) {
           const startPoint: SearchResult = {
             place_id: `map-start-${Date.now()}`,
-            display_name: data.display_name,
+            display_name: data.display,
             lat: lat.toString(),
             lon: lng.toString(),
-            type: data.type || data.category
+            type: data.type
           } as SearchResult;
 
           // Prevent debounced start search from firing when location is set programmatically from map
           skipStartSearchRef.current = true;
           setSelectedStartPoint(startPoint);
-          setFromLocation(data.display_name);
+          setFromLocation(data.display);
           setUseCurrentLocation(false);
           setIsSelectingStartFromMap(false);
-          setMarkerDetails({ coordinates: [lat, lng], address: data.display_name, name: data.display_name.split(',')[0], type: data.type || data.category });
-          toast?.success?.('Start selected', data.display_name.split(',')[0]);
+          setMarkerDetails({ coordinates: [lat, lng], address: data.display, name: data.display.split(',')[0], type: data.type });
+          toast?.success?.('Start selected', data.display.split(',')[0]);
           return;
         }
 
@@ -2036,26 +1914,26 @@ const mapLayers = [
         if (isSelectingEndFromMap) {
           const endPoint: SearchResult = {
             place_id: `map-end-${Date.now()}`,
-            display_name: data.display_name,
+            display_name: data.display,
             lat: lat.toString(),
             lon: lng.toString(),
-            type: data.type || data.category
+            type: data.type
           } as SearchResult;
 
           // Prevent debounced end search from firing when location is set programmatically from map
           skipEndSearchRef.current = true;
           setSelectedEndPoint(endPoint);
-          setToLocation(data.display_name);
+          setToLocation(data.display);
           setIsSelectingEndFromMap(false);
-          setMarkerDetails({ coordinates: [lat, lng], address: data.display_name, name: data.display_name.split(',')[0], type: data.type || data.category });
-          toast?.success?.('Destination selected', data.display_name.split(',')[0]);
+          setMarkerDetails({ coordinates: [lat, lng], address: data.display, name: data.display.split(',')[0], type: data.type });
+          toast?.success?.('Destination selected', data.display.split(',')[0]);
 
           // If we have a start (either current or selected), auto-add route points and calculate
           const startCoord = useCurrentLocation && userLocation ? userLocation : selectedStartPoint ? [parseFloat(selectedStartPoint.lat), parseFloat(selectedStartPoint.lon)] : null;
           if (startCoord) {
             const pts: RoutePoint[] = [
               { coordinates: startCoord, address: startCoord === userLocation ? 'Current Location' : (selectedStartPoint?.display_name || 'Start') },
-              { coordinates: [lat, lng], address: data.display_name }
+              { coordinates: [lat, lng], address: data.display }
             ];
             setRoutePoints(pts);
             calculateRouteRef.current?.(pts);
@@ -2068,17 +1946,17 @@ const mapLayers = [
         if (isSelectingWaypointFromMap) {
           setMarkerDetails({
             coordinates: [lat, lng],
-            address: data.display_name,
-            name: data.display_name.split(',')[0],
-            type: data.type || data.category
+            address: data.display,
+            name: data.display.split(',')[0],
+            type: data.type
           });
 
           const result: SearchResult = {
             place_id: `map-waypoint-${Date.now()}`,
-            display_name: data.display_name,
+            display_name: data.display,
             lat: lat.toString(),
             lon: lng.toString(),
-            type: data.type || data.category
+            type: data.type
           } as any;
 
           // Add destination and clear selection mode; do not open input automatically
@@ -2086,12 +1964,11 @@ const mapLayers = [
           setIsSelectingWaypointFromMap(false);
           // Ensure add-input is closed and Add destination button is visible
           setIsAddingWaypoint(false);
-          toast?.success?.('Destination added', data.display_name.split(',')[0]);
+          toast?.success?.('Destination added', data.display.split(',')[0]);
         }
       }
     } catch (error) {
       console.error('Reverse geocoding failed:', error);
-      console.log('Make sure Nominatim is running at http://192.168.1.11:8080');
     }
   }, [isSelectingWaypointFromMap, isSelectingStartFromMap, isSelectingEndFromMap, addWaypoint, toast, useCurrentLocation, userLocation, selectedStartPoint]);
 
@@ -2276,18 +2153,9 @@ const mapLayers = [
     }
   }, [availableRoutes, isVoiceNavigationEnabled, speakInstruction]);
 
-  // Reverse geocode helper for drag updates
-  const reverseGeocode = useCallback(async (lat: number, lng: number) => {
-    try {
-      const resp = await fetch(`${NOMINATIM_REVERSE_URL}?format=json&lat=${lat}&lon=${lng}&addressdetails=1`);
-      if (!resp.ok) throw new Error(String(resp.statusText));
-      const data = await resp.json();
-      const display = data?.display_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-      const type = data?.type || data?.category || undefined;
-      return { display, type } as { display: string; type?: string };
-    } catch {
-      return { display: `${lat.toFixed(6)}, ${lng.toFixed(6)}` } as { display: string };
-    }
+  // Reverse geocode helper for drag updates - now uses the new Map API
+  const reverseGeocodeCallback = useCallback(async (lat: number, lng: number) => {
+    return await reverseGeocode(lat, lng);
   }, []);
 
   // Handle route marker drag from map
@@ -2295,7 +2163,7 @@ const mapLayers = [
     const total = routePoints.length;
     if (total < 2 || index < 0 || index >= total) return;
 
-    const { display, type } = await reverseGeocode(lat, lng);
+    const { display, type } = await reverseGeocodeCallback(lat, lng);
 
     const usingInputs = !!selectedEndPoint || !!selectedStartPoint || waypoints.length > 0 || useCurrentLocation;
 
@@ -2353,7 +2221,7 @@ const mapLayers = [
       setRoutePoints(next);
       await calculateRouteRef.current?.(next);
     }
-  }, [routePoints, selectedStartPoint, selectedEndPoint, waypoints.length, useCurrentLocation, reverseGeocode, calculateRouteFromPoints]);
+  }, [routePoints, selectedStartPoint, selectedEndPoint, waypoints.length, useCurrentLocation, reverseGeocodeCallback, calculateRouteFromPoints]);
 
   const focusOnInstruction = useCallback((step: DirectionStep, index: number) => {
     setActiveInstructionIndex(index);
@@ -4079,6 +3947,14 @@ const mapLayers = [
           isDark={isDark}
           selectedTransport={selectedTransport}
           walkingPaths={walkingPaths}
+        />
+        
+        {/* Grid Overlay */}
+        <GridOverlay
+          map={map}
+          isVisible={isGridVisible}
+          isDark={isDark}
+          isLayerMode={mapLayer === "grid"}
         />
       </div>
     </div>

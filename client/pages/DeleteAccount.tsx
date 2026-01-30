@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,12 +23,17 @@ import {
   ArrowLeft,
   UserX,
   Database,
-  History,
   Settings
 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AnimatedSection from "@/components/AnimatedSection";
+import { post } from "@/lib/http";
+import { 
+  DeleteAccountOtpResponse, 
+  DeleteAccountVerifyResponse,
+  DeleteAccountConfirmResponse 
+} from "@shared/api";
 
 export default function DeleteAccount() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -36,6 +41,8 @@ export default function DeleteAccount() {
   const [agreement, setAgreement] = useState(false);
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [resendTimer, setResendTimer] = useState(0);
 
   const handleOtpChange = (index: number, value: string) => {
     if (value.length <= 1) {
@@ -51,18 +58,107 @@ export default function DeleteAccount() {
     }
   };
 
-  const handlePhoneSubmit = () => {
-    if (phoneNumber && agreement) {
-      setCurrentStep(2);
+  const handlePhoneSubmit = async () => {
+    if (!phoneNumber || !agreement) return;
+    
+    setIsSubmitting(true);
+    setError(null);
+    
+    try {
+      const response = await post<DeleteAccountOtpResponse>(
+        `/api/users/delete/request-otp?mobileNumber=${phoneNumber}`
+      );
+      
+      if (response.success) {
+        setCurrentStep(2);
+        setResendTimer(30);
+        
+        // Start countdown timer
+        const interval = setInterval(() => {
+          setResendTimer((prev) => {
+            if (prev <= 1) {
+              clearInterval(interval);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      } else {
+        setError(response.message || "Failed to send OTP. Please try again.");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to send OTP. Please check your phone number and try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (resendTimer > 0) return;
+    
+    setIsSubmitting(true);
+    setError(null);
+    
+    try {
+      const response = await post<DeleteAccountOtpResponse>(
+        `/api/users/delete/request-otp?mobileNumber=${phoneNumber}`
+      );
+      
+      if (response.success) {
+        setResendTimer(30);
+        
+        // Start countdown timer
+        const interval = setInterval(() => {
+          setResendTimer((prev) => {
+            if (prev <= 1) {
+              clearInterval(interval);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      } else {
+        setError(response.message || "Failed to resend OTP. Please try again.");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to resend OTP. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleOtpSubmit = async () => {
+    const otpCode = otp.join("");
+    if (otpCode.length !== 6) return;
+    
     setIsSubmitting(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setCurrentStep(3);
-    setIsSubmitting(false);
+    setError(null);
+    
+    try {
+      // First verify the OTP
+      const verifyResponse = await post<DeleteAccountVerifyResponse>(
+        `/api/users/delete/verify-otp?otp=${otpCode}`
+      );
+      
+      if (verifyResponse.success) {
+        // Then confirm the deletion
+        const confirmResponse = await post<DeleteAccountConfirmResponse>(
+          `/api/users/delete/confirm?otp=${otpCode}`
+        );
+        
+        if (confirmResponse.success) {
+          setCurrentStep(3);
+        } else {
+          setError(confirmResponse.message || "Failed to confirm deletion. Please try again.");
+        }
+      } else {
+        setError(verifyResponse.message || "Invalid OTP. Please check and try again.");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to verify OTP. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const stats = [
@@ -334,6 +430,15 @@ export default function DeleteAccount() {
                       </AlertDescription>
                     </Alert>
 
+                    {error && (
+                      <Alert className="border-red-500/40 bg-red-500/10 mb-6 rounded-lg border p-4">
+                        <AlertTriangle className="h-5 w-5 text-red-500" />
+                        <AlertDescription className="text-auto-sm text-red-500">
+                          {error}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
                     <div className="space-y-6">
                       <div>
                         <Label htmlFor="phone" className="text-auto-sm font-medium">
@@ -370,11 +475,24 @@ export default function DeleteAccount() {
                       <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
                         <Button
                           onClick={handlePhoneSubmit}
-                          disabled={!phoneNumber || !agreement}
-                          className="w-full bg-gradient-to-r from-[#036A38] to-[#00984E] text-white hover:opacity-90 py-3 h-12 text-auto-base font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                          disabled={!phoneNumber || !agreement || isSubmitting}
+                          className="w-full bg-gradient-to-r from-[#036A38] to-[#00984E] text-white hover:opacity-90 py-3 h-12 text-auto-base font-semibold shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50"
                         >
-                          Send Verification Code
-                          <ChevronRight className="w-5 h-5 ml-2" />
+                          {isSubmitting ? (
+                            <>
+                              <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                className="w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2"
+                              />
+                              Sending Code...
+                            </>
+                          ) : (
+                            <>
+                              Send Verification Code
+                              <ChevronRight className="w-5 h-5 ml-2" />
+                            </>
+                          )}
                         </Button>
                       </motion.div>
                     </div>
@@ -405,6 +523,15 @@ export default function DeleteAccount() {
                       </p>
                     </div>
 
+                    {error && (
+                      <Alert className="border-red-500/40 bg-red-500/10 mb-6 rounded-lg border p-4">
+                        <AlertTriangle className="h-5 w-5 text-red-500" />
+                        <AlertDescription className="text-auto-sm text-red-500">
+                          {error}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
                     <div className="space-y-8">
                       <div>
                         <Label className="text-auto-sm font-medium">Enter Verification Code</Label>
@@ -433,8 +560,12 @@ export default function DeleteAccount() {
                         <p className="text-auto-sm text-muted-foreground mb-4">
                           Didn't receive the code?
                         </p>
-                        <button className="text-auto-sm text-[#00984E] hover:text-[#00984E]/80 transition-colors font-medium">
-                          Resend Code (0:30)
+                        <button 
+                          onClick={handleResendOtp}
+                          disabled={resendTimer > 0 || isSubmitting}
+                          className="text-auto-sm text-[#00984E] hover:text-[#00984E]/80 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {resendTimer > 0 ? `Resend Code (0:${resendTimer.toString().padStart(2, '0')})` : 'Resend Code'}
                         </button>
                       </div>
 
@@ -442,18 +573,23 @@ export default function DeleteAccount() {
                         <Button
                           onClick={handleOtpSubmit}
                           disabled={otp.some(digit => !digit) || isSubmitting}
-                          className="w-full bg-gradient-to-r from-[#036A38] to-[#00984E] text-white hover:opacity-90 py-3 h-12 text-auto-base font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                          className="w-full bg-gradient-to-r from-[#036A38] to-[#00984E] text-white hover:opacity-90 py-3 h-12 text-auto-base font-semibold shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50"
                         >
                           {isSubmitting ? (
-                            <motion.div
-                              animate={{ rotate: 360 }}
-                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                              className="w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2"
-                            />
+                            <>
+                              <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                className="w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2"
+                              />
+                              Processing...
+                            </>
                           ) : (
-                            <Trash2 className="w-5 h-5 mr-2" />
+                            <>
+                              <Trash2 className="w-5 h-5 mr-2" />
+                              Delete My Account
+                            </>
                           )}
-                          {isSubmitting ? "Processing..." : "Delete My Account"}
                         </Button>
                       </motion.div>
 
