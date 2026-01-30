@@ -1,11 +1,9 @@
 import axios from 'axios';
 import type { RouteResponse, RouteManeuver } from '@shared/api';
 
-// Use local proxy endpoint to avoid CORS issues
-const ROUTING_API_URL = '/api/map/route';
-
 // Create a dedicated axios instance for routing API
 const routingClient = axios.create({
+  baseURL: 'https://api.ninja-map.dollopinfotech.com',
   timeout: 30000, // 30 seconds for routing requests
   headers: {
     'Accept': 'application/json',
@@ -180,7 +178,7 @@ export interface RouteResult {
 }
 
 /**
- * Calculate route using the new detailed routing API
+ * Calculate route using the new Ninja Map routing API
  * @param points - Array of route points (start, waypoints, end)
  * @param transportMode - Transport mode ('car', 'bike', 'motorbike', 'foot')
  * @returns Promise<RouteResult[]> - Array of route alternatives
@@ -195,24 +193,27 @@ export async function calculateRoute(
 
   const costing = TRANSPORT_COSTING_MAP[transportMode] || 'auto';
   
-  // Build the route request
+  // Build the route request with the new API format
   const routeRequest: any = {
     from: {
       lat: points[0].coordinates[0],
       lon: points[0].coordinates[1],
       search_term: points[0].address || '',
+      full_name: points[0].address || '',
       search_radius: 5000
     },
     to: {
       lat: points[points.length - 1].coordinates[0],
       lon: points[points.length - 1].coordinates[1],
       search_term: points[points.length - 1].address || '',
+      full_name: points[points.length - 1].address || '',
       search_radius: 5000
     },
     costing,
     use_ferry: 0.0,
     ferry_cost: 300000,
-    alternates: 3
+    alternates: '3',
+    isSaved: false
   };
 
   // Add waypoints if any
@@ -221,43 +222,97 @@ export async function calculateRoute(
       lat: point.coordinates[0],
       lon: point.coordinates[1],
       search_term: point.address || '',
+      full_name: point.address || '',
       search_radius: 3000
     }));
   }
 
   try {
-    console.log('New Routing API Request URL:', ROUTING_API_URL);
-    console.log('New Routing API Request Body:', routeRequest);
+    console.log('Routing API Request Body:', routeRequest);
     
-    const response = await routingClient.post<RouteResponse>(ROUTING_API_URL, routeRequest);
+    const response = await routingClient.post(
+      '/api/map/route', 
+      routeRequest
+    );
     
-    console.log('New Routing API Response:', response.data);
+    console.log('Routing API Response:', response.data);
     
-    if (!response.data.trip) {
-      throw new Error('No route found in response');
-    }
-
-    const trip = response.data.trip;
-    
-    // Process the route data
     const routes: RouteResult[] = [];
     
-    // Decode the route geometry
-    let coordinates: [number, number][] = [];
+    // Handle single trip response
+    if (response.data.trip) {
+      const trip = response.data.trip;
+      routes.push(processTrip(trip));
+    }
     
-    // Combine all leg shapes
-    if (trip.legs && trip.legs.length > 0) {
-      trip.legs.forEach(leg => {
-        if (leg.shape) {
-          const legCoords = decodePolyline6(leg.shape);
-          coordinates.push(...legCoords);
+    // Handle multiple trips (alternates) - check both 'trips' and 'alternates' keys
+    if (response.data.trips && Array.isArray(response.data.trips)) {
+      response.data.trips.forEach((trip: any) => {
+        routes.push(processTrip(trip));
+      });
+    }
+    
+    // Handle alternates key from API response
+    if (response.data.alternates && Array.isArray(response.data.alternates)) {
+      response.data.alternates.forEach((alternate: any) => {
+        if (alternate.trip) {
+          routes.push(processTrip(alternate.trip));
         }
       });
     }
-
-    // Process maneuvers to create direction steps
-    const instructions: DirectionStep[] = [];
     
+    if (routes.length === 0) {
+      throw new Error('No route found in response');
+    }
+    
+    return routes;
+    
+  } catch (error) {
+    console.error('Routing API failed:', error);
+    
+    if (axios.isAxiosError(error)) {
+      if (error.code === 'ECONNABORTED') {
+        throw new Error('Route calculation timed out. Please try again.');
+      }
+      if (error.response?.status === 404) {
+        throw new Error('Routing service not found. Please check the API endpoint.');
+      }
+      if (error.response?.status >= 500) {
+        throw new Error('Routing service is temporarily unavailable. Please try again later.');
+      }
+      if (error.response?.status === 0 || error.message.includes('Network Error')) {
+        throw new Error('Network error. Please check your internet connection.');
+      }
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+    }
+    
+    throw new Error('Route calculation failed. Please try again.');
+  }
+}
+
+/**
+ * Helper function to process a trip object into RouteResult format
+ */
+function processTrip(trip: any): RouteResult {
+  // Decode the route geometry
+  let coordinates: [number, number][] = [];
+  
+  // Combine all leg shapes
+  if (trip.legs && trip.legs.length > 0) {
+    trip.legs.forEach(leg => {
+      if (leg.shape) {
+        const legCoords = decodePolyline6(leg.shape);
+        coordinates.push(...legCoords);
+      }
+    });
+  }
+
+  // Process maneuvers to create direction steps
+  const instructions: DirectionStep[] = [];
+  
+  if (trip.legs) {
     trip.legs.forEach(leg => {
       if (leg.maneuvers) {
         leg.maneuvers.forEach((maneuver: RouteManeuver) => {
@@ -281,49 +336,22 @@ export async function calculateRoute(
         });
       }
     });
+  }
 
-    // Create the route result
-    const routeResult: RouteResult = {
-      distance: trip.summary.length * 1000, // Convert km to meters
-      time: trip.summary.time * 1000, // Convert seconds to milliseconds
-      instructions,
+  // Create the route result
+  return {
+    distance: trip.summary.length * 1000, // Convert km to meters
+    time: trip.summary.time * 1000, // Convert seconds to milliseconds
+    instructions,
+    geometry: {
+      type: 'Feature',
+      properties: {},
       geometry: {
-        type: 'Feature',
-        properties: {},
-        geometry: {
-          type: 'LineString',
-          coordinates: coordinates
-        }
-      }
-    };
-
-    routes.push(routeResult);
-    
-    return routes;
-    
-  } catch (error) {
-    console.error('New routing API failed:', error);
-    
-    if (axios.isAxiosError(error)) {
-      if (error.code === 'ECONNABORTED') {
-        throw new Error('Route calculation timed out. Please try again.');
-      }
-      if (error.response?.status === 404) {
-        throw new Error('Routing service not found. Please check the API endpoint.');
-      }
-      if (error.response?.status >= 500) {
-        throw new Error('Routing service is temporarily unavailable. Please try again later.');
-      }
-      if (error.response?.status === 0 || error.message.includes('Network Error')) {
-        throw new Error('Network error. Please check your internet connection.');
-      }
-      if (error.response?.data?.message) {
-        throw new Error(error.response.data.message);
+        type: 'LineString',
+        coordinates: coordinates
       }
     }
-    
-    throw new Error('Route calculation failed. Please try again.');
-  }
+  };
 }
 
 export default {

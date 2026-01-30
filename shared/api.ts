@@ -503,4 +503,8 @@ export interface RouteRequest {
 
 export interface RouteResponse {
   trip: RouteTrip;
+  trips?: RouteTrip[];
+  alternates?: Array<{
+    trip: RouteTrip;
+  }>;
 }
