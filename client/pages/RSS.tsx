@@ -122,7 +122,7 @@ export default function RSS() {
       setCopiedFeed(feedId);
       setTimeout(() => setCopiedFeed(null), 2000);
     } catch (err) {
-      console.error("Failed to copy: ", err);
+      // Failed to copy
     }
   };
 

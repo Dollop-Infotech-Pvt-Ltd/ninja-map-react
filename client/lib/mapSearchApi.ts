@@ -1,7 +1,6 @@
-import axios from 'axios';
-import { MAP_SEARCH_URL, MAP_REVERSE_URL } from './APIConstants';
+// Direct API calls for map search and reverse geocoding using Nominatim - no proxy needed
 
-// Map Search API interfaces
+// Map Search API interfaces (kept for compatibility)
 export interface MapSearchPlace {
   id: string;
   name: string;
@@ -98,31 +97,10 @@ export const transformMapSearchToSearchResult = (place: MapSearchPlace): SearchR
   };
 };
 
-// Create a dedicated axios instance for map search API
-const mapSearchClient = axios.create({
-  timeout: 10000,
-  headers: {
-    'Accept': 'application/json',
-    'Content-Type': 'application/json',
-  },
-});
 
-// Add response interceptor for better error handling
-mapSearchClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    console.error('Map Search API Error:', {
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      url: error.config?.url
-    });
-    return Promise.reject(error);
-  }
-);
 
 /**
- * Search for places using the Map Search API (via local proxy)
+ * Search for places using Nominatim API directly (no proxy)
  * @param query - Search query string
  * @param size - Number of results to return (default: 8)
  * @returns Promise<SearchResult[]>
@@ -133,32 +111,45 @@ export async function searchPlaces(query: string, size: number = 8): Promise<Sea
   }
 
   try {
-    const url = `${MAP_SEARCH_URL}?search=${encodeURIComponent(query)}&size=${size}`;
-    console.log('Map Search API Request (via proxy):', url);
+    // Use Nominatim API directly - no proxy needed
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=${size}&addressdetails=1&extratags=1`;
+    
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'YourAppName/1.0 (your-email@example.com)' // Required by Nominatim
+      }
+    });
 
-    const response = await mapSearchClient.get<MapSearchResponse>(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
     
-    console.log('Map Search API Response:', response.data);
-    
-    // Transform the API response to SearchResult format
-    const transformedResults = response.data.results.places.map(transformMapSearchToSearchResult);
+    // Transform Nominatim response to SearchResult format
+    const transformedResults: SearchResult[] = data.map((item: any) => ({
+      place_id: item.place_id?.toString() || item.osm_id?.toString() || Math.random().toString(),
+      display_name: item.display_name || item.name || 'Unknown location',
+      lat: item.lat,
+      lon: item.lon,
+      type: item.type || item.class,
+      category: item.category || item.class,
+      importance: parseFloat(item.importance) || 0
+    }));
     
     return transformedResults;
   } catch (error) {
-    console.error('Map search failed:', error);
+    console.error('Direct search failed:', error);
     
-    if (axios.isAxiosError(error)) {
-      if (error.code === 'ECONNABORTED') {
-        throw new Error('Search request timed out. Please try again.');
-      }
-      if (error.response?.status === 404) {
-        throw new Error('Search service not found. Please check the API endpoint.');
-      }
-      if (error.response?.status >= 500) {
-        throw new Error('Search service is temporarily unavailable. Please try again later.');
-      }
-      if (error.response?.status === 0 || error.message.includes('Network Error')) {
+    if (error instanceof Error) {
+      if (error.message.includes('Failed to fetch')) {
         throw new Error('Network error. Please check your internet connection.');
+      }
+      if (error.message.includes('HTTP error! status: 429')) {
+        throw new Error('Too many requests. Please wait a moment and try again.');
+      }
+      if (error.message.includes('HTTP error! status: 5')) {
+        throw new Error('Search service is temporarily unavailable. Please try again later.');
       }
     }
     
@@ -167,59 +158,74 @@ export async function searchPlaces(query: string, size: number = 8): Promise<Sea
 }
 
 /**
- * Reverse geocode coordinates to get place information
+ * Reverse geocode coordinates to get place information using Nominatim API directly
  * @param lat - Latitude
  * @param lon - Longitude
- * @param searchTerm - Optional search term to filter results
+ * @param searchTerm - Optional search term to filter results (not used in direct API)
  * @returns Promise<{display: string, type?: string}>
  */
 export async function reverseGeocode(lat: number, lon: number, searchTerm?: string): Promise<{display: string, type?: string}> {
   try {
-    let url = `${MAP_REVERSE_URL}?lat=${lat}&lon=${lon}`;
-    if (searchTerm) {
-      url += `&searchTerm=${encodeURIComponent(searchTerm)}`;
-    }
+    // Use Nominatim API directly - no proxy needed
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
     
-    console.log('Reverse geocoding request (via proxy):', url);
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'YourAppName/1.0 (your-email@example.com)' // Required by Nominatim
+      }
+    });
 
-    const response = await mapSearchClient.get(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
     
-    console.log('Reverse geocoding response:', response.data);
-    
-    // Handle the response - need to check the actual format from the API
-    const data = response.data;
-    
-    // Try to extract display name and type from the response
-    // Prioritize 'name' over 'display_name'
+    // Handle Nominatim response format
     let display = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
     let type: string | undefined;
     
-    if (data && typeof data === 'object') {
-      // Check for common response patterns
-      if (data.results && data.results.places && data.results.places.length > 0) {
-        const place = data.results.places[0];
-        // Prioritize name over display_name, then fall back to address
-        display = place.name || place.display_name || place.address?.full_address || display;
-        type = place.classification?.category?.[0] || place.classification?.layer;
-      } else if (data.name) {
-        // Direct name field
-        display = data.name;
-        type = data.type || data.category;
-      } else if (data.display_name) {
-        display = data.display_name;
-        type = data.type || data.category;
-      } else if (data.address) {
-        display = data.address;
-        type = data.type;
-      } else if (typeof data === 'string') {
-        display = data;
+    if (data && data.display_name) {
+      display = data.display_name;
+      type = data.type || data.class;
+    } else if (data && data.address) {
+      // Build display name from address components
+      const addr = data.address;
+      const parts = [];
+      
+      if (addr.house_number && addr.road) {
+        parts.push(`${addr.house_number} ${addr.road}`);
+      } else if (addr.road) {
+        parts.push(addr.road);
       }
+      
+      if (addr.suburb || addr.neighbourhood) {
+        parts.push(addr.suburb || addr.neighbourhood);
+      }
+      
+      if (addr.city || addr.town || addr.village) {
+        parts.push(addr.city || addr.town || addr.village);
+      }
+      
+      if (addr.state) {
+        parts.push(addr.state);
+      }
+      
+      if (addr.country) {
+        parts.push(addr.country);
+      }
+      
+      if (parts.length > 0) {
+        display = parts.join(', ');
+      }
+      
+      type = data.type || data.class;
     }
     
     return { display, type };
     
   } catch (error) {
-    console.error('Reverse geocoding failed:', error);
+    console.error('Direct reverse geocoding failed:', error);
     
     // Fallback to coordinates on error
     return { display: `${lat.toFixed(6)}, ${lon.toFixed(6)}` };

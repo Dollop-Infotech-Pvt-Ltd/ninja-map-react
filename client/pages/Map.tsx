@@ -341,9 +341,6 @@ function MapLibreMap({
     if (!mapContainer.current) return;
     
     try {
-      console.log('Initializing map...');
-      console.log('Container element:', mapContainer.current);
-      console.log('MapLibre GL version:', maplibregl.getVersion());
       
       // Check if the container exists
       if (!mapContainer.current) {
@@ -353,7 +350,6 @@ function MapLibreMap({
       
       // Try to initialize map with vector style, fallback to simple style if needed
       let initialStyle = mapStyles.vector;
-      console.log('Using initial style:', initialStyle);
       
       map.current = new maplibregl.Map({
         container: mapContainer.current,
@@ -368,7 +364,6 @@ function MapLibreMap({
       });
       
       currentStyleId.current = typeof initialStyle === 'string' ? initialStyle : 'initial';
-      console.log('Map instance created:', map.current);
       
       // Map click handler for reverse geocoding
       map.current.on('click', (e) => {
@@ -377,7 +372,6 @@ function MapLibreMap({
       
       // Map loading events
       map.current.on('load', () => {
-        console.log('Map loaded successfully');
         onMapLoad(map.current!);
       });
       
@@ -398,7 +392,6 @@ function MapLibreMap({
         });
         // If there's a style loading/fetch error, try fallback
         if (err && (msg.includes('style') || msg.includes('fetch'))) {
-          console.log('Style loading failed, trying fallback OSM style...');
           try {
             map.current?.setStyle(fallbackStyle);
             currentStyleId.current = 'fallback-osm';
@@ -406,11 +399,10 @@ function MapLibreMap({
             console.error('Fallback style also failed:', fallbackError);
           }
         }
-        console.log('Make sure TileServer GL is running at http://192.168.1.11:8080');
       });
       
       map.current.on('styledata', () => {
-        console.log('Map style loaded');
+        // Map style loaded
       });
       
       map.current.on('styleimagemissing', (e) => {
@@ -422,7 +414,7 @@ function MapLibreMap({
       });
       
       map.current.on('sourcedataloading', (e) => {
-        console.log('Source data loading:', e.sourceId);
+        // Source data loading
       });
     } catch (error) {
       console.error('Error initializing map:', error);
@@ -431,7 +423,6 @@ function MapLibreMap({
     return () => {
       if (map.current) {
         try {
-          console.log('Cleaning up map...');
           if (instructionMarker.current) {
             instructionMarker.current.remove();
             instructionMarker.current = null;
@@ -490,7 +481,6 @@ function MapLibreMap({
         }
         // Only call setStyle if the style actually changes
         if (desiredId && currentStyleId.current !== desiredId && desiredStyle) {
-          console.log('Switching to style:', mapLayer, desiredId);
           map.current.setStyle(desiredStyle);
           currentStyleId.current = desiredId;
         }
@@ -498,7 +488,6 @@ function MapLibreMap({
         console.error('Error updating map style:', error);
         // Fallback to vector style, then to simple OSM style if needed
         try {
-          console.log('Trying vector style fallback...');
           map.current.setStyle(mapStyles.vector);
           currentStyleId.current = mapStyles.vector;
         } catch (fallbackError) {
@@ -1230,13 +1219,9 @@ useEffect(() => {
       const selectedMode = transportModes.find(mode => mode.id === (modeId ?? selectedTransport));
       const transportMode = modeId ?? selectedTransport;
       
-      console.log(`Calculating route with transport mode: ${transportMode}`);
-      
       // Use the new routing API
       const { calculateRoute: newCalculateRoute } = await import('@/lib/routingApi');
       const routes = await newCalculateRoute(points, transportMode);
-      
-      console.log('New routing API results:', routes);
       
       if (routes.length === 0) {
         throw new Error('No routes found');
@@ -1891,7 +1876,6 @@ const mapLayers = [
   const handleMapClick = useCallback(async (lng: number, lat: number) => {
     try {
       const data = await reverseGeocode(lat, lng);
-
       if (data.display) {
         // If user simply clicks map (not picking start/end/waypoint) show compact details overlay like Google Maps
         if (!isSelectingStartFromMap && !isSelectingEndFromMap && !isSelectingWaypointFromMap) {
@@ -1985,7 +1969,6 @@ const mapLayers = [
       }
     } catch (error) {
       console.error('Reverse geocoding failed:', error);
-      console.log('Make sure Map Search API is running at https://api.ninja-map.dollopinfotech.com');
     }
   }, [isSelectingWaypointFromMap, isSelectingStartFromMap, isSelectingEndFromMap, addWaypoint, toast, useCurrentLocation, userLocation, selectedStartPoint]);
 

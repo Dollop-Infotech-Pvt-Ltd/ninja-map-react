@@ -584,7 +584,7 @@ export function GridOverlay({
 
       // Check for common network issues
       if (error.code === "ERR_NETWORK" || error.message?.includes("Network Error")) {
-        errorMessage = "Network error - check if grid API server is running at 192.168.1.78:7002";
+        errorMessage = "Network error - check if grid API server is running at https://api.ninja-map.dollopinfotech.com";
       } else if (error.response?.status === 404) {
         errorMessage = "Grid API endpoint not found - check server configuration";
       } else if (error.response?.status === 500) {

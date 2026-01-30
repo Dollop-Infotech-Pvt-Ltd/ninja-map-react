@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { RouteRequest, RouteResponse, RouteManeuver } from '@shared/api';
+import type { RouteResponse, RouteManeuver } from '@shared/api';
 
 // Use local proxy endpoint to avoid CORS issues
 const ROUTING_API_URL = '/api/map/route';
@@ -25,7 +25,6 @@ routingClient.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error('Routing API Request Error:', error);
     return Promise.reject(error);
   }
 );
@@ -35,10 +34,12 @@ routingClient.interceptors.response.use(
   (response) => response,
   (error) => {
     console.error('Routing API Error:', {
+      message: error.message,
+      code: error.code,
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,
-      url: error.config?.url
+      headers: error.response?.headers
     });
     return Promise.reject(error);
   }
@@ -195,7 +196,7 @@ export async function calculateRoute(
   const costing = TRANSPORT_COSTING_MAP[transportMode] || 'auto';
   
   // Build the route request
-  const routeRequest: RouteRequest = {
+  const routeRequest: any = {
     from: {
       lat: points[0].coordinates[0],
       lon: points[0].coordinates[1],
@@ -210,7 +211,8 @@ export async function calculateRoute(
     },
     costing,
     use_ferry: 0.0,
-    ferry_cost: 300000
+    ferry_cost: 300000,
+    alternates: 3
   };
 
   // Add waypoints if any

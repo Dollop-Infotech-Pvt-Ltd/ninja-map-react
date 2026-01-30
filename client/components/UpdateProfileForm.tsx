@@ -138,7 +138,7 @@ export default function UpdateProfileForm({ userData, isEditing, onEditToggle, o
           try {
             await onProfileUpdate();
           } catch (error) {
-            console.error("Failed to refresh user data:", error);
+            // Failed to refresh user data
           }
         }
       } else {

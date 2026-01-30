@@ -69,11 +69,8 @@ export async function changeUserPassword(data: {
       newPassword: data.newPassword,
     });
     
-    console.log("API Response:", response); // Debug log
     return response;
   } catch (error: any) {
-    console.error("API Error:", error); // Debug log
-    
     // Check if the error response contains success data
     if (error?.data?.success === true) {
       return error.data;
@@ -90,10 +87,8 @@ export async function changeUserPassword(data: {
  * @returns Promise<GridGenerationResponse>
  */
 export async function generateMapGrid(bounds: GridBounds): Promise<GridGenerationResponse> {
-  console.log('🔄 generateMapGrid called with bounds:', bounds);
   try {
     const result = await generateGrid(bounds);
-    console.log('✅ generateMapGrid successful:', result);
     return result;
   } catch (error) {
     console.error('❌ generateMapGrid failed:', error);

@@ -67,8 +67,8 @@ if (typeof window !== 'undefined') {
   // Add a simple endpoint test
   (window as any).testEndpoint = () => {
     console.log('🔍 Current grid API endpoint configuration:');
-    console.log('Base URL: http://192.168.1.78:7002');
-    console.log('Full endpoint: http://192.168.1.78:7002/api/grid/polylines-with-codes');
+    console.log('Base URL: https://api.ninja-map.dollopinfotech.com');
+    console.log('Full endpoint: https://api.ninja-map.dollopinfotech.com/api/grid/polylines-with-codes');
     console.log('Expected in network tab: POST to /api/grid/polylines-with-codes');
   };
   
@@ -87,10 +87,10 @@ if (typeof window !== 'undefined') {
         rightBottomLon: 3.418763705123172
       };
       
-      console.log('📡 Sending request to:', 'http://192.168.1.78:7002/api/grid/polylines-with-codes');
+      console.log('📡 Sending request to:', 'https://api.ninja-map.dollopinfotech.com/api/grid/polylines-with-codes');
       console.log('📡 Static payload:', staticPayload);
       
-      const response = await fetch('http://192.168.1.78:7002/api/grid/polylines-with-codes', {
+      const response = await fetch('https://api.ninja-map.dollopinfotech.com/api/grid/polylines-with-codes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

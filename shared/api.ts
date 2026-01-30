@@ -498,6 +498,7 @@ export interface RouteRequest {
   costing: string;
   use_ferry: number;
   ferry_cost: number;
+  alternates?: number;
 }
 
 export interface RouteResponse {

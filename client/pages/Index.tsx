@@ -50,6 +50,8 @@ import { motion, useInView } from "framer-motion";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AnimatedSection from "@/components/AnimatedSection";
+import { get } from "@/lib/http";
+import { CustomerStoriesResponse, CustomerStory } from "@shared/api";
 
 import TestimonialUserSample from "../assets/testimonial-sample-user.png"
 
@@ -91,78 +93,194 @@ function CountUpAnimation({
   );
 }
 
-const testimonials = [
+// Static fallback testimonials for when API is unavailable
+const staticTestimonials: CustomerStory[] = [
   {
-    name: "Adebayo Thompson",
-    role: "Business Executive",
-    company: "TechCorp Nigeria",
-    content:
-      "NINja Map has completely revolutionized how I navigate Lagos. It understands every shortcut, landmark, and traffic pattern perfectly. This is the future of Nigerian navigation.",
-    avatar: "AT",
-    image: TestimonialUserSample,
+    id: "static-1",
+    title: "NINja Map Revolutionized Our Lagos Operations",
+    description: "NINja Map has completely revolutionized how I navigate Lagos. It understands every shortcut, landmark, and traffic pattern perfectly. This is the future of Nigerian navigation.",
+    category: "BUSINESS",
     rating: 5,
     location: "Lagos",
+    author: {
+      name: "Adebayo Thompson",
+      email: "adebayo@techcorp.ng",
+      designation: "Business Executive",
+      organisationName: "TechCorp Nigeria",
+      profilePicture: null,
+      bio: "Business Executive with 10+ years of experience"
+    },
+    stats: {
+      views: 1250,
+      likes: 45,
+      comments: 12,
+      shares: 8
+    },
+    createdDate: "2024-01-15T10:30:00Z",
+    updatedDate: "2024-01-15T10:30:00Z",
+    isActive: true
   },
   {
-    name: "Kemi Okafor",
-    role: "Professional Driver",
-    company: "Uber Nigeria",
-    content:
-      "The voice guidance is incredibly clear and the offline maps work flawlessly even in poor network areas. My earnings increased by 25% with better route optimization.",
-    avatar: "KO",
-    image: TestimonialUserSample, 
+    id: "static-2", 
+    title: "25% Increase in Earnings with Better Routes",
+    description: "The voice guidance is incredibly clear and the offline maps work flawlessly even in poor network areas. My earnings increased by 25% with better route optimization.",
+    category: "TRANSPORT",
     rating: 5,
     location: "Abuja",
+    author: {
+      name: "Kemi Okafor",
+      email: "kemi@uber.ng",
+      designation: "Professional Driver",
+      organisationName: "Uber Nigeria",
+      profilePicture: null,
+      bio: "Professional driver with 5+ years experience"
+    },
+    stats: {
+      views: 980,
+      likes: 38,
+      comments: 9,
+      shares: 15
+    },
+    createdDate: "2024-01-10T14:20:00Z",
+    updatedDate: "2024-01-10T14:20:00Z",
+    isActive: true
   },
   {
-    name: "Ibrahim Musa",
-    role: "Logistics Manager",
-    company: "Swift Logistics",
-    content:
-      "Our delivery times improved by 35% since adopting NINja Map. The real-time traffic intelligence and community reports are game-changing for our business operations.",
-    avatar: "IM",
-    image: TestimonialUserSample,
+    id: "static-3",
+    title: "Our Delivery Times Improved by 35%",
+    description: "Our delivery times improved by 35% since adopting NINja Map. The real-time traffic intelligence and community reports are game-changing for our business operations.",
+    category: "BUSINESS",
     rating: 5,
     location: "Kano",
+    author: {
+      name: "Ibrahim Musa",
+      email: "ibrahim@swiftlogistics.ng",
+      designation: "Logistics Manager",
+      organisationName: "Swift Logistics",
+      profilePicture: null,
+      bio: "Logistics Manager with 8+ years experience"
+    },
+    stats: {
+      views: 1100,
+      likes: 52,
+      comments: 14,
+      shares: 10
+    },
+    createdDate: "2024-01-12T09:15:00Z",
+    updatedDate: "2024-01-12T09:15:00Z",
+    isActive: true
   },
   {
-    name: "Folake Adeniyi",
-    role: "Tourism Coordinator",
-    company: "Nigeria Tourism Board",
-    content:
-      "NINja Map helps tourists navigate our beautiful country with confidence. The cultural landmark recognition makes it perfect for showcasing Nigeria's heritage.",
-    avatar: "FA",
-    image: TestimonialUserSample,
+    id: "static-4",
+    title: "Perfect for Tourism and Cultural Navigation",
+    description: "NINja Map helps tourists navigate our beautiful country with confidence. The cultural landmark recognition makes it perfect for showcasing Nigeria's heritage.",
+    category: "PERSONAL",
     rating: 5,
     location: "Port Harcourt",
+    author: {
+      name: "Folake Adeniyi",
+      email: "folake@nigeriaturism.ng",
+      designation: "Tourism Coordinator",
+      organisationName: "Nigeria Tourism Board",
+      profilePicture: null,
+      bio: "Tourism professional with 6+ years experience"
+    },
+    stats: {
+      views: 890,
+      likes: 41,
+      comments: 11,
+      shares: 7
+    },
+    createdDate: "2024-01-08T16:45:00Z",
+    updatedDate: "2024-01-08T16:45:00Z",
+    isActive: true
   },
   {
-    name: "David Okonkwo",
-    role: "Emergency Response Coordinator",
-    company: "Red Cross Nigeria",
-    content:
-      "In emergency situations, every second counts. NINja Map's real-time navigation and local knowledge help us reach those in need faster than ever before.",
-    avatar: "DO",
-    image: TestimonialUserSample,
+    id: "static-5",
+    title: "Emergency Response Made Faster",
+    description: "In emergency situations, every second counts. NINja Map's real-time navigation and local knowledge help us reach those in need faster than ever before.",
+    category: "HEALTHCARE",
     rating: 5,
     location: "Enugu",
+    author: {
+      name: "David Okonkwo",
+      email: "david@redcross.ng",
+      designation: "Emergency Response Coordinator",
+      organisationName: "Red Cross Nigeria",
+      profilePicture: null,
+      bio: "Emergency coordinator with 7+ years experience"
+    },
+    stats: {
+      views: 1050,
+      likes: 48,
+      comments: 13,
+      shares: 9
+    },
+    createdDate: "2024-01-05T11:20:00Z",
+    updatedDate: "2024-01-05T11:20:00Z",
+    isActive: true
   },
   {
-    name: "Aisha Suleiman",
-    role: "Medical Professional",
-    company: "National Hospital Abuja",
-    content:
-      "As a healthcare worker, reliable navigation is crucial for patient care. NINja Map never fails to guide me through Abuja's complex road network efficiently.",
-    avatar: "AS",
-    image: TestimonialUserSample,
+    id: "static-6",
+    title: "Reliable Navigation for Healthcare Workers",
+    description: "As a healthcare worker, reliable navigation is crucial for patient care. NINja Map never fails to guide me through Abuja's complex road network efficiently.",
+    category: "HEALTHCARE",
     rating: 5,
     location: "Abuja",
-  },
+    author: {
+      name: "Aisha Suleiman",
+      email: "aisha@nationalhospital.ng",
+      designation: "Medical Professional",
+      organisationName: "National Hospital Abuja",
+      profilePicture: null,
+      bio: "Medical professional with 9+ years experience"
+    },
+    stats: {
+      views: 920,
+      likes: 44,
+      comments: 10,
+      shares: 8
+    },
+    createdDate: "2024-01-02T13:30:00Z",
+    updatedDate: "2024-01-02T13:30:00Z",
+    isActive: true
+  }
 ];
 
 export default function Index() {
   const [isNavSticky, setIsNavSticky] = useState(false);
-  const [currentTestimonial, setCurrentTestimonial] = useState(0); // Start with first card
+  const [currentTestimonial, setCurrentTestimonial] = useState(0);
+  const [testimonials, setTestimonials] = useState<CustomerStory[]>([]);
+  const [loadingTestimonials, setLoadingTestimonials] = useState(true);
+  const [hasTestimonials, setHasTestimonials] = useState(false);
+
+  // Fetch customer stories on mount
+  useEffect(() => {
+    const fetchTestimonials = async () => {
+      try {
+        setLoadingTestimonials(true);
+        const response = await get<CustomerStoriesResponse>(
+          `/api/customer-stories/get-all?pageNumber=0&pageSize=6&sortDirection=DESC&sortKey=createdDate&category=All`
+        );
+        
+        if (response.content && response.content.length > 0) {
+          setTestimonials(response.content);
+          setHasTestimonials(true);
+        } else {
+          setTestimonials([]);
+          setHasTestimonials(false);
+        }
+      } catch (err) {
+        console.error("Failed to fetch customer stories:", err);
+        setTestimonials([]);
+        setHasTestimonials(false);
+      } finally {
+        setLoadingTestimonials(false);
+      }
+    };
+
+    fetchTestimonials();
+  }, []);
 
   // Check scroll position for sticky navigation with smoother detection
   useEffect(() => {
@@ -1013,6 +1131,7 @@ export default function Index() {
       </section>
 
       {/* Testimonials Section - Redesigned with Large Images */}
+      {hasTestimonials && (
       <section id="testimonials" className="py-20 bg-gradient-to-br from-muted/20 to-background relative overflow-hidden">
         <div className="container">
           <AnimatedSection className="mx-auto max-w-4xl text-center mb-16">
@@ -1047,12 +1166,28 @@ export default function Index() {
                     <div className="grid lg:grid-cols-2 gap-0 items-center min-h-[500px]">
                       {/* Large User Image Side */}
                       <div className="relative h-80 lg:h-[500px] overflow-hidden">
-                        <img
-                          src={testimonials[currentTestimonial].image}
-                          alt={testimonials[currentTestimonial].name}
-                          className="w-full h-full object-contain object-center"
-                          loading="lazy"
-                        />
+                        {testimonials[currentTestimonial].author.profilePicture ? (
+                          <img
+                            src={testimonials[currentTestimonial].author.profilePicture}
+                            alt={testimonials[currentTestimonial].author.name}
+                            className="w-full h-full object-contain object-center"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#036A38]/20 to-[#FFB81C]/20">
+                            <div className="text-center">
+                              <div className="w-32 h-32 rounded-full flex items-center justify-center font-bold bg-[#036A38] text-white text-5xl mx-auto mb-4">
+                                {testimonials[currentTestimonial].author.name
+                                  .split(" ")
+                                  .map(n => n[0])
+                                  .join("")
+                                  .toUpperCase()
+                                  .slice(0, 2)}
+                              </div>
+                              <p className="text-muted-foreground text-sm">{testimonials[currentTestimonial].author.name}</p>
+                            </div>
+                          </div>
+                        )}
                         <div className="absolute inset-0 bg-gradient-to-br from-yellow-300/40 to-orange-700/40"  style={{
                             zIndex: -1
                           }} />
@@ -1099,20 +1234,20 @@ export default function Index() {
                         <div className="relative my-12">
                           <Quote className="absolute -top-4 -left-4 h-12 w-12 text-white/20" />
                           <blockquote className="text-auto-xl lg:text-auto-2xl text-foreground leading-relaxed font-medium pl-8 italic">
-                            "{testimonials[currentTestimonial].content}"
+                            "{testimonials[currentTestimonial].description}"
                           </blockquote>
                         </div>
 
                         {/* Author Info */}
                         <div className="border-t border-border/40">
                           <h3 className="text-auto-xl font-medium font-display mb-2">
-                            {testimonials[currentTestimonial].name}
+                            {testimonials[currentTestimonial].author.name}
                           </h3>
                           <p className="text-auto-lg  text-[#036A38] font-regular mb-1">
-                            {testimonials[currentTestimonial].role}
+                            {testimonials[currentTestimonial].author.designation}
                           </p>
                           <p className="text-auto-base text-muted-foreground">
-                            {testimonials[currentTestimonial].company}
+                            {testimonials[currentTestimonial].author.organisationName}
                           </p>
                         </div>
                       </div>
@@ -1138,12 +1273,23 @@ export default function Index() {
                     whileHover={{ scale: index === currentTestimonial ? 1.1 : 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    <img
-                      src={testimonial.image}
-                      alt={testimonial.name}
-                      className="w-16 h-16 rounded-full object-cover shadow-lg"
-                      loading="lazy"
-                    />
+                    {testimonial.author.profilePicture ? (
+                      <img
+                        src={testimonial.author.profilePicture}
+                        alt={testimonial.author.name}
+                        className="w-16 h-16 rounded-full object-cover shadow-lg"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded-full flex items-center justify-center font-bold bg-[#036A38] text-white text-lg shadow-lg">
+                        {testimonial.author.name
+                          .split(" ")
+                          .map(n => n[0])
+                          .join("")
+                          .toUpperCase()
+                          .slice(0, 2)}
+                      </div>
+                    )}
                   </motion.button>
                 ))}
               </div>
@@ -1151,6 +1297,7 @@ export default function Index() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Enhanced Download CTA */}
       <section className="cta-gradient-bg section-padding text-white relative overflow-hidden ">

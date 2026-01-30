@@ -16,13 +16,13 @@ export default defineConfig(({ mode }) => ({
         secure: true,
         configure: (proxy, _options) => {
           proxy.on('error', (err, _req, _res) => {
-            console.log('proxy error', err);
+            // Proxy error handling
           });
           proxy.on('proxyReq', (proxyReq, req, _res) => {
-            console.log('Sending Request to the Target:', req.method, req.url);
+            // Request logging can be added here if needed
           });
           proxy.on('proxyRes', (proxyRes, req, _res) => {
-            console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
+            // Response logging can be added here if needed
           });
         },
       },
@@ -32,13 +32,13 @@ export default defineConfig(({ mode }) => ({
         secure: true,
         configure: (proxy, _options) => {
           proxy.on('error', (err, _req, _res) => {
-            console.log('reverse geocoding proxy error', err);
+            // Reverse geocoding proxy error handling
           });
           proxy.on('proxyReq', (proxyReq, req, _res) => {
-            console.log('Sending Reverse Geocoding Request:', req.method, req.url);
+            // Request logging can be added here if needed
           });
           proxy.on('proxyRes', (proxyRes, req, _res) => {
-            console.log('Received Reverse Geocoding Response:', proxyRes.statusCode, req.url);
+            // Response logging can be added here if needed
           });
         },
       }

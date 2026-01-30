@@ -22,8 +22,6 @@ export function createServer() {
 
       const apiUrl = `https://api.ninja-map.dollopinfotech.com/api/map/search?search=${encodeURIComponent(search as string)}&size=${size}`;
       
-      console.log("Proxying map search request to:", apiUrl);
-      
       const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
@@ -65,8 +63,6 @@ export function createServer() {
         apiUrl += `&searchTerm=${encodeURIComponent(searchTerm as string)}`;
       }
       
-      console.log("Proxying reverse geocoding request to:", apiUrl);
-      
       const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
@@ -100,10 +96,10 @@ export function createServer() {
         return res.status(400).json({ error: "From and to locations are required" });
       }
 
-      const apiUrl = "http://192.168.1.95:7002/api/map/route";
+      const apiUrl = "https://api.ninja-map.dollopinfotech.com/api/map/route";
       
-      console.log("Proxying routing request to:", apiUrl);
-      console.log("Routing request body:", routeRequest);
+      console.log('Forwarding route request to:', apiUrl);
+      console.log('Request payload:', JSON.stringify(routeRequest, null, 2));
       
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -114,15 +110,30 @@ export function createServer() {
         body: JSON.stringify(routeRequest)
       });
 
+      const responseText = await response.text();
+      
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Routing API error response:", errorText);
-        throw new Error(`Routing API responded with status: ${response.status} - ${errorText}`);
+        console.error("Routing API error response:", {
+          status: response.status,
+          statusText: response.statusText,
+          body: responseText
+        });
+        return res.status(response.status).json({ 
+          error: "Routing API error",
+          message: responseText || `API responded with status: ${response.status}`
+        });
       }
 
-      const data = await response.json();
-      console.log("Routing API response received:", data);
-      res.json(data);
+      try {
+        const data = JSON.parse(responseText);
+        res.json(data);
+      } catch (parseError) {
+        console.error("Failed to parse response:", parseError);
+        res.status(500).json({ 
+          error: "Failed to parse routing response",
+          message: "Invalid JSON response from routing API"
+        });
+      }
       
     } catch (error) {
       console.error("Routing proxy error:", error);

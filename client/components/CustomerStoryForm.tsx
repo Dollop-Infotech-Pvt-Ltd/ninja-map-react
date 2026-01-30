@@ -129,7 +129,7 @@ export default function CustomerStoryForm({ onSuccess }: CustomerStoryFormProps)
       return response;
     },
     onSuccess: (data) => {
-      if (data.success) {
+      if (data.message=="Story submitted successfully. Pending admin approval.") {
         toast.success(data.message);
         
         // Clear all form data
@@ -201,7 +201,6 @@ export default function CustomerStoryForm({ onSuccess }: CustomerStoryFormProps)
 
   const clearAllFormData = () => {
     setIsResetting(true);
-    
     // Reset form data
     form.reset({
       title: "",

@@ -98,8 +98,6 @@ export default function UpdatePasswordForm() {
       }, 5000);
     },
     onError: (error: any) => {
-      console.error("Mutation Error - Password change error:", error); // Debug log
-      
       const message = error?.response?.data?.message || error?.message || "Failed to update password. Please try again.";
       toast.error("Password Change Failed", message);
     },

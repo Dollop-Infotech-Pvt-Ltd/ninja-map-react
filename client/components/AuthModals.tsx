@@ -18,8 +18,6 @@ import {
   ArrowLeft,
   Shield,
   Check,
-  Facebook,
-  Chrome,
   Smartphone,
   MapPin,
   Sparkles,
@@ -509,18 +507,6 @@ export default function AuthModals({ isOpen, onClose, initialMode = "login" }: A
     }
   };
 
-  const handleSocialAuth = async (provider: string) => {
-    setIsLoading(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success(`${provider} authentication`, "This feature will be available soon.");
-    } catch (error) {
-      toast.error("Authentication failed", "Please try again or use email/password.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const resendOtp = async () => {
     if (otpTimer > 0) return;
 
@@ -600,31 +586,6 @@ export default function AuthModals({ isOpen, onClose, initialMode = "login" }: A
     visible: { opacity: 1, y: 0 },
     exit: { opacity: 0, y: -5 }
   };
-
-  const SocialButton = ({ provider, icon: Icon, onClick }: {
-    provider: string;
-    icon: React.ElementType;
-    onClick: () => void;
-  }) => (
-    <Button
-      type="button"
-      variant="outline"
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        onClick();
-      }}
-      disabled={isLoading}
-      className={`w-full flex items-center justify-center gap-3 h-12 text-sm font-medium transition-all duration-200 ${
-        provider === 'Google'
-          ? 'hover:bg-green-50 hover:border-green-200 dark:hover:bg-green-950/20'
-          : 'hover:bg-yellow-50 hover:border-yellow-200 dark:hover:bg-yellow-950/20'
-      }`}
-    >
-      <Icon className="h-5 w-5" />
-      Continue with {provider}
-    </Button>
-  );
 
   if (!isOpen) return null;
 
@@ -715,29 +676,6 @@ export default function AuthModals({ isOpen, onClose, initialMode = "login" }: A
                     )}
 
                     <form onSubmit={handleSubmit} className="space-y-6">
-                      {/* Social Login */}
-                      <div className="space-y-3">
-                        <SocialButton
-                          provider="Google"
-                          icon={Chrome}
-                          onClick={() => handleSocialAuth("Google")}
-                        />
-                        <SocialButton
-                          provider="Facebook"
-                          icon={Facebook}
-                          onClick={() => handleSocialAuth("Facebook")}
-                        />
-                      </div>
-
-                      <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                          <div className="w-full border-t border-border" />
-                        </div>
-                        <div className="relative flex justify-center text-sm">
-                          <span className="bg-background px-4 text-muted-foreground">or continue with email</span>
-                        </div>
-                      </div>
-
                       <div className="space-y-4">
                         <UnifiedInput
                           label="Email"
@@ -841,29 +779,6 @@ export default function AuthModals({ isOpen, onClose, initialMode = "login" }: A
                     )}
 
                     <form onSubmit={handleSubmit} className="space-y-6">
-                      {/* Social Signup */}
-                      <div className="space-y-3">
-                        <SocialButton
-                          provider="Google"
-                          icon={Chrome}
-                          onClick={() => handleSocialAuth("Google")}
-                        />
-                        <SocialButton
-                          provider="Facebook"
-                          icon={Facebook}
-                          onClick={() => handleSocialAuth("Facebook")}
-                        />
-                      </div>
-
-                      <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                          <div className="w-full border-t border-border" />
-                        </div>
-                        <div className="relative flex justify-center text-sm">
-                          <span className="bg-background px-4 text-muted-foreground">or create account with email</span>
-                        </div>
-                      </div>
-
                       <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <UnifiedInput

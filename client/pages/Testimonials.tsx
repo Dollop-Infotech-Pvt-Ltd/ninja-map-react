@@ -42,8 +42,8 @@ export default function Testimonials() {
       setLoading(true);
       setError(null);
       
-      // Build query params
-      const categoryParam = filter !== "all" ? `&category=${filter.toUpperCase()}` : "";
+      // Build query params - send "ALL" when filter is "all"
+      const categoryParam = filter === "all" ? "&category=All" : `&category=${filter.toUpperCase()}`;
       const response = await get<CustomerStoriesResponse>(
         `/api/customer-stories/get-all?pageNumber=0&pageSize=20&sortDirection=DESC&sortKey=createdDate${categoryParam}`
       );

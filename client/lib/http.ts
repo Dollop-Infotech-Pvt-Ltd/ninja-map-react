@@ -58,7 +58,7 @@ export interface GridGenerationResponse {
 }
 
 // Base URL priority: Vite env -> provided IP -> fallback
-const DEFAULT_BASE_URL = "http://192.168.1.95:7002";
+const DEFAULT_BASE_URL = "https://api.ninja-map.dollopinfotech.com";
 const BASE_URL: string = typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_API_BASE_URL
   ? (import.meta as any).env.VITE_API_BASE_URL
   : DEFAULT_BASE_URL;
@@ -321,14 +321,14 @@ if (typeof window !== "undefined") {
 /**
  * Generate grid cells for a given geographic area
  * @param bounds - The geographic bounds for grid generation
- * @param baseUrl - Optional base URL override (defaults to 192.168.1.78:7002)
+ * @param baseUrl - Optional base URL override (defaults to https://api.ninja-map.dollopinfotech.com)
  * @returns Promise<GridGenerationResponse>
  */
 export async function generateGrid(
   bounds: GridBounds,
   baseUrl?: string
 ): Promise<GridGenerationResponse> {
-  const gridApiUrl = baseUrl || "http://192.168.1.78:7002";
+  const gridApiUrl = baseUrl || "https://api.ninja-map.dollopinfotech.com";
   const endpoint = `${gridApiUrl}/api/grid/polylines-with-codes`;
   
   console.log('🔄 Calling grid generation API:', endpoint);
