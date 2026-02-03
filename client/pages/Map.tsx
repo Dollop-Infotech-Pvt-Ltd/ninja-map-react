@@ -10,6 +10,7 @@ import { useTheme } from "@/hooks/use-theme";
 import { useEnhancedToast } from "@/hooks/use-enhanced-toast";
 import { useLoggedInUser } from "@/hooks/use-logged-in-user";
 import { GridOverlay } from "@/components/GridOverlay";
+import LocationAlert from "@/components/LocationAlert";
 // Import grid API test functions for browser console testing
 import "@/lib/gridApiTest";
 import {
@@ -65,6 +66,14 @@ import type { StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { TILE_STYLES, VALHALLA_ROUTE_URL, VALHALLA_OPTIMIZED_ROUTE_URL, CUSTOM_ROUTE_API_URL } from "@/lib/APIConstants";
 import { searchPlaces, reverseGeocode, type SearchResult } from "@/lib/mapSearchApi";
+import { 
+  NIGERIA_MAP_BOUNDS, 
+  NIGERIA_CENTER, 
+  isWithinNigeria, 
+  clampToNigeria, 
+  getNigeriaMapBounds,
+  validateLocationForNigeria 
+} from "@/lib/nigeriaMapBounds";
 
 // Helper function to decode polyline
 function decodePolyline(encoded: string): [number, number][] {
@@ -269,25 +278,7 @@ const esriSatelliteStyle: StyleSpecification = {
   ]
 };
 
-// Simple fallback style using OpenStreetMap tiles
-const fallbackStyle: StyleSpecification = {
-  version: 8 as 8,
-  sources: {
-    'osm': {
-      type: 'raster',
-      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-      tileSize: 256,
-      attribution: '© OpenStreetMap contributors'
-    }
-  },
-  layers: [
-    {
-      id: 'osm',
-      type: 'raster',
-      source: 'osm'
-    }
-  ]
-};
+// No fallback - only use your app tiles
 
 // Route colors for multiple routes
 const routeColors = [
@@ -356,26 +347,38 @@ function MapLibreMap({
         return;
       }
       
-      // Try to initialize map with vector style, fallback to simple style if needed
+      // Initialize map with your app vector style
       let initialStyle = mapStyles.vector;
       
       map.current = new maplibregl.Map({
         container: mapContainer.current,
         style: initialStyle,
-        center: [3.3792, 6.5244], // Lagos, Nigeria
-        zoom: 10,
+        center: [NIGERIA_CENTER.longitude, NIGERIA_CENTER.latitude], // Nigeria center (Abuja)
+        zoom: NIGERIA_CENTER.zoom,
         pitch: 0, // Initialize with 0 pitch (2D view)
         bearing: 0,
-        maxZoom: 20,
-        minZoom: 2,
+        maxZoom: 18, // Restrict max zoom for Nigeria
+        minZoom: 5,  // Restrict min zoom to keep focus on Nigeria
         attributionControl: false,
+        // Restrict map bounds to Nigeria only
+        maxBounds: getNigeriaMapBounds(),
       });
       
       currentStyleId.current = typeof initialStyle === 'string' ? initialStyle : 'initial';
       
-      // Map click handler for reverse geocoding
+      // Map click handler for reverse geocoding - Nigeria only
       map.current.on('click', (e) => {
-        onMapClick(e.lngLat.lng, e.lngLat.lat);
+        const { lng, lat } = e.lngLat;
+        
+        // Validate location is within Nigeria
+        const validation = validateLocationForNigeria(lat, lng);
+        if (!validation.isValid) {
+          console.log('Click outside Nigeria, redirecting to:', validation.message);
+          // Use corrected coordinates within Nigeria
+          onMapClick(validation.correctedLng, validation.correctedLat);
+        } else {
+          onMapClick(lng, lat);
+        }
       });
       
       // Map loading events
@@ -398,15 +401,8 @@ function MapLibreMap({
           name,
           message: msg || 'Unknown error'
         });
-        // If there's a style loading/fetch error, try fallback
-        if (err && (msg.includes('style') || msg.includes('fetch'))) {
-          try {
-            map.current?.setStyle(fallbackStyle);
-            currentStyleId.current = 'fallback-osm';
-          } catch (fallbackError) {
-            console.error('Fallback style also failed:', fallbackError);
-          }
-        }
+        // Only use your app tiles - no fallback to external sources
+        console.log('Using only your app tiles from:', TILE_STYLE_BASE);
       });
       
       map.current.on('styledata', () => {
@@ -467,7 +463,7 @@ function MapLibreMap({
     if (map.current) {
       try {
         // Always keep proper maxZoom per layer
-        if (mapLayer === 'satellite') {
+        if (mapLayer === 'satellite' || mapLayer === 'satelliteGrid') {
           map.current.setMaxZoom(18);
         } else {
           map.current.setMaxZoom(20);
@@ -475,8 +471,8 @@ function MapLibreMap({
         // Determine desired style id and value
         let desiredId: string | null = null;
         let desiredStyle: any = null;
-        if (mapLayer === 'satellite') {
-          desiredId = 'satellite-esri';
+        if (mapLayer === 'satellite' || mapLayer === 'satelliteGrid') {
+          desiredId = mapLayer === 'satellite' ? 'satellite-esri' : 'satellite-grid-esri';
           desiredStyle = esriSatelliteStyle;
         } else {
           const styleUrl = mapStyles[mapLayer as keyof typeof mapStyles];
@@ -494,32 +490,23 @@ function MapLibreMap({
         }
       } catch (error) {
         console.error('Error updating map style:', error);
-        // Fallback to vector style, then to simple OSM style if needed
-        try {
-          map.current.setStyle(mapStyles.vector);
-          currentStyleId.current = mapStyles.vector;
-        } catch (fallbackError) {
-          console.error('Vector style fallback failed, trying simple OSM...', fallbackError);
-          try {
-            map.current.setStyle(fallbackStyle);
-            currentStyleId.current = 'fallback-osm';
-          } catch (simpleFallbackError) {
-            console.error('All fallback styles failed:', simpleFallbackError);
-          }
-        }
+        // Only use your app tiles - no fallback to external sources
+        console.log('Map style error - using only your app tiles from:', TILE_STYLE_BASE);
       }
     }
   }, [mapLayer]);
 
-  // Center map on specific point
+  // Center map on specific point - DISABLED to prevent map style changes
   useEffect(() => {
     if (map.current && centerPoint) {
       try {
-        map.current.flyTo({
-          center: [centerPoint[1], centerPoint[0]],
-          zoom: 15,
-          duration: 1000
-        });
+        // COMMENTED OUT to prevent map view changes after grid load
+        // map.current.flyTo({
+        //   center: [centerPoint[1], centerPoint[0]],
+        //   zoom: 15,
+        //   duration: 1000
+        // });
+        console.log("🎯 Center point flyTo disabled to prevent map style changes");
       } catch (error) {
         console.warn('Error centering map:', error);
       }
@@ -867,23 +854,27 @@ function MapLibreMap({
         });
       }
 
-      // Fit bounds to show entire route
+      // Fit bounds to show entire route - DISABLED to prevent map style changes
       try {
         const selected = routeGeometries[selectedRouteIndex];
         if (selected && selected.geometry && Array.isArray(selected.geometry.coordinates) && selected.geometry.coordinates.length > 0) {
-          const bounds = new maplibregl.LngLatBounds();
-          selected.geometry.coordinates.forEach(([lng, lat]: [number, number]) => bounds.extend([lng, lat]));
-          map.current.fitBounds(bounds, {
-            padding: isDirectionsOpen ? { top: 80, right: 80, bottom: 80, left: 500 } : 100,
-            duration: 900
-          });
+          // COMMENTED OUT to prevent map view changes after grid load
+          // const bounds = new maplibregl.LngLatBounds();
+          // selected.geometry.coordinates.forEach(([lng, lat]: [number, number]) => bounds.extend([lng, lat]));
+          // map.current.fitBounds(bounds, {
+          //   padding: isDirectionsOpen ? { top: 80, right: 80, bottom: 80, left: 500 } : 100,
+          //   duration: 900
+          // });
+          console.log("🎯 Route bounds fitting disabled to prevent map style changes");
         } else if (routePoints.length > 1) {
-          const bounds = new maplibregl.LngLatBounds();
-          routePoints.forEach(point => bounds.extend([point.coordinates[1], point.coordinates[0]]));
-          map.current.fitBounds(bounds, { padding: 100, duration: 900 });
+          // COMMENTED OUT to prevent map view changes after grid load
+          // const bounds = new maplibregl.LngLatBounds();
+          // routePoints.forEach(point => bounds.extend([point.coordinates[1], point.coordinates[0]]));
+          // map.current.fitBounds(bounds, { padding: 100, duration: 900 });
+          console.log("🎯 Route points bounds fitting disabled to prevent map style changes");
         }
       } catch (e) {
-        console.warn('Error fitting bounds:', e);
+        console.warn('Error in route bounds calculation:', e);
       }
     } catch (error) {
       console.warn('Error in route visualization:', error);
@@ -923,6 +914,7 @@ export default function Map() {
   const [isSelectingWaypointFromMap, setIsSelectingWaypointFromMap] = useState(false);
   const [isSelectingStartFromMap, setIsSelectingStartFromMap] = useState(false);
   const [isSelectingEndFromMap, setIsSelectingEndFromMap] = useState(false);
+  const [showLocationAlert, setShowLocationAlert] = useState(true);
   // Ref to hold latest handler so map click listener isn't stale
   const onMapClickRef = useRef<(lng: number, lat: number) => void | null>(null);
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
@@ -987,10 +979,31 @@ export default function Map() {
 
   // Update grid visibility when layer changes
   useEffect(() => {
-    if (mapLayer === "grid") {
+    console.log("🔄 Layer change detected:", {
+      mapLayer,
+      isGrid: mapLayer === "grid",
+      isSatelliteGrid: mapLayer === "satelliteGrid",
+      shouldShowGrid: mapLayer === "grid" || mapLayer === "satelliteGrid"
+    });
+    
+    if (mapLayer === "grid" || mapLayer === "satelliteGrid") {
       setIsGridVisible(true);
+      console.log("🟢 Grid enabled for layer:", mapLayer);
     } else {
       setIsGridVisible(false);
+      console.log("🔴 Grid disabled for layer:", mapLayer);
+    }
+    
+    // Expose state to window for debugging
+    if (typeof window !== 'undefined') {
+      (window as any).mapLayer = mapLayer;
+      (window as any).isGridVisible = mapLayer === "grid" || mapLayer === "satelliteGrid";
+      (window as any).isSatelliteMode = mapLayer === "satelliteGrid";
+      console.log("🪟 Window state updated:", {
+        mapLayer,
+        isGridVisible: mapLayer === "grid" || mapLayer === "satelliteGrid",
+        isSatelliteMode: mapLayer === "satelliteGrid"
+      });
     }
   }, [mapLayer]);
 
@@ -1521,6 +1534,48 @@ const mapLayers = [
           <ellipse cx="15" cy="75" rx="12" ry="10" fill="#1a4a6a"/>
         </svg>
       )
+    },
+    {
+      id: "satelliteGrid",
+      name: "Satellite + Grid",
+      icon: Grid3X3,
+      description: "Satellite with Grid",
+      preview: (
+        <svg viewBox="0 0 120 100" className="w-full h-full">
+          <defs>
+            <pattern id="terrain-texture-grid" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse">
+              <rect width="10" height="10" fill="#3a5f3a"/>
+              <circle cx="3" cy="3" r="1" fill="#2d4a2d"/>
+              <circle cx="7" cy="7" r="1" fill="#2d4a2d"/>
+            </pattern>
+            <pattern id="satellite-grid" width="20" height="20" patternUnits="userSpaceOnUse">
+              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#00FF00" strokeWidth="1.5" opacity="0.8"/>
+            </pattern>
+          </defs>
+          <rect width="120" height="100" fill="#4a6b4a"/>
+          {/* Terrain variation */}
+          <rect width="120" height="100" fill="url(#terrain-texture-grid)" opacity="0.5"/>
+          {/* Forest areas */}
+          <ellipse cx="30" cy="25" rx="20" ry="15" fill="#2d4a2d"/>
+          <ellipse cx="90" cy="60" rx="25" ry="20" fill="#2d4a2d"/>
+          {/* Urban area */}
+          <rect x="45" y="35" width="30" height="30" fill="#5a5a5a" opacity="0.7"/>
+          <rect x="48" y="38" width="4" height="4" fill="#6a6a6a"/>
+          <rect x="54" y="38" width="4" height="4" fill="#6a6a6a"/>
+          <rect x="60" y="38" width="4" height="4" fill="#6a6a6a"/>
+          <rect x="48" y="44" width="4" height="4" fill="#6a6a6a"/>
+          <rect x="60" y="44" width="4" height="4" fill="#6a6a6a"/>
+          <rect x="48" y="56" width="4" height="4" fill="#6a6a6a"/>
+          <rect x="66" y="56" width="4" height="4" fill="#6a6a6a"/>
+          {/* Road */}
+          <path d="M0 50 L120 50" stroke="#7a7a7a" strokeWidth="3"/>
+          <path d="M60 0 L60 100" stroke="#7a7a7a" strokeWidth="2"/>
+          {/* Water body */}
+          <ellipse cx="15" cy="75" rx="12" ry="10" fill="#1a4a6a"/>
+          {/* Grid overlay */}
+          <rect width="120" height="100" fill="url(#satellite-grid)"/>
+        </svg>
+      )
     }
   ];
   
@@ -1797,12 +1852,28 @@ const mapLayers = [
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const location: [number, number] = [position.coords.latitude, position.coords.longitude];
-        setUserLocation(location);
-        setCenterPoint(location);
-        triedLowAccuracyRef.current = false;
-        setLocationError(null);
-        setHasGeolocationPermission(true);
+        const originalLat = position.coords.latitude;
+        const originalLng = position.coords.longitude;
+        
+        // Validate and restrict location to Nigeria only
+        const validation = validateLocationForNigeria(originalLat, originalLng);
+        
+        if (validation.isValid) {
+          // User is in Nigeria - show actual location
+          const location: [number, number] = [originalLat, originalLng];
+          setUserLocation(location);
+          setCenterPoint(location);
+          triedLowAccuracyRef.current = false;
+          setLocationError(null);
+          setHasGeolocationPermission(true);
+        } else {
+          // User is outside Nigeria - don't show location, show error message
+          console.log('User location outside Nigeria:', validation.message);
+          toast.error('Location Not Available', 'Current location only works within Nigeria.');
+          setLocationError('Current location is only available within Nigeria.');
+          setUserLocation(null); // Don't set any location
+          // Don't set centerPoint either
+        }
       },
       (error) => {
         // If permission explicitly denied, update permission state
@@ -1821,11 +1892,26 @@ const mapLayers = [
           triedLowAccuracyRef.current = true;
           navigator.geolocation.getCurrentPosition(
             (p) => {
-              const loc: [number, number] = [p.coords.latitude, p.coords.longitude];
-              setUserLocation(loc);
-              setCenterPoint(loc);
-              triedLowAccuracyRef.current = false;
-              setLocationError(null);
+              const originalLat = p.coords.latitude;
+              const originalLng = p.coords.longitude;
+              
+              // Validate and restrict location to Nigeria only
+              const validation = validateLocationForNigeria(originalLat, originalLng);
+              
+              if (validation.isValid) {
+                // User is in Nigeria - show actual location
+                const loc: [number, number] = [originalLat, originalLng];
+                setUserLocation(loc);
+                setCenterPoint(loc);
+                triedLowAccuracyRef.current = false;
+                setLocationError(null);
+              } else {
+                // User is outside Nigeria - don't show location
+                console.log('Retry location outside Nigeria:', validation.message);
+                toast.error('Location Not Available', 'Current location only works within Nigeria.');
+                setLocationError('Current location is only available within Nigeria.');
+                setUserLocation(null);
+              }
             },
             (e) => {
               console.warn('Error getting location:', e?.message || e);
@@ -1840,13 +1926,30 @@ const mapLayers = [
         if (error.code === 2 || error.code === 3) {
           watchIdRef.current = navigator.geolocation.watchPosition(
             (p2) => {
-              const loc2: [number, number] = [p2.coords.latitude, p2.coords.longitude];
-              setUserLocation(loc2);
-              setCenterPoint(loc2);
-              if (watchIdRef.current != null) navigator.geolocation.clearWatch(watchIdRef.current);
-              if (watchTimeoutRef.current != null) window.clearTimeout(watchTimeoutRef.current);
-              triedLowAccuracyRef.current = false;
-              setLocationError(null);
+              const originalLat = p2.coords.latitude;
+              const originalLng = p2.coords.longitude;
+              
+              // Validate and restrict location to Nigeria only
+              const validation = validateLocationForNigeria(originalLat, originalLng);
+              
+              if (validation.isValid) {
+                // User is in Nigeria - show actual location
+                const loc2: [number, number] = [originalLat, originalLng];
+                setUserLocation(loc2);
+                setCenterPoint(loc2);
+                if (watchIdRef.current != null) navigator.geolocation.clearWatch(watchIdRef.current);
+                if (watchTimeoutRef.current != null) window.clearTimeout(watchTimeoutRef.current);
+                triedLowAccuracyRef.current = false;
+                setLocationError(null);
+              } else {
+                // User is outside Nigeria - don't show location
+                console.log('Watch location outside Nigeria:', validation.message);
+                toast.error('Location Not Available', 'Current location only works within Nigeria.');
+                setLocationError('Current location is only available within Nigeria.');
+                setUserLocation(null);
+                if (watchIdRef.current != null) navigator.geolocation.clearWatch(watchIdRef.current);
+                if (watchTimeoutRef.current != null) window.clearTimeout(watchTimeoutRef.current);
+              }
             },
             () => {},
             { enableHighAccuracy: false, maximumAge: 600000 }
@@ -2715,6 +2818,14 @@ const mapLayers = [
 
   return (
     <div className="fixed inset-0 w-screen overflow-hidden bg-background" style={{ height: '100dvh', ['--primary' as any]: '151 94% 21%', ['--primary-foreground' as any]: '0 0% 100%', ['--secondary' as any]: '41 100% 55%', ['--secondary-foreground' as any]: '0 0% 0%', ['--brand' as any]: '151 94% 21%', ['--brand-foreground' as any]: '0 0% 100%', ['--gradient-from' as any]: '151 94% 21%', ['--gradient-via' as any]: '41 100% 55%', ['--gradient-to' as any]: '41 92% 40%'}}>
+      {/* Location Alert for users outside Nigeria */}
+      {showLocationAlert && (
+        <LocationAlert 
+          onDismiss={() => setShowLocationAlert(false)}
+          showOnlyOutsideNigeria={true}
+        />
+      )}
+      
       {/* Floating Search - top-left (logo left, input center, directions right) */}
       <div className="absolute top-3 left-2 sm:top-4 sm:left-4 z-50 w-[calc(100vw-4.5rem)] sm:w-[min(90vw,28rem)]" style={{ marginTop: 'env(safe-area-inset-top)' }}>
         <div className="flex items-center gap-3">
@@ -4097,7 +4208,14 @@ const mapLayers = [
       {/* Main Map Container */}
       <div className="absolute inset-0 w-full h-full">
         <MapLibreMap
-          onMapLoad={setMap}
+          onMapLoad={(mapInstance) => {
+            setMap(mapInstance);
+            // Expose map to window for debugging
+            if (typeof window !== 'undefined') {
+              (window as any).map = mapInstance;
+              console.log('🗺️ Map loaded and exposed to window.map for debugging');
+            }
+          }}
           userLocation={userLocation}
           destination={destination}
           markerDetails={markerDetails}
@@ -4121,7 +4239,8 @@ const mapLayers = [
           map={map}
           isVisible={isGridVisible}
           isDark={isDark}
-          isLayerMode={mapLayer === "grid"}
+          isLayerMode={mapLayer === "grid" || mapLayer === "satelliteGrid"}
+          isSatelliteMode={mapLayer === "satelliteGrid"}
         />
       </div>
     </div>

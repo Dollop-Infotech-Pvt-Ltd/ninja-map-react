@@ -27,6 +27,7 @@ import BlogDetail from "./pages/BlogDetail";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import MyContribution from "./pages/MyContribution";
+import LocationTest from "./pages/LocationTest";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -56,6 +57,7 @@ const App = () => {
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/:id" element={<BlogDetail />} />
             <Route path="/rss" element={<RSS />} />
+            <Route path="/location-test" element={<LocationTest />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/my-contribution" element={<ProtectedRoute><MyContribution /></ProtectedRoute>} />

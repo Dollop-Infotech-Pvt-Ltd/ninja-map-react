@@ -48,6 +48,7 @@ import {
 } from "lucide-react";
 import { motion, useInView } from "framer-motion";
 import Header from "@/components/Header";
+import LocationAlert from "@/components/LocationAlert";
 import Footer from "@/components/Footer";
 import AnimatedSection from "@/components/AnimatedSection";
 import { get } from "@/lib/http";
@@ -253,6 +254,7 @@ export default function Index() {
   const [testimonials, setTestimonials] = useState<CustomerStory[]>([]);
   const [loadingTestimonials, setLoadingTestimonials] = useState(true);
   const [hasTestimonials, setHasTestimonials] = useState(false);
+  const [showLocationAlert, setShowLocationAlert] = useState(true);
 
   // Fetch customer stories on mount
   useEffect(() => {
@@ -507,6 +509,14 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background font-display theme-transition">
+      {/* Location Alert for users outside Nigeria */}
+      {showLocationAlert && (
+        <LocationAlert 
+          onDismiss={() => setShowLocationAlert(false)}
+          showOnlyOutsideNigeria={true}
+        />
+      )}
+      
       {/* Header */}
       <Header />
 

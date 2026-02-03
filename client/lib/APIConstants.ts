@@ -13,6 +13,8 @@ export const TILE_STYLES = {
   dark: `${TILE_STYLE_BASE}/styles/dark-matter/style.json`,
   elevated: `${TILE_STYLE_BASE}/styles/3d-map/style.json`,
   klokantech: `${TILE_STYLE_BASE}/styles/klokantech-basic/style.json`,
+  satellite: 'satellite', // Special identifier for satellite view
+  satelliteGrid: 'satellite-grid', // New satellite with grid view
 };
 
 export const NOMINATIM_SEARCH_URL = `${NOMINATIM_BASE}/search`;
