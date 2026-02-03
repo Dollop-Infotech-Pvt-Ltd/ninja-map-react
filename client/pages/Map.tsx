@@ -8,6 +8,7 @@ import { UnifiedTextarea, UnifiedInput } from "@/components/ui/unified-input";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useTheme } from "@/hooks/use-theme";
 import { useEnhancedToast } from "@/hooks/use-enhanced-toast";
+import { useLoggedInUser } from "@/hooks/use-logged-in-user";
 import { GridOverlay } from "@/components/GridOverlay";
 import LocationAlert from "@/components/LocationAlert";
 // Import grid API test functions for browser console testing
@@ -51,7 +52,14 @@ import {
   Box,
   AlertTriangle,
   Mountain,
-  Grid3X3
+  Grid3X3,
+  ChevronRight,
+  User,
+  History,
+  Link as LinkIcon,
+  Info,
+  LogOut,
+  Menu
 } from "lucide-react";
 import maplibregl from 'maplibre-gl';
 import type { StyleSpecification } from 'maplibre-gl';
@@ -885,6 +893,7 @@ function MapLibreMap({
 export default function Map() {
   const { theme, setTheme, isDark } = useTheme();
   const toast = useEnhancedToast();
+  const { user, loading: userLoading } = useLoggedInUser();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDirectionsOpen, setIsDirectionsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -3887,17 +3896,175 @@ const mapLayers = [
         )}
       </AnimatePresence>
       
-      {/* Layers Button */}
-      <div className="absolute bottom-4 left-4 z-50 hidden sm:block" style={{ marginBottom: 'env(safe-area-inset-bottom)' }}>
+      {/* Profile & Layers Buttons */}
+      <div className="absolute bottom-4 left-4 z-50 hidden sm:flex flex-col gap-2" style={{ marginBottom: 'env(safe-area-inset-bottom)' }}>
+        {/* Profile/Menu Button */}
         <Button
           variant="ghost"
-          onClick={() => setShowLayerPanel((prev) => { const next = !prev; if (next) clearAll(); return next; })}
+          onClick={() => setIsMenuOpen((prev) => { const next = !prev; if (next) { setShowLayerPanel(false); clearAll(); } return next; })}
+          className="h-10 w-10 backdrop-blur-sm bg-card/60 border border-border/40 rounded-full shadow-sm p-1 flex items-center justify-center transition"
+          title="Menu"
+        >
+          {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </Button>
+        
+        {/* Layers Button */}
+        <Button
+          variant="ghost"
+          onClick={() => setShowLayerPanel((prev) => { const next = !prev; if (next) { setIsMenuOpen(false); clearAll(); } return next; })}
           className="h-10 w-10 backdrop-blur-sm bg-card/60 border border-border/40 rounded-full shadow-sm p-1 flex items-center justify-center transition"
           title="Map style"
         >
           {showLayerPanel ? <X className="h-5 w-5" /> : <Layers className="h-5 w-5" />}
         </Button>
       </div>
+
+      {/* Profile/Menu Overlay */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 6, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 6, scale: 0.98 }}
+            transition={{ duration: 0.09, ease: 'easeOut' }}
+            className="absolute bottom-28 left-4 z-50 origin-bottom-left" style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+          >
+            <div className="bg-card/95 backdrop-blur-xl border border-border rounded-2xl shadow-xl p-0 w-72 origin-bottom-left overflow-hidden">
+              {/* Header with Logo */}
+              <div className="bg-[] backdrop-blur-md px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <img src="/logo/logo.png" alt="NINja Map" className="h-6 w-6 object-contain" />
+                  <span className="text-primary-foreground font-bold text-lg">NINjaMap</span>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => setIsMenuOpen(false)} className="h-7 w-7 p-0 text-primary-foreground hover:bg-primary-foreground/20">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Profile Card */}
+              {user ? (
+                <Link to="/profile" onClick={() => setIsMenuOpen(false)}>
+                  <div className="px-4 py-4 border-b border-border/50 hover:bg-accent/5 transition-colors cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-primary-foreground font-bold text-xl flex-shrink-0 overflow-hidden">
+                        {user.profilePicture ? (
+                          <img src={user.profilePicture} alt={user.fullName} className="w-full h-full object-cover" />
+                        ) : (
+                          <span>{user.fullName?.charAt(0).toUpperCase() || 'U'}</span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-foreground truncate">{user.fullName || 'User'}</div>
+                        <div className="text-sm text-muted-foreground truncate">{user.phoneNumber || user.email}</div>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                    </div>
+                  </div>
+                </Link>
+              ) : (
+                <Link to="/profile" onClick={() => setIsMenuOpen(false)}>
+                  <div className="px-4 py-4 border-b border-border/50 hover:bg-accent/5 transition-colors cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-primary-foreground flex-shrink-0">
+                        <User className="h-7 w-7" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-foreground">Guest User</div>
+                        <div className="text-sm text-muted-foreground">Sign in to continue</div>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                    </div>
+                  </div>
+                </Link>
+              )}
+
+              {/* Menu Items */}
+              <div className="py-2">
+                {/* My Places */}
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    toast?.info?.('Coming soon', 'My Places feature will be available soon!');
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/10 transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <MapPin className="h-5 w-5 text-primary" />
+                  </div>
+                  <span className="text-sm font-medium text-foreground">My Places</span>
+                </button>
+
+                {/* Recent Searches */}
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    toast?.info?.('Coming soon', 'Recent Searches feature will be available soon!');
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/10 transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <History className="h-5 w-5 text-primary" />
+                  </div>
+                  <span className="text-sm font-medium text-foreground">Recent Searches</span>
+                </button>
+
+                {/* My Contribution */}
+                <Link to="/my-contribution" onClick={() => setIsMenuOpen(false)}>
+                  <button
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/10 transition-colors"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <LinkIcon className="h-5 w-5 text-primary" />
+                    </div>
+                    <span className="text-sm font-medium text-foreground">My Contribution</span>
+                  </button>
+                </Link>
+
+                {/* Help & Feedback */}
+                <Link to="/faqs" onClick={() => setIsMenuOpen(false)}>
+                  <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/10 transition-colors">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Info className="h-5 w-5 text-primary" />
+                    </div>
+                    <span className="text-sm font-medium text-foreground">Help & Feedback</span>
+                  </button>
+                </Link>
+
+                {/* About NINja Map */}
+                <Link to="/about" onClick={() => setIsMenuOpen(false)}>
+                  <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/10 transition-colors">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <MapPin className="h-5 w-5 text-primary" />
+                    </div>
+                    <span className="text-sm font-medium text-foreground">About NINja Map</span>
+                  </button>
+                </Link>
+
+             
+
+                {/* Logout */}
+                {user && (
+                  <button
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      // Handle logout
+                      localStorage.removeItem('authToken');
+                      window.dispatchEvent(new Event('authChange'));
+                      toast?.success?.('Logged out', 'You have been logged out successfully');
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/10 transition-colors border-t border-border/50 mt-2"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center flex-shrink-0">
+                      <LogOut className="h-5 w-5 text-red-500" />
+                    </div>
+                    <span className="text-sm font-medium text-red-500">Logout</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Layer Selection Overlay */}
       <AnimatePresence>
