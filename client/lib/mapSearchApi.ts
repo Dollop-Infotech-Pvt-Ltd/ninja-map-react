@@ -1,6 +1,7 @@
 // Direct API calls for map search and reverse geocoding using Ninja Map API
 
 import axios from 'axios';
+import { isWithinNigeria } from './nigeriaMapBounds';
 
 // Map Search API interfaces (kept for compatibility)
 export interface MapSearchPlace {
@@ -129,16 +130,23 @@ export async function searchPlaces(query: string, size: number = 8): Promise<Sea
 
     const data: MapSearchResponse = response.data;
     
-    // Transform new API response to SearchResult format
-    const transformedResults: SearchResult[] = data.results.places.map((place: MapSearchPlace) => ({
-      place_id: place.id,
-      display_name: place.name || place.display_name || place.address.full_address,
-      lat: place.coordinates.latitude.toString(),
-      lon: place.coordinates.longitude.toString(),
-      type: place.classification.category[0] || place.classification.layer,
-      category: place.classification.category.join(','),
-      importance: place.relevance.similarity_score
-    }));
+    // Transform new API response to SearchResult format and filter for Nigeria only
+    const transformedResults: SearchResult[] = data.results.places
+      .filter((place: MapSearchPlace) => {
+        // Only include places within Nigeria boundaries
+        const lat = place.coordinates.latitude;
+        const lng = place.coordinates.longitude;
+        return isWithinNigeria(lat, lng);
+      })
+      .map((place: MapSearchPlace) => ({
+        place_id: place.id,
+        display_name: place.name || place.display_name || place.address.full_address,
+        lat: place.coordinates.latitude.toString(),
+        lon: place.coordinates.longitude.toString(),
+        type: place.classification.category[0] || place.classification.layer,
+        category: place.classification.category.join(','),
+        importance: place.relevance.similarity_score
+      }));
     
     return transformedResults;
   } catch (error) {
@@ -171,6 +179,12 @@ export async function searchPlaces(query: string, size: number = 8): Promise<Sea
  * @returns Promise<{display: string, type?: string}>
  */
 export async function reverseGeocode(lat: number, lon: number, searchTerm?: string): Promise<{display: string, type?: string}> {
+  // Check if coordinates are within Nigeria first
+  if (!isWithinNigeria(lat, lon)) {
+    console.log('Reverse geocoding attempted outside Nigeria, coordinates:', lat, lon);
+    return { display: 'Location outside Nigeria', type: 'restricted' };
+  }
+
   try {
     const params: any = {
       lat: lat,
@@ -202,7 +216,7 @@ export async function reverseGeocode(lat: number, lon: number, searchTerm?: stri
   } catch (error) {
     console.error('Reverse geocoding failed:', error);
     
-    // Fallback to coordinates on error
+    // Fallback to coordinates on error (only if within Nigeria)
     return { display: `${lat.toFixed(6)}, ${lon.toFixed(6)}` };
   }
 }
