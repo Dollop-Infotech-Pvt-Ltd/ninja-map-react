@@ -9,6 +9,7 @@ interface GridOverlayProps {
   isVisible: boolean;
   isDark?: boolean;
   isLayerMode?: boolean; // New prop to indicate if used as a layer
+  isSatelliteMode?: boolean; // New prop for satellite grid mode
 }
 
 export function GridOverlay({
@@ -16,27 +17,48 @@ export function GridOverlay({
   isVisible,
   isDark,
   isLayerMode = false,
+  isSatelliteMode = false,
 }: GridOverlayProps) {
   const [gridData, setGridData] = useState<GridApiResponse[] | null>(null);
-  const [gridOpacity] = useState(isLayerMode ? 0.1 : 0.5); // 50% opacity for auto grid, 10% for layer mode
-  const [showLabels] = useState(true);
-  const [gridColor] = useState(isLayerMode ? "#00FF00" : "#036A38"); // Pure green for layer mode
+  const [gridOpacity] = useState(isLayerMode ? (isSatelliteMode ? 0.8 : 0.1) : 0.5); // Higher opacity for satellite mode
+  const [gridColor] = useState(
+    isLayerMode 
+      ? (isSatelliteMode ? "#00FF00" : "#00FF00") // Bright green for both grid modes
+      : "#036A38"
+  ); // Pure green for layer mode
   const [autoGridEnabled] = useState(true);
-  const [selectedBlocks, setSelectedBlocks] = useState<Set<string>>(new Set());
-  const [defaultFillColor] = useState("#036A38");
   const lastGridBoundsRef = useRef<string | null>(null);
   const throttleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Debug: Log when props change
+  useEffect(() => {
+    console.log("🔧 GridOverlay props updated:", {
+      isVisible,
+      isSatelliteMode,
+      isLayerMode,
+      gridOpacity,
+      gridColor,
+      mode: isSatelliteMode ? "🛰️ SATELLITE" : "🗺️ OSM"
+    });
+  }, [isVisible, isSatelliteMode, isLayerMode, gridOpacity, gridColor]);
+
   const gridSourceId = "grid-source";
   const gridLayerId = "grid-layer";
-  const gridLabelsLayerId = "grid-labels-layer";
   const gridSourceAdded = useRef(false);
 
-  // Function to check if grid should be visible (only at full zoom)
+  // Function to check if grid should be visible (at full zoom only)
   const shouldShowGrid = (): boolean => {
     if (!map) return false;
     const currentZoom = map.getZoom();
-    return currentZoom >= 18;
+    
+    // Show grid only at maximum zoom levels:
+    // - Satellite: zoom 18 (max zoom)
+    // - OSM: zoom 20 (max zoom)
+    if (isSatelliteMode) {
+      return currentZoom >= 18; // Satellite max zoom is 18
+    } else {
+      return currentZoom >= 20; // OSM max zoom is 20 (full zoom)
+    }
   };
 
   // Function to generate a unique key for current center position
@@ -51,9 +73,10 @@ export function GridOverlay({
   useEffect(() => {
     if (!map || !gridData || !isVisible) return;
 
-    // Only show grid when at full zoom level
+    // Only show grid when at FULL ZOOM level
     if (!shouldShowGrid()) {
-      console.log("🚫 Not showing grid - zoom level too low");
+      const requiredZoom = isSatelliteMode ? 18 : 20;
+      console.log(`🚫 Not showing grid - zoom level too low (need FULL ZOOM ${requiredZoom}+, current: ${map.getZoom().toFixed(1)}) - ${isSatelliteMode ? 'Satellite' : 'OSM'} mode`);
       return;
     }
 
@@ -62,7 +85,12 @@ export function GridOverlay({
       gridDataExists: !!gridData,
       isVisible,
       gridCellCount: gridData.length,
-      currentZoom: map.getZoom()
+      currentZoom: map.getZoom(),
+      isSatelliteMode,
+      isLayerMode,
+      gridOpacity,
+      gridColor,
+      mode: isSatelliteMode ? "🛰️ SATELLITE" : "🗺️ OSM"
     });
 
     // Wait for map to be ready
@@ -104,23 +132,7 @@ export function GridOverlay({
 
         console.log("📊 Created GeoJSON with", features.length, "grid cells:", gridGeoJSON);
 
-        // Create labels GeoJSON for all cells
-        const labelFeatures = gridData.map((gridItem) => ({
-          type: "Feature" as const,
-          properties: {
-            cellId: gridItem.gridCell.cellId,
-            blockCode: gridItem.blockCode,
-          },
-          geometry: {
-            type: "Point" as const,
-            coordinates: [gridItem.center.longitude, gridItem.center.latitude],
-          },
-        }));
-
-        const labelsGeoJSON = {
-          type: "FeatureCollection" as const,
-          features: labelFeatures,
-        };
+        // Labels source removed - only show grid code on click via tooltip
 
         // Add source if not exists
         if (!map.getSource(gridSourceId)) {
@@ -134,21 +146,6 @@ export function GridOverlay({
           console.log("🔄 Updating existing grid source");
           (map.getSource(gridSourceId) as maplibregl.GeoJSONSource).setData(
             gridGeoJSON,
-          );
-        }
-
-        // Add labels source
-        const labelsSourceId = `${gridSourceId}-labels`;
-        if (!map.getSource(labelsSourceId)) {
-          console.log("➕ Adding labels source to map");
-          map.addSource(labelsSourceId, {
-            type: "geojson",
-            data: labelsGeoJSON,
-          });
-        } else {
-          console.log("🔄 Updating existing labels source");
-          (map.getSource(labelsSourceId) as maplibregl.GeoJSONSource).setData(
-            labelsGeoJSON,
           );
         }
 
@@ -172,7 +169,7 @@ export function GridOverlay({
           map.setPaintProperty(gridLayerId, "line-opacity", gridOpacity);
         }
 
-        // Add fill layer for grid cells with conditional coloring
+        // Add fill layer for grid cells
         const gridFillLayerId = `${gridLayerId}-fill`;
         if (!map.getLayer(gridFillLayerId)) {
           console.log("➕ Adding grid fill layer to map");
@@ -182,74 +179,19 @@ export function GridOverlay({
             source: gridSourceId,
             layout: {},
             paint: {
-              "fill-color": [
-                "case",
-                ["in", ["get", "cellId"], ["literal", Array.from(selectedBlocks)]],
-                defaultFillColor, // Selected blocks use default fill color
-                gridColor // Unselected blocks use grid color
-              ],
-              "fill-opacity": [
-                "case",
-                ["in", ["get", "cellId"], ["literal", Array.from(selectedBlocks)]],
-                gridOpacity, // Selected blocks use same opacity as grid
-                gridOpacity * 0.2 // Unselected blocks less opaque
-              ],
+              "fill-color": gridColor,
+              "fill-opacity": gridOpacity * 0.2,
             },
           });
         } else {
           console.log("🔄 Updating grid fill layer properties");
-          map.setPaintProperty(gridFillLayerId, "fill-color", [
-            "case",
-            ["in", ["get", "cellId"], ["literal", Array.from(selectedBlocks)]],
-            defaultFillColor,
-            gridColor
-          ]);
-          map.setPaintProperty(gridFillLayerId, "fill-opacity", [
-            "case",
-            ["in", ["get", "cellId"], ["literal", Array.from(selectedBlocks)]],
-            gridOpacity, // Selected blocks use same opacity as grid
-            gridOpacity * 0.2
-          ]);
+          map.setPaintProperty(gridFillLayerId, "fill-color", gridColor);
+          map.setPaintProperty(gridFillLayerId, "fill-opacity", gridOpacity * 0.2);
         }
 
-        // Add labels layer
-        if (showLabels && !map.getLayer(gridLabelsLayerId)) {
-          console.log("➕ Adding grid labels layer to map");
-          map.addLayer({
-            id: gridLabelsLayerId,
-            type: "symbol",
-            source: labelsSourceId,
-            layout: {
-              "text-field": ["get", "cellId"],
-              "text-font": ["Open Sans Regular"],
-              "text-size": 10,
-              "text-anchor": "center",
-              "text-allow-overlap": false,
-              "text-ignore-placement": false,
-            },
-            paint: {
-              "text-color": isDark ? "#ffffff" : "#000000",
-              "text-halo-color": isDark ? "#000000" : "#ffffff",
-              "text-halo-width": 1,
-              "text-opacity": 0, // Hide labels by default
-            },
-          });
-        } else if (showLabels && map.getLayer(gridLabelsLayerId)) {
-          console.log("🔄 Updating grid labels layer properties");
-          map.setPaintProperty(gridLabelsLayerId, "text-opacity", 0); // Keep labels hidden
-          map.setPaintProperty(
-            gridLabelsLayerId,
-            "text-color",
-            isDark ? "#ffffff" : "#000000",
-          );
-          map.setPaintProperty(
-            gridLabelsLayerId,
-            "text-halo-color",
-            isDark ? "#000000" : "#ffffff",
-          );
-        }
+        // Labels removed - only show grid code on click via tooltip
 
-        // Add click handler for grid cells (single selection mode)
+        // Add click handler for grid cells - show grid code tooltip only
         const handleGridClick = (e: maplibregl.MapMouseEvent) => {
           const features = map.queryRenderedFeatures(e.point, {
             layers: [`${gridLayerId}-fill`],
@@ -257,23 +199,6 @@ export function GridOverlay({
           if (features.length > 0) {
             const feature = features[0];
             const props = feature.properties;
-            const cellId = props?.cellId;
-
-            if (cellId) {
-              // Single selection mode - clear all others and select only this one
-              setSelectedBlocks(prev => {
-                const wasSelected = prev.has(cellId);
-                if (wasSelected) {
-                  // If clicking the same block, deselect it
-                  console.log(`� Deselected block: ${cellId}`);
-                  return new Set();
-                } else {
-                  // Select only this block, clear all others
-                  console.log(`🟨 Selected block: ${cellId} - filled with ${defaultFillColor} (cleared others)`);
-                  return new Set([cellId]);
-                }
-              });
-            }
 
             // Find the corresponding grid data to get the center coordinates
             const clickedCell = gridData.find(item => item.gridCell.cellId === props?.cellId);
@@ -281,20 +206,21 @@ export function GridOverlay({
               [clickedCell.center.longitude, clickedCell.center.latitude] : 
               [e.lngLat.lng, e.lngLat.lat];
 
-            // Create popup at the center of the grid cell
+            // Show simple tooltip with grid code
             new maplibregl.Popup({
-              className: 'grid-click-popup'
+              className: 'grid-tooltip',
+              closeButton: false,
+              closeOnClick: true,
+              anchor: 'bottom',
+              offset: [0, -10]
             })
               .setLngLat(centerCoords)
               .setHTML(
                 `
-                <div class="px-3 py-2">
-                  <div class="text-sm font-semibold text-foreground">
-                    ${props?.blockCode || "N/A"}
-                  </div>
-              
+                <div class="px-2 py-1 bg-gray-900 text-white rounded-md shadow-lg text-xs font-mono">
+                  ${props?.blockCode || props?.cellId || "N/A"}
                 </div>
-              `,
+                `,
               )
               .addTo(map);
           }
@@ -317,17 +243,9 @@ export function GridOverlay({
 
         console.log("✅ Grid successfully added to map!");
 
-        // Fit map to show all grid cells with no padding (use full screen)
-        if (gridData.length > 0) {
-          const bounds = new maplibregl.LngLatBounds();
-          gridData.forEach((gridItem) => {
-            const cell = gridItem.gridCell;
-            bounds.extend([cell.bottomLeft.longitude, cell.bottomLeft.latitude]);
-            bounds.extend([cell.topRight.longitude, cell.topRight.latitude]);
-          });
-          // Use zero padding to utilize full screen dimensions
-          map.fitBounds(bounds, { padding: 0 });
-        }
+        // DON'T fit bounds - keep current map view unchanged
+        // This was causing map style to change after grid API call
+        console.log("🎯 Grid added without changing map view/style");
 
         return () => {
           map.off("click", `${gridLayerId}-fill`, handleGridClick);
@@ -358,7 +276,44 @@ export function GridOverlay({
         map.off("styledata", onStyleLoad);
       };
     }
-  }, [map, gridData, isVisible, gridOpacity, showLabels, gridColor, isDark, selectedBlocks, defaultFillColor]);
+  }, [map, gridData, isVisible, gridOpacity, gridColor, isDark, isSatelliteMode, isLayerMode]);
+
+  // Handle map style changes - re-add grid when style loads
+  useEffect(() => {
+    if (!map || !isVisible) return;
+
+    const handleStyleData = () => {
+      console.log("🎨 Map style changed, checking if grid needs to be re-added...", {
+        hasGridData: !!gridData,
+        isVisible,
+        isSatelliteMode,
+        isLayerMode,
+        currentZoom: map.getZoom()
+      });
+      
+      // If we have grid data and should show grid, re-add it after style change
+      // BUT don't change map view/bounds
+      if (gridData && shouldShowGrid()) {
+        console.log("🔄 Re-adding grid after style change (without changing map view)");
+        // Small delay to ensure style is fully loaded
+        setTimeout(() => {
+          // Trigger re-render by updating a state that will cause the grid effect to run
+          // BUT don't change map view or bounds
+          console.log("🔄 Re-triggering grid render without changing map view");
+          // Force re-render by clearing and setting grid data
+          const currentData = gridData;
+          setGridData(null);
+          setTimeout(() => setGridData(currentData), 50);
+        }, 100);
+      }
+    };
+
+    map.on('styledata', handleStyleData);
+
+    return () => {
+      map.off('styledata', handleStyleData);
+    };
+  }, [map, isVisible, gridData, isSatelliteMode, isLayerMode]);
 
   // Remove grid from map when not visible
   useEffect(() => {
@@ -366,7 +321,7 @@ export function GridOverlay({
 
     try {
       // Remove layers
-      [gridLayerId, `${gridLayerId}-fill`, gridLabelsLayerId].forEach(
+      [gridLayerId, `${gridLayerId}-fill`].forEach(
         (layerId) => {
           if (map.getLayer(layerId)) {
             map.removeLayer(layerId);
@@ -375,7 +330,7 @@ export function GridOverlay({
       );
 
       // Remove sources
-      [gridSourceId, `${gridSourceId}-labels`].forEach((sourceId) => {
+      [gridSourceId].forEach((sourceId) => {
         if (map.getSource(sourceId)) {
           map.removeSource(sourceId);
         }
@@ -393,9 +348,10 @@ export function GridOverlay({
 
     const handleMapMove = () => {
       const currentZoom = map.getZoom();
+      const requiredZoom = isSatelliteMode ? 18 : 20; // Full zoom for each mode
       
-      // Only proceed if we're at full zoom (18+)
-      if (currentZoom >= 18 && autoGridEnabled) {
+      // Only proceed if we're at full zoom level
+      if (currentZoom >= requiredZoom && autoGridEnabled) {
         const currentCenterKey = getCenterKey();
         
         // Only load if center has changed significantly (user scrolled/moved map)
@@ -407,15 +363,16 @@ export function GridOverlay({
           
           // Throttle API calls - wait 500ms after last movement
           throttleTimeoutRef.current = setTimeout(() => {
-            console.log("🔄 Loading grid after map movement at full zoom (zoom ≥18)");
+            console.log(`🔄 Loading grid after map movement at FULL ZOOM (zoom ≥${requiredZoom}) - ${isSatelliteMode ? 'Satellite' : 'OSM'} mode`);
+            console.log("🎯 This will NOT change map view/style - only add grid overlay");
             lastGridBoundsRef.current = currentCenterKey;
             handleGridGenerate();
           }, 500);
         }
-      } else if (currentZoom < 18) {
+      } else if (currentZoom < requiredZoom) {
         // Clear grid data when not at full zoom
         if (gridData) {
-          console.log("🧹 Clearing grid data - zoom level below 18");
+          console.log(`🧹 Clearing grid data - zoom level below FULL ZOOM (${requiredZoom})`);
           setGridData(null);
           lastGridBoundsRef.current = null;
           
@@ -430,17 +387,18 @@ export function GridOverlay({
 
     const handleZoomEnd = () => {
       const currentZoom = map.getZoom();
-      console.log(`🔍 Zoom ended at level: ${currentZoom.toFixed(1)}`);
+      const requiredZoom = isSatelliteMode ? 18 : 20; // Full zoom for each mode
+      console.log(`🔍 Zoom ended at level: ${currentZoom.toFixed(1)} (FULL ZOOM: ${requiredZoom}) - ${isSatelliteMode ? 'Satellite' : 'OSM'} mode`);
       
-      // When reaching full zoom, load grid immediately if we don't have data
-      if (currentZoom >= 18 && autoGridEnabled && !gridData) {
-        console.log("📍 Reached full zoom - loading grid immediately");
+      // When reaching FULL ZOOM, load grid immediately if we don't have data
+      if (currentZoom >= requiredZoom && autoGridEnabled && !gridData) {
+        console.log(`📍 Reached FULL ZOOM - loading grid immediately (${isSatelliteMode ? 'Satellite' : 'OSM'} mode)`);
         const currentCenterKey = getCenterKey();
         lastGridBoundsRef.current = currentCenterKey;
         handleGridGenerate();
-      } else if (currentZoom < 18 && gridData) {
-        // Clear grid when zooming out
-        console.log("🧹 Clearing grid data - zoomed out below level 18");
+      } else if (currentZoom < requiredZoom && gridData) {
+        // Clear grid when zooming out from full zoom
+        console.log(`🧹 Clearing grid data - zoomed out below FULL ZOOM (${requiredZoom})`);
         setGridData(null);
         lastGridBoundsRef.current = null;
         
@@ -467,34 +425,51 @@ export function GridOverlay({
     };
   }, [map, isVisible, autoGridEnabled, gridData]);
 
-  // Load grid immediately when layer is first activated at full zoom
+  // Load grid immediately when layer is first activated at FULL ZOOM
   useEffect(() => {
     if (!map || !isVisible || !autoGridEnabled) return;
     
     const currentZoom = map.getZoom();
+    const requiredZoom = isSatelliteMode ? 18 : 20; // Full zoom for each mode
     
-    // If grid layer is activated and we're at full zoom, load grid immediately
-    if (currentZoom >= 18 && !gridData) {
-      console.log("🎯 Grid layer activated at full zoom - loading grid immediately");
+    console.log("🎯 Grid layer activation check:", {
+      isVisible,
+      isSatelliteMode,
+      isLayerMode,
+      currentZoom,
+      requiredZoom,
+      hasGridData: !!gridData,
+      autoGridEnabled,
+      mode: isSatelliteMode ? "Satellite" : "OSM"
+    });
+    
+    // If grid layer is activated and we're at FULL ZOOM, load grid immediately
+    if (currentZoom >= requiredZoom && !gridData) {
+      console.log("🎯 Grid layer activated at FULL ZOOM - loading grid immediately", {
+        isSatelliteMode: isSatelliteMode ? "YES" : "NO",
+        isLayerMode: isLayerMode ? "YES" : "NO",
+        mode: isSatelliteMode ? "Satellite" : "OSM",
+        requiredZoom
+      });
       const currentCenterKey = getCenterKey();
       lastGridBoundsRef.current = currentCenterKey;
       handleGridGenerate();
     }
-  }, [isVisible, map, autoGridEnabled, gridData]);
+  }, [isVisible, map, autoGridEnabled, gridData, isSatelliteMode, isLayerMode]);
 
   // Clean up on unmount
   useEffect(() => {
     return () => {
       if (map && gridSourceAdded.current) {
         try {
-          [gridLayerId, `${gridLayerId}-fill`, gridLabelsLayerId].forEach(
+          [gridLayerId, `${gridLayerId}-fill`].forEach(
             (layerId) => {
               if (map.getLayer(layerId)) {
                 map.removeLayer(layerId);
               }
             },
           );
-          [gridSourceId, `${gridSourceId}-labels`].forEach((sourceId) => {
+          [gridSourceId].forEach((sourceId) => {
             if (map.getSource(sourceId)) {
               map.removeSource(sourceId);
             }
@@ -513,7 +488,10 @@ export function GridOverlay({
   }, [map]);
 
   const handleGridGenerate = async () => {
-    console.log("🚀 Calling your specific grid API...");
+    const currentMode = isSatelliteMode ? '🛰️ SATELLITE' : '🗺️ OSM';
+    console.log(`🚀 Calling SAME grid API for ${currentMode} mode...`);
+    console.log(`📡 API Endpoint: ${GRID_API_URL}`);
+    console.log(`🔧 Mode Detection: isSatelliteMode = ${isSatelliteMode}`);
     
     if (!map) {
       console.error("Map not available");
@@ -521,12 +499,12 @@ export function GridOverlay({
     }
 
     try {
-      // Get current map bounds (full screen area - use 100% of visible area)
+      // Get current map bounds (IDENTICAL for both OSM and Satellite)
       const bounds = map.getBounds();
       const sw = bounds.getSouthWest();
       const ne = bounds.getNorthEast();
       
-      // Use full screen area (100% of visible area for maximum grid coverage)
+      // Use IDENTICAL payload structure for both modes to ensure same grid size
       const payload = {
         "leftBottomLat": sw.lat,
         "leftBottomLon": sw.lng,
@@ -538,12 +516,14 @@ export function GridOverlay({
         "rightBottomLon": ne.lng
       };
 
-      console.log("📍 Full Screen Grid API payload:", payload);
-      console.log("🎯 Map bounds:", { 
+      console.log(`📍 ${currentMode} Grid API payload (IDENTICAL TO OSM):`, payload);
+      console.log("🎯 Map bounds (SAME FOR BOTH MODES):", { 
         southwest: { lat: sw.lat, lng: sw.lng },
         northeast: { lat: ne.lat, lng: ne.lng }
       });
-      console.log("📏 Grid area: Full visible screen area");
+      console.log(`📏 Grid area: IDENTICAL bounds for ${currentMode} mode`);
+      console.log(`🔗 Using SAME API endpoint: ${GRID_API_URL}`);
+      console.log(`⚖️ This will produce IDENTICAL grid size for both OSM and Satellite modes`);
 
       const response = await axios.post(GRID_API_URL, payload, {
         headers: {
@@ -551,7 +531,7 @@ export function GridOverlay({
         },
       });
 
-      console.log("📊 Raw API response:", response.data);
+      console.log(`📊 ${currentMode} Grid API response (SAME API):`, response.data);
 
       // Handle the response - it might be an array of grid cells
       let result: GridApiResponse[];
@@ -569,10 +549,23 @@ export function GridOverlay({
 
       setGridData(result);
       
-      console.log("✅ Grid API call successful!");
+      console.log(`✅ ${currentMode} Grid API call successful! (SAME API AS OSM)`);
       console.log("📊 Processed grid data:", result.length, "cells:", result);
+      console.log(`🎉 ${currentMode} mode is using the EXACT SAME API as OSM mode!`);
+      console.log("🎯 Map style will NOT be changed - keeping current view");
+      
+      // Log grid size information - SHOULD BE IDENTICAL FOR BOTH MODES
+      if (result.length > 0) {
+        const firstCell = result[0];
+        const area = firstCell.gridCell?.areaSquareMeters;
+        if (area) {
+          const sideLength = Math.sqrt(area);
+          console.log(`📏 ${currentMode} Grid Square Size: ${area.toFixed(2)} m² (${sideLength.toFixed(1)} x ${sideLength.toFixed(1)} meters)`);
+          console.log(`⚖️ This size should be IDENTICAL to OSM grid size!`);
+        }
+      }
     } catch (error: any) {
-      console.error("❌ Grid API call failed:", error);
+      console.error(`❌ ${currentMode} Grid API call failed:`, error);
       
       let errorMessage = "Failed to fetch grid data";
       
@@ -593,7 +586,7 @@ export function GridOverlay({
         errorMessage = "Connection refused - grid API server may be down";
       }
 
-      console.error("Grid API Error:", errorMessage);
+      console.error(`${currentMode} Grid API Error:`, errorMessage);
       // Clear grid data on error
       setGridData(null);
     }
