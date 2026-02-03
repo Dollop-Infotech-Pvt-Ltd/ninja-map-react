@@ -19,6 +19,7 @@ export default function Header({ showBackButton = true }: HeaderProps) {
   const [mounted, setMounted] = useState(false);
   const { theme, setTheme, isDark } = useTheme();
   const { user } = useLoggedInUser();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [userLoggedIn, setUserLoggedIn] = useState<boolean>(() => {
     try {
       return hasAuthCookies();
@@ -70,6 +71,21 @@ export default function Header({ showBackButton = true }: HeaderProps) {
 
   const navigate = useNavigate();
 
+  const handleLogout = () => {
+    try {
+      setAuthToken(null);
+      // remove cookies
+      document.cookie = 'accessToken=; Path=/; Max-Age=0;';
+      document.cookie = 'refreshToken=; Path=/; Max-Age=0;';
+      setUserLoggedIn(false);
+      setShowLogoutModal(false);
+      // navigate to home without reloading
+      navigate('/');
+    } catch (e) {
+      /* ignore */
+    }
+  };
+
   const toggleTheme = () => {
     // Toggle between light and dark (keep it simple)
     const next = isDark ? 'light' : 'dark';
@@ -120,20 +136,7 @@ export default function Header({ showBackButton = true }: HeaderProps) {
                     <span>{user?.firstName || 'Profile'}</span>
                   </Link>
                   <button
-                    onClick={() => {
-                      // logout
-                      try {
-                        setAuthToken(null);
-                        // remove cookies
-                        document.cookie = 'accessToken=; Path=/; Max-Age=0;';
-                        document.cookie = 'refreshToken=; Path=/; Max-Age=0;';
-                        setUserLoggedIn(false);
-                        // navigate to home without reloading
-                        navigate('/');
-                      } catch (e) {
-                        /* ignore */
-                      }
-                    }}
+                    onClick={() => setShowLogoutModal(true)}
                     className="text-auto-sm font-medium border border-border text-foreground px-4 py-2 rounded-lg hover:bg-muted transition-colors"
                     type="button"
                   >
@@ -201,6 +204,40 @@ export default function Header({ showBackButton = true }: HeaderProps) {
         onClose={closeModal}
         initialMode={mode}
       />
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="fixed top-60 inset-0 z-50 flex items-end mb-30  justify-end p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="w-full max-w-md bg-card border border-border/40 rounded-2xl p-6 shadow-2xl"
+          >
+            <h3 className="text-xl font-semibold text-foreground mb-2">
+              Logout
+            </h3>
+            <p className="text-muted-foreground mb-6">
+              Are you sure you want to log out?
+            </p>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowLogoutModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 bg-[#036A38] hover:bg-[#025C31] text-white"
+                onClick={handleLogout}
+              >
+                Logout
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </header>
   );
 }

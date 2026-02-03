@@ -26,6 +26,7 @@ import RSS from "./pages/RSS";
 import BlogDetail from "./pages/BlogDetail";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
+import MyContribution from "./pages/MyContribution";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -57,6 +58,7 @@ const App = () => {
             <Route path="/rss" element={<RSS />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/my-contribution" element={<ProtectedRoute><MyContribution /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
