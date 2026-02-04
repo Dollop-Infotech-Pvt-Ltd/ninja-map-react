@@ -59,7 +59,8 @@ import {
   Link as LinkIcon,
   Info,
   LogOut,
-  Menu
+  Menu,
+  BookMarked
 } from "lucide-react";
 import maplibregl from 'maplibre-gl';
 import type { StyleSpecification } from 'maplibre-gl';
@@ -990,6 +991,29 @@ export default function Map() {
   const [isWaypointSearching, setIsWaypointSearching] = useState(false);
   const [isStartInputFocused, setIsStartInputFocused] = useState(false);
   const [isEndInputFocused, setIsEndInputFocused] = useState(false);
+  const [isSavePlaceModalOpen, setIsSavePlaceModalOpen] = useState(false);
+  const [savePlaceLabel, setSavePlaceLabel] = useState("");
+  const [selectedPlaceIcon, setSelectedPlaceIcon] = useState("📍");
+
+  // Icon options for saved places
+  const placeIconOptions = [
+    { emoji: "📍", label: "Pin" },
+    { emoji: "🏠", label: "Home" },
+    { emoji: "💼", label: "Work" },
+    { emoji: "🏋️", label: "Gym" },
+    { emoji: "🍽️", label: "Restaurant" },
+    { emoji: "☕", label: "Cafe" },
+    { emoji: "🏥", label: "Hospital" },
+    { emoji: "🏫", label: "School" },
+    { emoji: "🛒", label: "Shopping" },
+    { emoji: "⛽", label: "Gas" },
+    { emoji: "🏨", label: "Hotel" },
+    { emoji: "🎭", label: "Entertainment" },
+    { emoji: "🏦", label: "Bank" },
+    { emoji: "✈️", label: "Airport" },
+    { emoji: "🚗", label: "Parking" },
+    { emoji: "⭐", label: "Favorite" },
+  ];
 
   // Grid overlay state - automatically enabled when grid layer is selected
   const [isGridVisible, setIsGridVisible] = useState(false);
@@ -3023,14 +3047,29 @@ const mapLayers = [
                       </p>
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0"
-                    onClick={() => setMarkerDetails(null)}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      onClick={() => {
+                        setSavePlaceLabel("");
+                        setSelectedPlaceIcon("📍");
+                        setIsSavePlaceModalOpen(true);
+                      }}
+                      title="Save place"
+                    >
+                      <BookMarked className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      onClick={() => setMarkerDetails(null)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
                 
                 <div className="flex items-center gap-2 mt-3">
@@ -4262,6 +4301,111 @@ const mapLayers = [
         )}
       </AnimatePresence>
       
+      {/* Save Place Modal */}
+      <AnimatePresence>
+        {isSavePlaceModalOpen && markerDetails && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            onClick={() => setIsSavePlaceModalOpen(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.2 }}
+              className="bg-card/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-border/50 p-6 w-[90vw] max-w-md mx-4 max-h-[85vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-foreground">Save Place</h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setIsSavePlaceModalOpen(false);
+                    setSelectedPlaceIcon("📍");
+                  }}
+                  className="h-8 w-8 p-0 rounded-full"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Place Name */}
+              <div className="mb-6">
+                <p className="text-base text-muted-foreground">{markerDetails.name}</p>
+              </div>
+
+              {/* Add Label Section */}
+              <div className="mb-6">
+                <label className="text-sm font-medium text-foreground mb-3 block">Add Label</label>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-2xl">
+                    {selectedPlaceIcon}
+                  </div>
+                  <Input
+                    placeholder="e.g. My Gym"
+                    value={savePlaceLabel}
+                    onChange={(e) => setSavePlaceLabel(e.target.value)}
+                    className="flex-1 h-12 rounded-2xl bg-muted/50 border-border/50"
+                  />
+                </div>
+              </div>
+
+              {/* Icon Picker */}
+              <div className="mb-6">
+                <label className="text-sm font-medium text-foreground mb-3 block">Choose Icon</label>
+                <div className="grid grid-cols-8 gap-2">
+                  {placeIconOptions.map((option) => (
+                    <button
+                      key={option.emoji}
+                      type="button"
+                      onClick={() => setSelectedPlaceIcon(option.emoji)}
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center text-2xl transition-all ${
+                        selectedPlaceIcon === option.emoji
+                          ? 'bg-primary/20 ring-2 ring-primary/50 scale-110'
+                          : 'bg-muted/30 hover:bg-muted/50 hover:scale-105'
+                      }`}
+                      title={option.label}
+                    >
+                      {option.emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Save Button */}
+              <Button
+                onClick={() => {
+                  const savedPlaces = JSON.parse(localStorage.getItem('savedPlaces') || '[]');
+                  const newPlace = {
+                    id: `place-${Date.now()}`,
+                    name: savePlaceLabel.trim() || markerDetails.name,
+                    address: markerDetails.address,
+                    icon: selectedPlaceIcon,
+                    lat: markerDetails.coordinates[0],
+                    lng: markerDetails.coordinates[1]
+                  };
+                  savedPlaces.push(newPlace);
+                  localStorage.setItem('savedPlaces', JSON.stringify(savedPlaces));
+                  toast?.success?.('Place saved', `${newPlace.name} has been saved to your places`);
+                  setIsSavePlaceModalOpen(false);
+                  setSavePlaceLabel("");
+                  setSelectedPlaceIcon("📍");
+                }}
+                className="w-full h-12 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+              >
+                Save
+              </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Main Map Container */}
       <div className="absolute inset-0 w-full h-full">
         <MapLibreMap
