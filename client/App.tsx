@@ -27,6 +27,9 @@ import BlogDetail from "./pages/BlogDetail";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import MyContribution from "./pages/MyContribution";
+import MyPlaces from "./pages/MyPlaces";
+import AddPlace from "./pages/AddPlace";
+import SavedPlaces from "./pages/SavedPlaces";
 import LocationTest from "./pages/LocationTest";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -61,6 +64,11 @@ const App = () => {
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/my-contribution" element={<ProtectedRoute><MyContribution /></ProtectedRoute>} />
+            <Route path="/my-places" element={<ProtectedRoute><MyPlaces /></ProtectedRoute>} />
+            <Route path="/add-place" element={<ProtectedRoute><AddPlace /></ProtectedRoute>} />
+            <Route path="/saved-places" element={<ProtectedRoute><SavedPlaces /></ProtectedRoute>} />
+            <Route path="/saved-routes" element={<ProtectedRoute><SavedPlaces /></ProtectedRoute>} />
+            <Route path="/dropped-pins" element={<ProtectedRoute><SavedPlaces /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

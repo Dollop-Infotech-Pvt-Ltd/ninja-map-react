@@ -178,7 +178,9 @@ export async function searchPlaces(query: string, size: number = 8): Promise<Sea
  * @param searchTerm - Optional search term to filter results
  * @returns Promise<{display: string, type?: string}>
  */
-export async function reverseGeocode(lat: number, lon: number, searchTerm?: string): Promise<{display: string, type?: string}> {
+export async function reverseGeocode(lat: number, lon: number, searchTerm?: string): Promise<{
+  length: number;display: string, type?: string
+}> {
   // Check if coordinates are within Nigeria first
   if (!isWithinNigeria(lat, lon)) {
     console.log('Reverse geocoding attempted outside Nigeria, coordinates:', lat, lon);
