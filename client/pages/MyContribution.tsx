@@ -4,6 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import { fetchBusinessCategories } from '@/lib/businessCategoriesApi';
+import type { BusinessCategory } from '@shared/api';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import Picker from 'react-mobile-picker';
 
 type ContributionType = 'place' | 'business' | 'fix' | 'activity' | null;
 type ActivityType = 'traffic' | 'accident' | 'closure' | 'event' | 'other' | null;
@@ -11,74 +17,50 @@ type PlaceType = 'road' | 'landmark' | 'public' | null;
 type BusinessType = 'register' | 'claim' | null;
 type FixType = 'edit-details' | 'move-pin' | 'correct-name' | null;
 
-const businessCategories = [
-  { 
-    id: 'food', 
-    name: 'Food & Drink', 
-    icon: Utensils,
-    subcategories: ['Restaurant', 'Fast Food', 'Cafe / Coffee Shop', 'Bakery', 'Street food', 'Bar / Lounge']
-  },
-  { 
-    id: 'retail', 
-    name: 'Retail & Shopping', 
-    icon: ShoppingBag,
-    subcategories: ['Clothing Store', 'Electronics', 'Grocery Store', 'Pharmacy', 'Bookstore', 'Gift Shop']
-  },
-  { 
-    id: 'health', 
-    name: 'Health & Wellness', 
-    icon: Heart,
-    subcategories: ['Hospital', 'Clinic', 'Dental', 'Gym', 'Spa', 'Pharmacy']
-  },
-  { 
-    id: 'automotive', 
-    name: 'Automotive & Transport', 
-    icon: Car,
-    subcategories: ['Car Repair', 'Gas Station', 'Car Wash', 'Parking', 'Auto Parts']
-  },
-  { 
-    id: 'finance', 
-    name: 'Finance & Services', 
-    icon: Briefcase,
-    subcategories: ['Bank', 'ATM', 'Insurance', 'Real Estate', 'Legal Services']
-  },
-  { 
-    id: 'professional', 
-    name: 'Professional Services', 
-    icon: Briefcase,
-    subcategories: ['Consulting', 'Marketing', 'IT Services', 'Accounting', 'Photography']
-  },
-  { 
-    id: 'education', 
-    name: 'Education', 
-    icon: GraduationCap,
-    subcategories: ['School', 'College', 'Training Center', 'Library', 'Tutoring']
-  },
-  { 
-    id: 'travel', 
-    name: 'Travel & Hospitality', 
-    icon: Plane,
-    subcategories: ['Hotel', 'Travel Agency', 'Tourist Attraction', 'Resort']
-  },
-  { 
-    id: 'entertainment', 
-    name: 'Entertainment & Lifestyle', 
-    icon: Film,
-    subcategories: ['Cinema', 'Theater', 'Museum', 'Art Gallery', 'Sports Center']
-  },
-  { 
-    id: 'community', 
-    name: 'Public & Community', 
-    icon: Users,
-    subcategories: ['Government Office', 'Post Office', 'Police Station', 'Fire Station', 'Community Center']
-  },
-  { 
-    id: 'other', 
-    name: 'Other', 
-    icon: MoreHorizontal,
-    subcategories: ['Other']
+// Helper function to get category icon based on category name
+const getCategoryIcon = (categoryName: string) => {
+  const name = categoryName.toLowerCase();
+  
+  if (name.includes('food') || name.includes('drink')) {
+    return Utensils;
+  } else if (name.includes('retail') || name.includes('shopping')) {
+    return ShoppingBag;
+  } else if (name.includes('health') || name.includes('wellness')) {
+    return Heart;
+  } else if (name.includes('automotive') || name.includes('transport')) {
+    return Car;
+  } else if (name.includes('finance') || name.includes('service')) {
+    return Briefcase;
+  } else if (name.includes('education')) {
+    return GraduationCap;
+  } else if (name.includes('travel') || name.includes('hospitality')) {
+    return Plane;
+  } else if (name.includes('entertainment') || name.includes('lifestyle')) {
+    return Film;
+  } else if (name.includes('public') || name.includes('community')) {
+    return Users;
+  } else {
+    return MoreHorizontal;
   }
-];
+};
+
+// Validation schema for contact details using Zod
+const contactDetailsSchema = z.object({
+  phone: z
+    .string()
+    .min(1, 'Phone number is required')
+    .regex(
+      /^[789][01]\d{8}$/,
+      'Please enter a valid Nigerian phone number starting with 7, 8, or 9 (e.g., 8012345678)'
+    ),
+  website: z
+    .string()
+    .url('Please enter a valid website URL')
+    .optional()
+    .or(z.literal(''))
+});
+
+type ContactDetailsFormData = z.infer<typeof contactDetailsSchema>;
 
 export default function MyContribution() {
   const navigate = useNavigate();
@@ -89,14 +71,19 @@ export default function MyContribution() {
   const [selectedFixType, setSelectedFixType] = useState<FixType>(null);
   const [showCategorySelector, setShowCategorySelector] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [businessName, setBusinessName] = useState('');
   const [businessStep, setBusinessStep] = useState(1); // 1: profile, 2: location, 3: contact, 4: hours, 5: photos, 6: review
+  
+  // Business categories state
+  const [businessCategories, setBusinessCategories] = useState<BusinessCategory[]>([]);
+  const [isCategoriesLoading, setIsCategoriesLoading] = useState(false);
+  const [categoriesError, setCategoriesError] = useState<string | null>(null);
+  
   const [businessData, setBusinessData] = useState({
     name: '',
     category: '',
     phone: '',
     website: '',
+    coordinates: null as { lat: number; lng: number } | null,
     hours: {} as Record<string, { open: string; close: string; closed: boolean; open24: boolean }>,
     photos: [] as string[]
   });
@@ -200,6 +187,36 @@ export default function MyContribution() {
       setShowActivityMap(true);
     }
   };
+
+  // Contact details form setup
+  const contactForm = useForm<ContactDetailsFormData>({
+    resolver: zodResolver(contactDetailsSchema),
+    defaultValues: {
+      phone: '',
+      website: ''
+    }
+  });
+
+  const { register, handleSubmit, formState: { errors }, setValue, watch } = contactForm;
+
+  // Load business categories on component mount
+  useEffect(() => {
+    const loadCategories = async () => {
+      setIsCategoriesLoading(true);
+      setCategoriesError(null);
+      try {
+        const categories = await fetchBusinessCategories();
+        setBusinessCategories(categories);
+      } catch (error) {
+        console.error('Failed to load business categories:', error);
+        setCategoriesError('Failed to load categories. Please try again.');
+      } finally {
+        setIsCategoriesLoading(false);
+      }
+    };
+
+    loadCategories();
+  }, []);
 
   const toggleSection = (section: ContributionType) => {
     setExpandedSection(expandedSection === section ? null : section);
@@ -486,53 +503,120 @@ export default function MyContribution() {
                           </div>
 
                           <Input 
-                            placeholder="Bakery, Car wash..." 
+                            placeholder="Search categories..." 
                             className="mb-2"
                           />
 
-                          <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                            {businessCategories.map((category) => {
-                              const Icon = category.icon;
-                              const isExpanded = expandedCategory === category.id;
-                              
-                              return (
-                                <div key={category.id} className="border border-border/40 rounded-xl overflow-hidden">
-                                  <button
-                                    onClick={() => setExpandedCategory(isExpanded ? null : category.id)}
-                                    className="w-full flex items-center justify-between p-4 hover:bg-muted/5 transition-colors"
-                                  >
-                                    <div className="flex items-center gap-3">
-                                      <Icon className="h-5 w-5 text-[#036A38]" />
-                                      <span className="text-sm font-medium text-foreground">{category.name}</span>
-                                    </div>
-                                    <ChevronDown
-                                      className={cn(
-                                        "h-4 w-4 text-muted-foreground transition-transform",
-                                        isExpanded && "rotate-180"
+                          {/* Loading State */}
+                          {isCategoriesLoading && (
+                            <div className="flex items-center justify-center py-8">
+                              <Loader2 className="h-6 w-6 animate-spin text-[#036A38]" />
+                              <span className="ml-2 text-sm text-muted-foreground">Loading categories...</span>
+                            </div>
+                          )}
+
+                          {/* Error State */}
+                          {categoriesError && (
+                            <div className="text-center py-4">
+                              <p className="text-sm text-red-500 mb-2">{categoriesError}</p>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => {
+                                  setIsCategoriesLoading(true);
+                                  setCategoriesError(null);
+                                  fetchBusinessCategories()
+                                    .then(setBusinessCategories)
+                                    .catch(() => setCategoriesError('Failed to load categories. Please try again.'))
+                                    .finally(() => setIsCategoriesLoading(false));
+                                }}
+                              >
+                                Retry
+                              </Button>
+                            </div>
+                          )}
+
+                          {/* Categories List */}
+                          {!isCategoriesLoading && !categoriesError && (
+                            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                              {businessCategories.map((category) => {
+                                const IconComponent = getCategoryIcon(category.categoryName);
+                                const isExpanded = expandedCategory === category.id;
+                                
+                                return (
+                                  <div key={category.id} className="border border-border/40 rounded-xl overflow-hidden">
+                                    <button
+                                      onClick={() => setExpandedCategory(isExpanded ? null : category.id)}
+                                      className="w-full flex items-center justify-between p-4 hover:bg-muted/5 transition-colors"
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        {category.categoryPicture ? (
+                                          <img 
+                                            src={category.categoryPicture} 
+                                            alt={category.categoryName}
+                                            className="h-5 w-5 object-contain"
+                                          />
+                                        ) : (
+                                          <IconComponent className="h-5 w-5 text-[#036A38]" />
+                                        )}
+                                        <span className="text-sm font-medium text-foreground">{category.categoryName}</span>
+                                        {category.hasSubCategories && (
+                                          <span className="text-xs text-muted-foreground">({category.subCategoryCount})</span>
+                                        )}
+                                      </div>
+                                      {category.hasSubCategories && (
+                                        <ChevronDown
+                                          className={cn(
+                                            "h-4 w-4 text-muted-foreground transition-transform",
+                                            isExpanded && "rotate-180"
+                                          )}
+                                        />
                                       )}
-                                    />
-                                  </button>
-                                  
-                                  {isExpanded && (
-                                    <div className="border-t border-border/40 bg-muted/5">
-                                      {category.subcategories.map((sub) => (
+                                    </button>
+                                    
+                                    {/* If no subcategories, allow direct selection */}
+                                    {!category.hasSubCategories && (
+                                      <div className="px-4 pb-2">
                                         <button
-                                          key={sub}
                                           onClick={() => {
-                                            setBusinessData({...businessData, category: sub});
+                                            setBusinessData({...businessData, category: category.categoryName});
                                             setShowCategorySelector(false);
                                           }}
-                                          className="w-full text-left px-4 py-3 text-sm text-foreground hover:bg-muted/10 transition-colors border-b border-border/20 last:border-b-0"
+                                          className="w-full text-left px-3 py-2 text-sm text-[#036A38] hover:bg-[#036A38]/10 transition-colors rounded-lg"
                                         >
-                                          {sub}
+                                          Select {category.categoryName}
                                         </button>
-                                      ))}
-                                    </div>
-                                  )}
+                                      </div>
+                                    )}
+                                    
+                                    {/* Subcategories */}
+                                    {isExpanded && category.hasSubCategories && (
+                                      <div className="border-t border-border/40 bg-muted/5">
+                                        {category.subCategories.map((sub) => (
+                                          <button
+                                            key={sub.id}
+                                            onClick={() => {
+                                              setBusinessData({...businessData, category: sub.subCategoryName});
+                                              setShowCategorySelector(false);
+                                            }}
+                                            className="w-full text-left px-4 py-3 text-sm text-foreground hover:bg-muted/10 transition-colors border-b border-border/20 last:border-b-0"
+                                          >
+                                            {sub.subCategoryName}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                              
+                              {businessCategories.length === 0 && !isCategoriesLoading && (
+                                <div className="text-center py-8">
+                                  <p className="text-sm text-muted-foreground">No categories available</p>
                                 </div>
-                              );
-                            })}
-                          </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )}
 
@@ -550,19 +634,62 @@ export default function MyContribution() {
                               className="w-full h-full border-0"
                               title="Map"
                               style={{ pointerEvents: 'auto' }}
+                              onLoad={(e) => {
+                                const iframe = e.target as HTMLIFrameElement;
+                                try {
+                                  // Add message listener for map clicks
+                                  const handleMapMessage = (event: MessageEvent) => {
+                                    if (event.origin !== window.location.origin) return;
+                                    
+                                    if (event.data.type === 'MAP_CLICK') {
+                                      const { lat, lng } = event.data;
+                                      console.log('📍 Pin placed at coordinates:', { lat, lng });
+                                      console.log(`Latitude: ${lat}`);
+                                      console.log(`Longitude: ${lng}`);
+                                      
+                                      // Update business data with coordinates
+                                      setBusinessData(prev => ({
+                                        ...prev,
+                                        coordinates: { lat, lng }
+                                      }));
+                                    }
+                                  };
+                                  
+                                  window.addEventListener('message', handleMapMessage);
+                                  
+                                  // Send message to map to enable pin placement mode
+                                  setTimeout(() => {
+                                    iframe.contentWindow?.postMessage({
+                                      type: 'ENABLE_PIN_PLACEMENT',
+                                      message: 'Click on the map to place your business pin'
+                                    }, window.location.origin);
+                                  }, 1000);
+                                  
+                                } catch (error) {
+                                  console.error('Error setting up map communication:', error);
+                                }
+                              }}
                             />
                           </div>
 
                           <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg border border-border/40">
                             <p className="font-medium text-foreground mb-1">Click on the map to set your business location</p>
                             <p className="text-xs">Use the map above to find and mark your exact business location</p>
+                            {businessData.coordinates && (
+                              <div className="mt-2 p-2 bg-[#036A38]/10 rounded border border-[#036A38]/20">
+                                <p className="text-xs font-mono text-[#036A38]">
+                                  📍 Pin placed at: {businessData.coordinates.lat.toFixed(6)}, {businessData.coordinates.lng.toFixed(6)}
+                                </p>
+                              </div>
+                            )}
                           </div>
 
                           <Button 
                             className="w-full bg-[#036A38] hover:bg-[#025C31] text-white"
+                            disabled={!businessData.coordinates}
                             onClick={() => setBusinessStep(3)}
                           >
-                            Next
+                            {businessData.coordinates ? 'Next' : 'Place pin to continue'}
                           </Button>
                         </>
                       )}
@@ -575,41 +702,81 @@ export default function MyContribution() {
                             <p className="text-sm text-muted-foreground">Help customers reach your business easily</p>
                           </div>
 
-                          <div className="space-y-3">
-                            <div>
-                              <label className="text-sm text-muted-foreground mb-1 block">Phone number</label>
-                              <div className="flex gap-2">
+                          <form onSubmit={handleSubmit((data) => {
+                            setBusinessData(prev => ({
+                              ...prev,
+                              phone: data.phone,
+                              website: data.website || ''
+                            }));
+                            setBusinessStep(4);
+                          })}>
+                            <div className="space-y-3">
+                              <div>
+                                <label className="text-sm text-muted-foreground mb-1 block">Phone number</label>
+                                <div className="flex gap-2">
+                                  <div className="w-20 px-3 py-2 rounded-xl border border-input bg-muted/50 flex items-center justify-center text-sm font-medium text-muted-foreground">
+                                    +234
+                                  </div>
+                                  <div className="flex-1">
+                                    <Input 
+                                      {...register('phone')}
+                                      placeholder="8012345678" 
+                                      className={cn(
+                                        "flex-1",
+                                        errors.phone && "border-red-500 focus:border-red-500 focus:ring-red-500"
+                                      )}
+                                      onChange={(e) => {
+                                        // Remove any non-digit characters
+                                        let value = e.target.value.replace(/\D/g, '');
+                                        
+                                        // Remove any prefixes (234, +234, 0)
+                                        if (value.startsWith('234')) {
+                                          value = value.substring(3);
+                                        } else if (value.startsWith('0')) {
+                                          value = value.substring(1);
+                                        }
+                                        
+                                        // Limit to 10 digits and ensure it starts with 7, 8, or 9
+                                        value = value.substring(0, 10);
+                                        
+                                        // Only allow if it starts with 7, 8, or 9 or is empty
+                                        if (value === '' || /^[789]/.test(value)) {
+                                          setValue('phone', value);
+                                        }
+                                      }}
+                                    />
+                                    {errors.phone && (
+                                      <p className="text-xs text-red-500 mt-1">{errors.phone.message}</p>
+                                    )}
+                                  </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Enter your 10-digit phone number starting with 7, 8, or 9 (e.g., 8012345678)
+                                </p>
+                              </div>
+
+                              <div>
+                                <label className="text-sm text-muted-foreground mb-1 block">Website (optional)</label>
                                 <Input 
-                                  placeholder="+234" 
-                                  className="w-20"
-                                  disabled
+                                  {...register('website')}
+                                  placeholder="https://www.example.com" 
+                                  className={cn(
+                                    errors.website && "border-red-500 focus:border-red-500 focus:ring-red-500"
+                                  )}
                                 />
-                                <Input 
-                                  placeholder="Enter your phone number" 
-                                  value={businessData.phone}
-                                  onChange={(e) => setBusinessData({...businessData, phone: e.target.value})}
-                                  className="flex-1"
-                                />
+                                {errors.website && (
+                                  <p className="text-xs text-red-500 mt-1">{errors.website.message}</p>
+                                )}
                               </div>
                             </div>
 
-                            <div>
-                              <label className="text-sm text-muted-foreground mb-1 block">Website (optional)</label>
-                              <Input 
-                                placeholder="Enter website" 
-                                value={businessData.website}
-                                onChange={(e) => setBusinessData({...businessData, website: e.target.value})}
-                              />
-                            </div>
-                          </div>
-
-                          <Button 
-                            className="w-full bg-[#036A38] hover:bg-[#025C31] text-white"
-                            disabled={!businessData.phone}
-                            onClick={() => setBusinessStep(4)}
-                          >
-                            Next
-                          </Button>
+                            <Button 
+                              type="submit"
+                              className="w-full bg-[#036A38] hover:bg-[#025C31] text-white mt-4"
+                            >
+                              Next
+                            </Button>
+                          </form>
                         </>
                       )}
 
@@ -858,9 +1025,16 @@ export default function MyContribution() {
                             <div>
                               <label className="text-sm text-muted-foreground mb-1 block">Phone number</label>
                               <div className="flex items-center justify-between px-4 py-3 rounded-xl border border-input bg-background/80">
-                                <span className="text-sm font-medium text-foreground">+234 {businessData.phone}</span>
+                                <span className="text-sm font-medium text-foreground">
+                                  +234 {businessData.phone}
+                                </span>
                                 <button
-                                  onClick={() => setBusinessStep(3)}
+                                  onClick={() => {
+                                    // Pre-fill the form with current data
+                                    setValue('phone', businessData.phone);
+                                    setValue('website', businessData.website);
+                                    setBusinessStep(3);
+                                  }}
                                   className="text-[#036A38] hover:text-[#025C31]"
                                 >
                                   <Edit2 className="h-4 w-4" />
@@ -875,7 +1049,12 @@ export default function MyContribution() {
                                 <div className="flex items-center justify-between px-4 py-3 rounded-xl border border-input bg-background/80">
                                   <span className="text-sm font-medium text-foreground">{businessData.website}</span>
                                   <button
-                                    onClick={() => setBusinessStep(3)}
+                                    onClick={() => {
+                                      // Pre-fill the form with current data
+                                      setValue('phone', businessData.phone);
+                                      setValue('website', businessData.website);
+                                      setBusinessStep(3);
+                                    }}
                                     className="text-[#036A38] hover:text-[#025C31]"
                                   >
                                     <Edit2 className="h-4 w-4" />
@@ -990,6 +1169,7 @@ export default function MyContribution() {
                                 category: '',
                                 phone: '',
                                 website: '',
+                                coordinates: null,
                                 hours: {},
                                 photos: []
                               });
@@ -1631,112 +1811,92 @@ export default function MyContribution() {
               {/* Selection highlight bar */}
               <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-12 bg-[#036A38]/5 border-y border-[#036A38]/20 pointer-events-none" />
               
-              <div className="flex items-center justify-center gap-1">
-                {/* Hour Picker */}
-                <div className="flex-1 flex flex-col items-center">
-                  <div className="h-48 overflow-y-auto scrollbar-hide relative">
-                    <div className="flex flex-col items-center py-20">
-                      {Array.from({ length: 12 }, (_, i) => {
-                        const hour = i + 1;
-                        const currentTime = showTimePicker === 'open' ? tempHours.open : tempHours.close;
-                        const [currentHour] = currentTime.split(':');
-                        const isSelected = parseInt(currentHour) === hour;
-                        
-                        return (
-                          <button
-                            key={hour}
-                            onClick={() => {
-                              const parts = currentTime.split(/[:\s]/);
-                              const newTime = `${hour.toString().padStart(2, '0')}:${parts[1]} ${parts[2]}`;
-                              if (showTimePicker === 'open') {
-                                setTempHours({...tempHours, open: newTime});
-                              } else {
-                                setTempHours({...tempHours, close: newTime});
-                              }
-                            }}
-                            className={cn(
-                              "py-2 px-6 text-2xl font-medium transition-all",
-                              isSelected ? "text-foreground scale-110" : "text-muted-foreground/40 scale-90"
-                            )}
-                          >
-                            {hour}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-
-                <span className="text-2xl font-bold text-foreground px-2">:</span>
-
-                {/* Minute Picker */}
-                <div className="flex-1 flex flex-col items-center">
-                  <div className="h-48 overflow-y-auto scrollbar-hide relative">
-                    <div className="flex flex-col items-center py-20">
-                      {Array.from({ length: 60 }, (_, i) => {
-                        const min = i;
-                        const currentTime = showTimePicker === 'open' ? tempHours.open : tempHours.close;
-                        const parts = currentTime.split(/[:\s]/);
-                        const isSelected = parseInt(parts[1]) === min;
-                        
-                        return (
-                          <button
-                            key={min}
-                            onClick={() => {
-                              const timeParts = currentTime.split(/[:\s]/);
-                              const newTime = `${timeParts[0]}:${min.toString().padStart(2, '0')} ${timeParts[2]}`;
-                              if (showTimePicker === 'open') {
-                                setTempHours({...tempHours, open: newTime});
-                              } else {
-                                setTempHours({...tempHours, close: newTime});
-                              }
-                            }}
-                            className={cn(
-                              "py-2 px-6 text-2xl font-medium transition-all",
-                              isSelected ? "text-foreground scale-110" : "text-muted-foreground/40 scale-90"
-                            )}
-                          >
-                            {min.toString().padStart(2, '0')}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-
-                {/* AM/PM Picker */}
-                <div className="flex-1 flex flex-col items-center">
-                  <div className="h-48 flex items-center justify-center">
-                    <div className="flex flex-col gap-4">
-                      {['AM', 'PM'].map((period) => {
-                        const currentTime = showTimePicker === 'open' ? tempHours.open : tempHours.close;
-                        const currentPeriod = currentTime.split(' ')[1];
-                        const isSelected = currentPeriod === period;
-                        
-                        return (
-                          <button
-                            key={period}
-                            onClick={() => {
-                              const timeParts = currentTime.split(/[:\s]/);
-                              const newTime = `${timeParts[0]}:${timeParts[1]} ${period}`;
-                              if (showTimePicker === 'open') {
-                                setTempHours({...tempHours, open: newTime});
-                              } else {
-                                setTempHours({...tempHours, close: newTime});
-                              }
-                            }}
-                            className={cn(
-                              "py-3 px-6 text-xl font-medium transition-all",
-                              isSelected ? "text-foreground scale-110" : "text-muted-foreground/40 scale-90"
-                            )}
-                          >
-                            {period}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
+              <div className="h-48">
+                <Picker
+                  value={{
+                    hour: (() => {
+                      const currentTime = showTimePicker === 'open' ? tempHours.open : tempHours.close;
+                      const [hour] = currentTime.split(':');
+                      return hour.padStart(2, '0');
+                    })(),
+                    minute: (() => {
+                      const currentTime = showTimePicker === 'open' ? tempHours.open : tempHours.close;
+                      const parts = currentTime.split(/[:\s]/);
+                      return parts[1];
+                    })(),
+                    period: (() => {
+                      const currentTime = showTimePicker === 'open' ? tempHours.open : tempHours.close;
+                      return currentTime.split(' ')[1];
+                    })()
+                  }}
+                  onChange={(value) => {
+                    const newTime = `${value.hour}:${value.minute} ${value.period}`;
+                    if (showTimePicker === 'open') {
+                      setTempHours({...tempHours, open: newTime});
+                    } else {
+                      setTempHours({...tempHours, close: newTime});
+                    }
+                  }}
+                  wheelMode="natural"
+                  height={192}
+                  itemHeight={40}
+                  style={{
+                    color: 'hsl(var(--foreground))',
+                    fontSize: '18px',
+                    fontWeight: '500'
+                  }}
+                >
+                  <Picker.Column name="hour">
+                    {Array.from({ length: 12 }, (_, i) => {
+                      const hour = (i + 1).toString().padStart(2, '0');
+                      return (
+                        <Picker.Item key={hour} value={hour}>
+                          {hour}
+                        </Picker.Item>
+                      );
+                    })}
+                  </Picker.Column>
+                  <Picker.Column name="minute">
+                    {Array.from({ length: 60 }, (_, i) => {
+                      const minute = i.toString().padStart(2, '0');
+                      return (
+                        <Picker.Item key={minute} value={minute}>
+                          {minute}
+                        </Picker.Item>
+                      );
+                    })}
+                  </Picker.Column>
+                  <Picker.Column name="period">
+                    <Picker.Item value="AM">
+                      <div className={cn(
+                        "py-2 px-4 rounded-lg transition-all font-medium",
+                        (() => {
+                          const currentTime = showTimePicker === 'open' ? tempHours.open : tempHours.close;
+                          const currentPeriod = currentTime.split(' ')[1];
+                          return currentPeriod === 'AM' 
+                            ? "bg-[#036A38]/10 border-2 text-[#036A38]" 
+                            : "text-muted-foreground";
+                        })()
+                      )}>
+                        AM
+                      </div>
+                    </Picker.Item>
+                    <Picker.Item value="PM">
+                      <div className={cn(
+                        "py-2 px-4 rounded-lg transition-all font-medium",
+                        (() => {
+                          const currentTime = showTimePicker === 'open' ? tempHours.open : tempHours.close;
+                          const currentPeriod = currentTime.split(' ')[1];
+                          return currentPeriod === 'PM' 
+                            ? "bg-[#036A38]/10 border-8text-[#036A38]" 
+                            : "text-muted-foreground";
+                        })()
+                      )}>
+                        PM
+                      </div>
+                    </Picker.Item>
+                  </Picker.Column>
+                </Picker>
               </div>
             </div>
           </div>

@@ -66,6 +66,8 @@ import type { StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { TILE_STYLES, VALHALLA_ROUTE_URL, VALHALLA_OPTIMIZED_ROUTE_URL, CUSTOM_ROUTE_API_URL, TILE_STYLE_BASE } from "@/lib/APIConstants";
 import { searchPlaces, reverseGeocode, type SearchResult } from "@/lib/mapSearchApi";
+import { fetchBusinessCategories, getCategoryIcon } from "@/lib/businessCategoriesApi";
+import type { BusinessCategory } from "@shared/api";
 import { 
   NIGERIA_MAP_BOUNDS, 
   NIGERIA_CENTER, 
@@ -991,6 +993,10 @@ export default function Map() {
 
   // Grid overlay state - automatically enabled when grid layer is selected
   const [isGridVisible, setIsGridVisible] = useState(false);
+
+  // Business categories state
+  const [businessCategories, setBusinessCategories] = useState<BusinessCategory[]>([]);
+  const [isCategoriesLoading, setIsCategoriesLoading] = useState(false);
 
   // Update grid visibility when layer changes
   useEffect(() => {
@@ -2830,6 +2836,43 @@ const mapLayers = [
       setIsRouteStepsVisible(false);
     }
   }, [searchResults.length]);
+
+  // Handle messages from iframe (for pin placement in MyContribution)
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      
+      if (event.data.type === 'ENABLE_PIN_PLACEMENT') {
+        console.log('📍 Pin placement mode enabled');
+        // You can add visual feedback here if needed
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  // Enhanced map click handler that sends coordinates to parent iframe
+  const handleMapClickWithMessage = useCallback(async (lng: number, lat: number) => {
+    // Send coordinates to parent window (for MyContribution iframe)
+    try {
+      window.parent.postMessage({
+        type: 'MAP_CLICK',
+        lat,
+        lng
+      }, window.location.origin);
+    } catch (error) {
+      // Ignore if not in iframe
+    }
+
+    // Continue with normal map click handling
+    await handleMapClick(lng, lat);
+  }, [handleMapClick]);
+
+  // Update the map click handler reference
+  useEffect(() => { 
+    onMapClickRef.current = handleMapClickWithMessage; 
+  }, [handleMapClickWithMessage]);
 
   return (
     <div className="fixed inset-0 w-screen overflow-hidden bg-background" style={{ height: '100dvh', ['--primary' as any]: '151 94% 21%', ['--primary-foreground' as any]: '0 0% 100%', ['--secondary' as any]: '41 100% 55%', ['--secondary-foreground' as any]: '0 0% 0%', ['--brand' as any]: '151 94% 21%', ['--brand-foreground' as any]: '0 0% 100%', ['--gradient-from' as any]: '151 94% 21%', ['--gradient-via' as any]: '41 100% 55%', ['--gradient-to' as any]: '41 92% 40%'}}>

@@ -509,3 +509,41 @@ export interface RouteResponse {
     trip: RouteTrip;
   }>;
 }
+
+/**
+ * Business Categories API types
+ */
+export interface BusinessSubCategory {
+  id: string;
+  subCategoryName: string;
+  isActive: boolean;
+  createdDate: string;
+  updatedDate: string;
+}
+
+export interface BusinessCategory {
+  id: string;
+  categoryName: string;
+  categoryPicture: string;
+  isActive: boolean;
+  createdDate: string;
+  updatedDate: string;
+  subCategories: BusinessSubCategory[];
+  hasSubCategories: boolean;
+  subCategoryCount: number;
+}
+
+export interface CategoriesApiResponse {
+  message: string;
+  data: {
+    content: BusinessCategory[];
+    pageNumber: number;
+    pageSize: number;
+    totalElements: number;
+    totalPages: number;
+    numberOfElements: number;
+    firstPage: boolean;
+    lastPage: boolean;
+  };
+  statusCode: number;
+}

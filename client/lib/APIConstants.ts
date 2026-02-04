@@ -35,3 +35,7 @@ export const GRID_API_URL = `${GRID_API_BASE}/api/grid/polylines-with-codes`;
 // Custom Routing API - New detailed routing service
 export const CUSTOM_ROUTE_API_BASE = "https://api.ninja-map.dollopinfotech.com";
 export const CUSTOM_ROUTE_API_URL = `${CUSTOM_ROUTE_API_BASE}/api/map/route`;
+
+// Business Categories API
+export const CATEGORIES_API_BASE = "https://api.ninja-map.dollopinfotech.com";
+export const CATEGORIES_API_URL = `${CATEGORIES_API_BASE}/api/categories/get-categories`;
