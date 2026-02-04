@@ -1,5 +1,5 @@
-﻿import { useState } from 'react';
-import { ChevronDown, MapPin, Building2, MapPinOff, AlertTriangle, Calendar, Info, ArrowLeft, ChevronRight, Utensils, ShoppingBag, Heart, Car, Briefcase, GraduationCap, Plane, Film, Users, MoreHorizontal, X, Image as ImageIcon, Camera, Upload, Clock, Edit2 } from 'lucide-react';
+﻿import { useState, useEffect } from 'react';
+import { ChevronDown, MapPin, Building2, MapPinOff, AlertTriangle, Calendar, Info, ArrowLeft, ChevronRight, Utensils, ShoppingBag, Heart, Car, Briefcase, GraduationCap, Plane, Film, Users, MoreHorizontal, X, Image as ImageIcon, Camera, Upload, Clock, Edit2, Navigation, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -104,6 +104,102 @@ export default function MyContribution() {
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
   const [tempHours, setTempHours] = useState({ open: '09:00 AM', close: '05:00 PM', open24: false, closed: false });
   const [showTimePicker, setShowTimePicker] = useState<'open' | 'close' | null>(null);
+  const [showActivityMap, setShowActivityMap] = useState(false);
+  const [activityLocation, setActivityLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
+  const [activityLocationInput, setActivityLocationInput] = useState('');
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [activityPhoto, setActivityPhoto] = useState<string | null>(null);
+  const [activityDescription, setActivityDescription] = useState('');
+  const [isAnonymous, setIsAnonymous] = useState(false);
+
+  // Listen for messages from the map iframe
+  useEffect(() => {
+    const handleMapMessage = (event: MessageEvent) => {
+      // Only accept messages from our own origin for security
+      if (event.origin !== window.location.origin) return;
+      
+      if (event.data.type === 'MAP_CLICK' && event.data.location) {
+        const { lat, lng, address } = event.data.location;
+        setActivityLocation({
+          lat,
+          lng,
+          address: address || `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+        });
+      }
+    };
+
+    window.addEventListener('message', handleMapMessage);
+    return () => window.removeEventListener('message', handleMapMessage);
+  }, []);
+
+  // Check if coordinates are within Nigeria bounds
+  const isInNigeria = (lat: number, lng: number): boolean => {
+    // Nigeria approximate bounds
+    const nigeriaBounds = {
+      north: 13.9,
+      south: 4.3,
+      west: 2.7,
+      east: 14.7
+    };
+    
+    return lat >= nigeriaBounds.south && 
+           lat <= nigeriaBounds.north && 
+           lng >= nigeriaBounds.west && 
+           lng <= nigeriaBounds.east;
+  };
+
+  // Get user's current location or use Lagos as default
+  const openMapWithLocation = () => {
+    setIsGettingLocation(true);
+    
+    // Default to Lagos coordinates (only used if location is outside Nigeria or fails)
+    const lagosDefault = {
+      lat: 6.5244,
+      lng: 3.3792,
+      address: 'Lagos, Nigeria'
+    };
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          
+          // Check if location is within Nigeria
+          if (isInNigeria(latitude, longitude)) {
+            // Use actual location if in Nigeria
+            setActivityLocation({
+              lat: latitude,
+              lng: longitude,
+              address: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+            });
+            // Don't update input field - let user select from map
+          } else {
+            // Use Lagos if outside Nigeria
+            setActivityLocation(lagosDefault);
+          }
+          
+          setIsGettingLocation(false);
+          setShowActivityMap(true);
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          // Use Lagos as default if location fails
+          setActivityLocation(lagosDefault);
+          setIsGettingLocation(false);
+          setShowActivityMap(true);
+        },
+        {
+          timeout: 5000,
+          enableHighAccuracy: true
+        }
+      );
+    } else {
+      // Use Lagos as default if geolocation not supported
+      setActivityLocation(lagosDefault);
+      setIsGettingLocation(false);
+      setShowActivityMap(true);
+    }
+  };
 
   const toggleSection = (section: ContributionType) => {
     setExpandedSection(expandedSection === section ? null : section);
@@ -1077,91 +1173,279 @@ export default function MyContribution() {
               />
             </button>
             {expandedSection === 'activity' && (
-              <div className="px-4 pb-4 pt-4 space-y-3 animate-slide-up">
-                {/* Activity Type Buttons */}
-                <div className="grid grid-cols-2 gap-3">
+              <div className="px-4 pb-4 pt-4 space-y-4 animate-slide-up">
+                {/* Activity Type Grid */}
+                <div className="grid grid-cols-3 gap-3">
                   <button
                     onClick={() => setSelectedActivity('traffic')}
                     className={cn(
-                      "flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all min-h-[100px]",
+                      "flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all aspect-square",
                       selectedActivity === 'traffic'
-                        ? "bg-[#036A38]/10 border-[#036A38]"
+                        ? "bg-[#036A38]/10 border-[#036A38] shadow-md"
                         : "bg-background/80 border-border hover:bg-muted/5"
                     )}
                   >
-                    <div className="w-10 h-10 rounded-full bg-[#036A38]/10 flex items-center justify-center">
-                      <AlertTriangle className="h-5 w-5 text-[#036A38]" />
+                    <div className={cn(
+                      "w-12 h-12 rounded-full flex items-center justify-center",
+                      selectedActivity === 'traffic' ? "bg-[#036A38]/20" : "bg-[#036A38]/10"
+                    )}>
+                      <Car className="h-6 w-6 text-[#036A38]" />
                     </div>
-                    <span className="text-sm font-medium text-foreground">Traffic report</span>
+                    <span className="text-xs font-medium text-foreground text-center">Traffic</span>
                   </button>
+
                   <button
                     onClick={() => setSelectedActivity('accident')}
                     className={cn(
-                      "flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all min-h-[100px]",
+                      "flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all aspect-square",
                       selectedActivity === 'accident'
-                        ? "bg-[#036A38]/10 border-[#036A38]"
+                        ? "bg-[#036A38]/10 border-[#036A38] shadow-md"
                         : "bg-background/80 border-border hover:bg-muted/5"
                     )}
                   >
-                    <div className="w-10 h-10 rounded-full bg-[#036A38]/10 flex items-center justify-center">
-                      <AlertTriangle className="h-5 w-5 text-[#036A38]" />
+                    <div className={cn(
+                      "w-12 h-12 rounded-full flex items-center justify-center",
+                      selectedActivity === 'accident' ? "bg-[#036A38]/20" : "bg-[#036A38]/10"
+                    )}>
+                      <AlertTriangle className="h-6 w-6 text-[#036A38]" />
                     </div>
-                    <span className="text-sm font-medium text-foreground">Accident</span>
+                    <span className="text-xs font-medium text-foreground text-center">Accident</span>
                   </button>
+
                   <button
                     onClick={() => setSelectedActivity('closure')}
                     className={cn(
-                      "flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all min-h-[100px]",
+                      "flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all aspect-square",
                       selectedActivity === 'closure'
-                        ? "bg-[#036A38]/10 border-[#036A38]"
+                        ? "bg-[#036A38]/10 border-[#036A38] shadow-md"
                         : "bg-background/80 border-border hover:bg-muted/5"
                     )}
                   >
-                    <div className="w-10 h-10 rounded-full bg-[#036A38]/10 flex items-center justify-center">
-                      <MapPinOff className="h-5 w-5 text-[#036A38]" />
+                    <div className={cn(
+                      "w-12 h-12 rounded-full flex items-center justify-center",
+                      selectedActivity === 'closure' ? "bg-[#036A38]/20" : "bg-[#036A38]/10"
+                    )}>
+                      <MapPinOff className="h-6 w-6 text-[#036A38]" />
                     </div>
-                    <span className="text-sm font-medium text-foreground">Road Closure</span>
+                    <span className="text-xs font-medium text-foreground text-center">Road Closure</span>
                   </button>
+
                   <button
                     onClick={() => setSelectedActivity('event')}
                     className={cn(
-                      "flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all min-h-[100px]",
+                      "flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all aspect-square",
                       selectedActivity === 'event'
-                        ? "bg-[#036A38]/10 border-[#036A38]"
+                        ? "bg-[#036A38]/10 border-[#036A38] shadow-md"
                         : "bg-background/80 border-border hover:bg-muted/5"
                     )}
                   >
-                    <div className="w-10 h-10 rounded-full bg-[#036A38]/10 flex items-center justify-center">
-                      <Calendar className="h-5 w-5 text-[#036A38]" />
+                    <div className={cn(
+                      "w-12 h-12 rounded-full flex items-center justify-center",
+                      selectedActivity === 'event' ? "bg-[#036A38]/20" : "bg-[#036A38]/10"
+                    )}>
+                      <Calendar className="h-6 w-6 text-[#036A38]" />
                     </div>
-                    <span className="text-sm font-medium text-foreground">Event</span>
+                    <span className="text-xs font-medium text-foreground text-center">Event</span>
                   </button>
+
                   <button
                     onClick={() => setSelectedActivity('other')}
                     className={cn(
-                      "flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all min-h-[100px] col-span-2",
+                      "flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all aspect-square",
                       selectedActivity === 'other'
-                        ? "bg-[#036A38]/10 border-[#036A38]"
+                        ? "bg-[#036A38]/10 border-[#036A38] shadow-md"
                         : "bg-background/80 border-border hover:bg-muted/5"
                     )}
                   >
-                    <div className="w-10 h-10 rounded-full bg-[#036A38]/10 flex items-center justify-center">
-                      <Info className="h-5 w-5 text-[#036A38]" />
+                    <div className={cn(
+                      "w-12 h-12 rounded-full flex items-center justify-center",
+                      selectedActivity === 'other' ? "bg-[#036A38]/20" : "bg-[#036A38]/10"
+                    )}>
+                      <Info className="h-6 w-6 text-[#036A38]" />
                     </div>
-                    <span className="text-sm font-medium text-foreground">Other</span>
+                    <span className="text-xs font-medium text-foreground text-center">Other</span>
                   </button>
                 </div>
 
                 {/* Activity Form */}
-                {selectedActivity && (
-                  <div className="space-y-3 animate-fade-in pt-2">
-                    <Input placeholder="Location" />
-                    <textarea
-                      className="w-full rounded-xl border border-input bg-background/80 backdrop-blur-sm px-4 py-3 text-sm font-medium transition-all duration-200 placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand hover:border-border/80 hover:bg-background/90 min-h-[100px]"
-                      placeholder="Describe what's happening..."
-                    />
-                    <Button className="w-full bg-[#036A38] hover:bg-[#025C31] text-white">
+                {selectedActivity && !showActivityMap && (
+                  <div className="space-y-4 animate-fade-in pt-2">
+                    {/* Location Input with Live Location Button */}
+                    <div className="space-y-2">
+                      <label className="text-sm text-muted-foreground">Location</label>
+                      <div className="flex gap-2">
+                        <Input 
+                          placeholder="Enter location or use live location" 
+                          value={activityLocationInput}
+                          onChange={(e) => setActivityLocationInput(e.target.value)}
+                          className="flex-1"
+                        />
+                        <Button
+                          type="button"
+                          onClick={openMapWithLocation}
+                          disabled={isGettingLocation}
+                          className="bg-[#036A38] hover:bg-[#025C31] text-white px-4"
+                        >
+                          {isGettingLocation ? (
+                            <Clock className="h-5 w-5 animate-spin" />
+                          ) : (
+                            <Navigation className="h-5 w-5" />
+                          )}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Click the location icon to use your current location</p>
+                    </div>
+
+                    {/* Description */}
+                    <div className="space-y-2">
+                      <label className="text-sm text-muted-foreground">Description</label>
+                      <textarea
+                        value={activityDescription}
+                        onChange={(e) => setActivityDescription(e.target.value)}
+                        className="w-full rounded-xl border border-input bg-background/80 backdrop-blur-sm px-4 py-3 text-sm font-medium transition-all duration-200 placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand hover:border-border/80 hover:bg-background/90 min-h-[100px]"
+                        placeholder="Describe what's happening..."
+                      />
+                    </div>
+
+                    {/* Photo Upload */}
+                    <div className="space-y-2">
+                      <label className="text-sm text-muted-foreground">Add Photo (Optional)</label>
+                      
+                      {activityPhoto ? (
+                        <div className="relative rounded-xl overflow-hidden border border-border">
+                          <img 
+                            src={activityPhoto} 
+                            alt="Activity photo" 
+                            className="w-full h-48 object-cover"
+                          />
+                          <button
+                            onClick={() => setActivityPhoto(null)}
+                            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 flex items-center justify-center transition-colors"
+                          >
+                            <X className="h-5 w-5 text-white" />
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-dashed border-border hover:border-[#036A38] transition-colors cursor-pointer bg-background/50">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  setActivityPhoto(reader.result as string);
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                              e.target.value = '';
+                            }}
+                          />
+                          <Camera className="h-5 w-5 text-[#036A38]" />
+                          <span className="text-sm text-muted-foreground">Take or upload a photo</span>
+                        </label>
+                      )}
+                    </div>
+
+                    {/* Anonymous Checkbox */}
+                    <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/30 border border-border/40">
+                      <input
+                        type="checkbox"
+                        id="anonymous-activity"
+                        checked={isAnonymous}
+                        onChange={(e) => setIsAnonymous(e.target.checked)}
+                        className="w-4 h-4 rounded border-[#036A38] text-[#036A38] focus:ring-[#036A38] focus:ring-offset-0"
+                      />
+                      <label htmlFor="anonymous-activity" className="text-sm text-foreground cursor-pointer flex-1">
+                        Hide my name (contribute anonymously)
+                      </label>
+                    </div>
+
+                    <Button 
+                      className="w-full bg-[#036A38] hover:bg-[#025C31] text-white"
+                      onClick={() => {
+                        // Submit the report
+                        console.log({
+                          type: selectedActivity,
+                          location: activityLocationInput,
+                          description: activityDescription,
+                          photo: activityPhoto,
+                          coordinates: activityLocation,
+                          anonymous: isAnonymous
+                        });
+                        alert(`Report submitted successfully!${isAnonymous ? ' (Anonymous)' : ''}`);
+                        // Reset form
+                        setSelectedActivity(null);
+                        setActivityLocationInput('');
+                        setActivityDescription('');
+                        setActivityPhoto(null);
+                        setActivityLocation(null);
+                      }}
+                    >
                       Submit Report
+                    </Button>
+                  </div>
+                )}
+
+                {/* Map View for Location Selection */}
+                {showActivityMap && (
+                  <div className="space-y-4 animate-fade-in">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-medium text-foreground">Pin your location</h4>
+                      <button
+                        onClick={() => {
+                          setShowActivityMap(false);
+                          // Don't update input when closing without confirming
+                        }}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
+                    </div>
+
+                    <div className="relative w-full h-96 bg-muted rounded-xl overflow-hidden border border-border/40">
+                      <iframe
+                        src="/map"
+                        className="w-full h-full border-0"
+                        title="Activity Location Map"
+                        style={{ pointerEvents: 'auto' }}
+                      />
+                      {activityLocation && (
+                        <div className="absolute top-3 left-3 right-3 bg-background/95 backdrop-blur-sm border border-border/40 rounded-lg p-3 shadow-lg">
+                          <div className="flex items-start gap-2">
+                            <MapPin className="h-4 w-4 text-[#036A38] mt-0.5 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium text-foreground">
+                                {isInNigeria(activityLocation.lat, activityLocation.lng) 
+                                  ? 'Your Location' 
+                                  : 'Default Location (Outside Nigeria)'}
+                              </p>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {activityLocation.address}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <p className="text-xs text-muted-foreground text-center">
+                      Click on the map to select your exact location
+                    </p>
+
+                    <Button 
+                      className="w-full bg-[#036A38] hover:bg-[#025C31] text-white"
+                      onClick={() => {
+                        setShowActivityMap(false);
+                        // Only update input when user confirms the location from map
+                        if (activityLocation) {
+                          setActivityLocationInput(activityLocation.address);
+                        }
+                      }}
+                    >
+                      Confirm Location
                     </Button>
                   </div>
                 )}

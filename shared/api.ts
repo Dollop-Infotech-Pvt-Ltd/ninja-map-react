@@ -315,6 +315,7 @@ export interface ChangePasswordResponse {
 }
 
 export interface LoggedInUser {
+  phoneNumber: string;
   id: string;
   email: string;
   firstName: string;

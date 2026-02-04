@@ -64,7 +64,7 @@ import {
 import maplibregl from 'maplibre-gl';
 import type { StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { TILE_STYLES, VALHALLA_ROUTE_URL, VALHALLA_OPTIMIZED_ROUTE_URL, CUSTOM_ROUTE_API_URL } from "@/lib/APIConstants";
+import { TILE_STYLES, VALHALLA_ROUTE_URL, VALHALLA_OPTIMIZED_ROUTE_URL, CUSTOM_ROUTE_API_URL, TILE_STYLE_BASE } from "@/lib/APIConstants";
 import { searchPlaces, reverseGeocode, type SearchResult } from "@/lib/mapSearchApi";
 import { 
   NIGERIA_MAP_BOUNDS, 
@@ -212,16 +212,6 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c;
 }
 
-interface SearchResult {
-  place_id: string;
-  display_name: string;
-  lat: string;
-  lon: string;
-  type?: string;
-  category?: string;
-  importance?: number;
-}
-
 interface RoutePoint {
   coordinates: [number, number];
   address: string;
@@ -367,18 +357,43 @@ function MapLibreMap({
       currentStyleId.current = typeof initialStyle === 'string' ? initialStyle : 'initial';
       
       // Map click handler for reverse geocoding - Nigeria only
-      map.current.on('click', (e) => {
+      map.current.on('click', async (e) => {
         const { lng, lat } = e.lngLat;
         
         // Validate location is within Nigeria
         const validation = validateLocationForNigeria(lat, lng);
+        const finalLat = validation.isValid ? lat : validation.correctedLat;
+        const finalLng = validation.isValid ? lng : validation.correctedLng;
+        
         if (!validation.isValid) {
           console.log('Click outside Nigeria, redirecting to:', validation.message);
-          // Use corrected coordinates within Nigeria
-          onMapClick(validation.correctedLng, validation.correctedLat);
-        } else {
-          onMapClick(lng, lat);
         }
+        
+        // Try to get address from reverse geocoding
+        let address = `${finalLat.toFixed(6)}, ${finalLng.toFixed(6)}`;
+        try {
+          const results = await reverseGeocode(finalLat, finalLng);
+          if (results && results.length > 0) {
+            address = results[0].display_name;
+          }
+        } catch (error) {
+          console.warn('Reverse geocoding failed, using coordinates');
+        }
+        
+        // Post message to parent window (for iframe usage)
+        if (window.parent !== window) {
+          window.parent.postMessage({
+            type: 'MAP_CLICK',
+            location: {
+              lat: finalLat,
+              lng: finalLng,
+              address: address
+            }
+          }, window.location.origin);
+        }
+        
+        // Call the original handler
+        onMapClick(finalLng, finalLat);
       });
       
       // Map loading events
@@ -2041,11 +2056,11 @@ const mapLayers = [
           toast?.success?.('Destination selected', data.display.split(',')[0]);
 
           // If we have a start (either current or selected), auto-add route points and calculate
-          const startCoord = useCurrentLocation && userLocation ? userLocation : selectedStartPoint ? [parseFloat(selectedStartPoint.lat), parseFloat(selectedStartPoint.lon)] : null;
+          const startCoord: [number, number] | null = useCurrentLocation && userLocation ? userLocation : selectedStartPoint ? [parseFloat(selectedStartPoint.lat), parseFloat(selectedStartPoint.lon)] as [number, number] : null;
           if (startCoord) {
             const pts: RoutePoint[] = [
               { coordinates: startCoord, address: startCoord === userLocation ? 'Current Location' : (selectedStartPoint?.display_name || 'Start') },
-              { coordinates: [lat, lng], address: data.display }
+              { coordinates: [lat, lng] as [number, number], address: data.display }
             ];
             setRoutePoints(pts);
             calculateRouteRef.current?.(pts);
@@ -3981,18 +3996,17 @@ const mapLayers = [
               {/* Menu Items */}
               <div className="py-2">
                 {/* My Places */}
-                <button
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    toast?.info?.('Coming soon', 'My Places feature will be available soon!');
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/10 transition-colors"
-                >
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <MapPin className="h-5 w-5 text-primary" />
-                  </div>
-                  <span className="text-sm font-medium text-foreground">My Places</span>
-                </button>
+             {/* My Contribution */}
+                <Link to="/my-places" onClick={() => setIsMenuOpen(false)}>
+                  <button
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/10 transition-colors"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <MapPin className="h-5 w-5 text-primary" />
+                    </div>
+                    <span className="text-sm font-medium text-foreground">My Places</span>
+                  </button>
+                </Link>
 
                 {/* Recent Searches */}
                 <button
