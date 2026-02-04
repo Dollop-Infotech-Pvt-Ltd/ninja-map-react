@@ -39,3 +39,9 @@ export const CUSTOM_ROUTE_API_URL = `${CUSTOM_ROUTE_API_BASE}/api/map/route`;
 // Business Categories API
 export const CATEGORIES_API_BASE = "https://api.ninja-map.dollopinfotech.com";
 export const CATEGORIES_API_URL = `${CATEGORIES_API_BASE}/api/categories/get-categories`;
+
+// Business Creation API
+export const CREATE_BUSINESS_API_URL = `${CATEGORIES_API_BASE}/api/v1/businesses/create-business`;
+
+// Activity Report API
+export const SUBMIT_REPORT_API_URL = `${CATEGORIES_API_BASE}/api/reports/submit`;
