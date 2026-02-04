@@ -1,11 +1,14 @@
 ﻿import { useState, useEffect } from 'react';
-import { ChevronDown, MapPin, Building2, MapPinOff, AlertTriangle, Calendar, Info, ArrowLeft, ChevronRight, Utensils, ShoppingBag, Heart, Car, Briefcase, GraduationCap, Plane, Film, Users, MoreHorizontal, X, Image as ImageIcon, Camera, Upload, Clock, Edit2, Navigation, User, Loader2 } from 'lucide-react';
+import { ChevronDown, MapPin, Building2, MapPinOff, AlertTriangle, Calendar, Info, ArrowLeft, ChevronRight, Utensils, ShoppingBag, Heart, Car, Briefcase, GraduationCap, Plane, Film, Users, MoreHorizontal, X, Image as ImageIcon, Edit2, Loader2, Navigation, Camera, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { fetchBusinessCategories } from '@/lib/businessCategoriesApi';
-import type { BusinessCategory } from '@shared/api';
+import { createBusiness, convertTo24Hour, base64ToFile } from '@/lib/businessApi';
+import { submitActivityReport, convertActivityTypeToAPI, base64ToFileForReport } from '@/lib/activityReportApi';
+import type { BusinessCategory, CreateBusinessRequest, BusinessHoursRequest } from '@shared/api';
+import { useLoggedInUser } from '@/hooks/use-logged-in-user';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -64,6 +67,7 @@ type ContactDetailsFormData = z.infer<typeof contactDetailsSchema>;
 
 export default function MyContribution() {
   const navigate = useNavigate();
+  const { user, loading: userLoading } = useLoggedInUser();
   const [expandedSection, setExpandedSection] = useState<ContributionType>(null);
   const [selectedActivity, setSelectedActivity] = useState<ActivityType>(null);
   const [selectedPlaceType, setSelectedPlaceType] = useState<PlaceType>(null);
@@ -81,6 +85,7 @@ export default function MyContribution() {
   const [businessData, setBusinessData] = useState({
     name: '',
     category: '',
+    categoryId: '', // Store the subcategory ID for API
     phone: '',
     website: '',
     coordinates: null as { lat: number; lng: number } | null,
@@ -98,6 +103,10 @@ export default function MyContribution() {
   const [activityPhoto, setActivityPhoto] = useState<string | null>(null);
   const [activityDescription, setActivityDescription] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [isSubmittingBusiness, setIsSubmittingBusiness] = useState(false);
+  const [businessSubmissionError, setBusinessSubmissionError] = useState<string | null>(null);
+  const [isSubmittingActivity, setIsSubmittingActivity] = useState(false);
+  const [activitySubmissionError, setActivitySubmissionError] = useState<string | null>(null);
 
   // Listen for messages from the map iframe
   useEffect(() => {
@@ -222,6 +231,12 @@ export default function MyContribution() {
     setExpandedSection(expandedSection === section ? null : section);
     if (section !== 'activity') {
       setSelectedActivity(null);
+      setActivityLocationInput('');
+      setActivityDescription('');
+      setActivityPhoto(null);
+      setActivityLocation(null);
+      setIsAnonymous(false);
+      setActivitySubmissionError(null);
     }
     if (section !== 'place') {
       setSelectedPlaceType(null);
@@ -231,6 +246,177 @@ export default function MyContribution() {
     }
     if (section !== 'fix') {
       setSelectedFixType(null);
+    }
+  };
+
+  // Function to handle business submission
+  const handleBusinessSubmission = async () => {
+    // Check if user is authenticated
+    if (!user) {
+      setBusinessSubmissionError('Please log in to create a business listing');
+      return;
+    }
+
+    if (!businessData.coordinates) {
+      setBusinessSubmissionError('Please set your business location on the map');
+      return;
+    }
+
+    if (!businessData.categoryId) {
+      setBusinessSubmissionError('Please select a business category');
+      return;
+    }
+
+    setIsSubmittingBusiness(true);
+    setBusinessSubmissionError(null);
+
+    try {
+      // Convert business hours to API format
+      const businessHours: BusinessHoursRequest[] = [];
+      const daysOfWeek = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+      
+      daysOfWeek.forEach(day => {
+        const dayKey = day.charAt(0) + day.slice(1).toLowerCase(); // Convert to "Sunday", "Monday", etc.
+        const hours = businessData.hours[dayKey];
+        
+        if (hours) {
+          businessHours.push({
+            weekday: day,
+            openingTime: hours.open24 ? undefined : convertTo24Hour(hours.open),
+            closingTime: hours.open24 ? undefined : convertTo24Hour(hours.close),
+            isClosed: hours.closed,
+            isOpen24Hours: hours.open24
+          });
+        } else {
+          // Default to closed if no hours set
+          businessHours.push({
+            weekday: day,
+            isClosed: true,
+            isOpen24Hours: false
+          });
+        }
+      });
+
+      // Convert base64 images to File objects
+      const businessImages: File[] = [];
+      businessData.photos.forEach((photo, index) => {
+        if (photo.startsWith('data:')) {
+          const file = base64ToFile(photo, `business-photo-${index + 1}.jpg`);
+          businessImages.push(file);
+        }
+      });
+
+      // Create business request
+      const createRequest: CreateBusinessRequest = {
+        businessName: businessData.name,
+        subCategoryId: businessData.categoryId,
+        address: `${businessData.coordinates.lat.toFixed(6)}, ${businessData.coordinates.lng.toFixed(6)}`, // Use coordinates as address for now
+        latitude: businessData.coordinates.lat,
+        longitude: businessData.coordinates.lng,
+        phoneNumber: `+234${businessData.phone}`,
+        website: businessData.website || undefined,
+        businessHours,
+        businessImages: businessImages.length > 0 ? businessImages : undefined
+      };
+
+      const result = await createBusiness(createRequest);
+
+      if (result.success) {
+        // Success - show success message and reset form
+        alert(`Business "${businessData.name}" created successfully!`);
+        
+        // Reset form
+        setSelectedBusinessType(null);
+        setBusinessStep(1);
+        setBusinessData({
+          name: '',
+          category: '',
+          categoryId: '',
+          phone: '',
+          website: '',
+          coordinates: null,
+          hours: {},
+          photos: []
+        });
+        
+        // Reset contact form
+        contactForm.reset();
+      } else {
+        setBusinessSubmissionError(result.message);
+      }
+    } catch (error) {
+      console.error('Error submitting business:', error);
+      setBusinessSubmissionError('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsSubmittingBusiness(false);
+    }
+  };
+
+  // Function to handle activity report submission
+  const handleActivitySubmission = async () => {
+    // Check if user is authenticated
+    if (!user) {
+      setActivitySubmissionError('Please log in to submit a report');
+      return;
+    }
+
+    if (!selectedActivity) {
+      setActivitySubmissionError('Please select an activity type');
+      return;
+    }
+
+    if (!activityDescription.trim()) {
+      setActivitySubmissionError('Please provide a description');
+      return;
+    }
+
+    if (!activityLocation) {
+      setActivitySubmissionError('Please set the location for your report');
+      return;
+    }
+
+    setIsSubmittingActivity(true);
+    setActivitySubmissionError(null);
+
+    try {
+      // Convert photo to File object if provided
+      let reportPicture: File | undefined;
+      if (activityPhoto && activityPhoto.startsWith('data:')) {
+        reportPicture = base64ToFileForReport(activityPhoto, 'activity-report.jpg');
+      }
+
+      // Create activity report request
+      const reportRequest = {
+        reportType: convertActivityTypeToAPI(selectedActivity),
+        comment: activityDescription,
+        latitude: activityLocation.lat,
+        longitude: activityLocation.lng,
+        location: activityLocation.address,
+        reportPicture,
+        hideName: isAnonymous
+      };
+
+      const result = await submitActivityReport(reportRequest);
+
+      if (result.success) {
+        // Success - show success message and reset form
+        alert(`Report submitted successfully!${isAnonymous ? ' (Anonymous)' : ''}`);
+        
+        // Reset form
+        setSelectedActivity(null);
+        setActivityLocationInput('');
+        setActivityDescription('');
+        setActivityPhoto(null);
+        setActivityLocation(null);
+        setIsAnonymous(false);
+      } else {
+        setActivitySubmissionError(result.message);
+      }
+    } catch (error) {
+      console.error('Error submitting activity report:', error);
+      setActivitySubmissionError('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsSubmittingActivity(false);
     }
   };
 
@@ -579,7 +765,11 @@ export default function MyContribution() {
                                       <div className="px-4 pb-2">
                                         <button
                                           onClick={() => {
-                                            setBusinessData({...businessData, category: category.categoryName});
+                                            setBusinessData({
+                                              ...businessData, 
+                                              category: category.categoryName,
+                                              categoryId: category.id // Store category ID for categories without subcategories
+                                            });
                                             setShowCategorySelector(false);
                                           }}
                                           className="w-full text-left px-3 py-2 text-sm text-[#036A38] hover:bg-[#036A38]/10 transition-colors rounded-lg"
@@ -596,7 +786,11 @@ export default function MyContribution() {
                                           <button
                                             key={sub.id}
                                             onClick={() => {
-                                              setBusinessData({...businessData, category: sub.subCategoryName});
+                                              setBusinessData({
+                                                ...businessData, 
+                                                category: sub.subCategoryName,
+                                                categoryId: sub.id // Store subcategory ID for API
+                                              });
                                               setShowCategorySelector(false);
                                             }}
                                             className="w-full text-left px-4 py-3 text-sm text-foreground hover:bg-muted/10 transition-colors border-b border-border/20 last:border-b-0"
@@ -1157,25 +1351,26 @@ export default function MyContribution() {
                             </div>
                           </div>
 
+                          {/* Error Display */}
+                          {businessSubmissionError && (
+                            <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+                              {businessSubmissionError}
+                            </div>
+                          )}
+
                           <Button 
                             className="w-full bg-[#036A38] hover:bg-[#025C31] text-white mt-4"
-                            onClick={() => {
-                              // Submit business
-                              alert('Business submitted successfully!');
-                              setSelectedBusinessType(null);
-                              setBusinessStep(1);
-                              setBusinessData({
-                                name: '',
-                                category: '',
-                                phone: '',
-                                website: '',
-                                coordinates: null,
-                                hours: {},
-                                photos: []
-                              });
-                            }}
+                            disabled={isSubmittingBusiness}
+                            onClick={handleBusinessSubmission}
                           >
-                            Submit
+                            {isSubmittingBusiness ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                Creating Business...
+                              </>
+                            ) : (
+                              'Submit'
+                            )}
                           </Button>
                         </>
                       )}
@@ -1473,18 +1668,30 @@ export default function MyContribution() {
                           )}
                         </Button>
                       </div>
-                      <p className="text-xs text-muted-foreground">Click the location icon to use your current location</p>
+                      {activityLocation ? (
+                        <div className="text-xs text-[#036A38] bg-[#036A38]/10 p-2 rounded border border-[#036A38]/20">
+                          📍 Location set: {activityLocation.address}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">Click the location icon to use your current location or select from map</p>
+                      )}
                     </div>
 
                     {/* Description */}
                     <div className="space-y-2">
-                      <label className="text-sm text-muted-foreground">Description</label>
+                      <label className="text-sm text-muted-foreground">Description *</label>
                       <textarea
                         value={activityDescription}
                         onChange={(e) => setActivityDescription(e.target.value)}
-                        className="w-full rounded-xl border border-input bg-background/80 backdrop-blur-sm px-4 py-3 text-sm font-medium transition-all duration-200 placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand hover:border-border/80 hover:bg-background/90 min-h-[100px]"
+                        className={cn(
+                          "w-full rounded-xl border border-input bg-background/80 backdrop-blur-sm px-4 py-3 text-sm font-medium transition-all duration-200 placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand hover:border-border/80 hover:bg-background/90 min-h-[100px]",
+                          !activityDescription.trim() && activitySubmissionError && "border-red-500"
+                        )}
                         placeholder="Describe what's happening..."
                       />
+                      {!activityDescription.trim() && (
+                        <p className="text-xs text-muted-foreground">Please provide a description of the activity</p>
+                      )}
                     </div>
 
                     {/* Photo Upload */}
@@ -1543,28 +1750,26 @@ export default function MyContribution() {
                       </label>
                     </div>
 
+                    {/* Error Display */}
+                    {activitySubmissionError && (
+                      <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+                        {activitySubmissionError}
+                      </div>
+                    )}
+
                     <Button 
                       className="w-full bg-[#036A38] hover:bg-[#025C31] text-white"
-                      onClick={() => {
-                        // Submit the report
-                        console.log({
-                          type: selectedActivity,
-                          location: activityLocationInput,
-                          description: activityDescription,
-                          photo: activityPhoto,
-                          coordinates: activityLocation,
-                          anonymous: isAnonymous
-                        });
-                        alert(`Report submitted successfully!${isAnonymous ? ' (Anonymous)' : ''}`);
-                        // Reset form
-                        setSelectedActivity(null);
-                        setActivityLocationInput('');
-                        setActivityDescription('');
-                        setActivityPhoto(null);
-                        setActivityLocation(null);
-                      }}
+                      disabled={isSubmittingActivity || !activityDescription.trim() || !activityLocation}
+                      onClick={handleActivitySubmission}
                     >
-                      Submit Report
+                      {isSubmittingActivity ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Submitting Report...
+                        </>
+                      ) : (
+                        'Submit Report'
+                      )}
                     </Button>
                   </div>
                 )}
@@ -1888,7 +2093,7 @@ export default function MyContribution() {
                           const currentTime = showTimePicker === 'open' ? tempHours.open : tempHours.close;
                           const currentPeriod = currentTime.split(' ')[1];
                           return currentPeriod === 'PM' 
-                            ? "bg-[#036A38]/10 border-8text-[#036A38]" 
+                            ? "bg-[#036A38]/10 border-2 border-[#036A38] text-[#036A38]" 
                             : "text-muted-foreground";
                         })()
                       )}>

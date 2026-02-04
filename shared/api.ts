@@ -547,3 +547,53 @@ export interface CategoriesApiResponse {
   };
   statusCode: number;
 }
+
+/**
+ * Business Creation API types
+ */
+export interface BusinessHoursRequest {
+  weekday: string;
+  openingTime?: string;
+  closingTime?: string;
+  isClosed: boolean;
+  isOpen24Hours: boolean;
+}
+
+export interface CreateBusinessRequest {
+  businessName: string;
+  subCategoryId: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  phoneNumber: string;
+  website?: string;
+  businessHours: BusinessHoursRequest[];
+  businessImages?: File[];
+}
+
+export interface CreateBusinessResponse {
+  success: boolean;
+  message: string;
+  businessId?: string;
+  statusCode?: number;
+}
+
+/**
+ * Activity Report API types
+ */
+export type ActivityReportType = 'TRAFFIC' | 'ACCIDENT' | 'ROAD_CLOSURE' | 'EVENT' | 'OTHER';
+
+export interface SubmitActivityReportRequest {
+  reportType: ActivityReportType;
+  comment: string;
+  latitude: number;
+  longitude: number;
+  location: string;
+  reportPicture?: File;
+  hideName?: boolean;
+}
+
+export interface SubmitActivityReportResponse {
+  message: string;
+  statusCode: number;
+}
