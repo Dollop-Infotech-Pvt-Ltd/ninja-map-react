@@ -54,10 +54,10 @@ export function GridOverlay({
     const currentZoom = map.getZoom();
     
     // Show grid only at maximum zoom levels:
-    // - Satellite: zoom 20 (max zoom)
+    // - Satellite: zoom 18 (max zoom)
     // - OSM: zoom 20 (max zoom)
     if (isSatelliteMode) {
-      return currentZoom >= 20; // Satellite max zoom is 20
+      return currentZoom >= 18; // Satellite max zoom is 18
     } else {
       return currentZoom >= 20; // OSM max zoom is 20 (full zoom)
     }
@@ -77,7 +77,7 @@ export function GridOverlay({
 
     // Only show grid when at FULL ZOOM level
     if (!shouldShowGrid()) {
-      const requiredZoom = isSatelliteMode ? 20 : 20;
+      const requiredZoom = isSatelliteMode ? 18 : 20;
       console.log(`🚫 Not showing grid - zoom level too low (need FULL ZOOM ${requiredZoom}+, current: ${map.getZoom().toFixed(1)}) - ${isSatelliteMode ? 'Satellite' : 'OSM'} mode`);
       return;
     }
@@ -357,7 +357,7 @@ export function GridOverlay({
 
     const handleMapMove = () => {
       const currentZoom = map.getZoom();
-      const requiredZoom = isSatelliteMode ? 20 : 20; // Full zoom for each mode
+      const requiredZoom = isSatelliteMode ? 18 : 20; // Full zoom for each mode
       
       // Only proceed if we're at full zoom level
       if (currentZoom >= requiredZoom && autoGridEnabled) {
@@ -419,7 +419,7 @@ export function GridOverlay({
 
     const handleZoomEnd = () => {
       const currentZoom = map.getZoom();
-      const requiredZoom = isSatelliteMode ? 20 : 20; // Full zoom for each mode
+      const requiredZoom = isSatelliteMode ? 18 : 20; // Full zoom for each mode
       console.log(`🔍 Zoom ended at level: ${currentZoom.toFixed(1)} (FULL ZOOM: ${requiredZoom}) - ${isSatelliteMode ? 'Satellite' : 'OSM'} mode`);
       
       // When reaching FULL ZOOM, load grid immediately if we don't have data
@@ -485,7 +485,7 @@ export function GridOverlay({
     if (!map || !isVisible || !autoGridEnabled) return;
     
     const currentZoom = map.getZoom();
-    const requiredZoom = isSatelliteMode ? 20 : 20; // Full zoom for each mode
+    const requiredZoom = isSatelliteMode ? 18 : 20; // Full zoom for each mode
     
     console.log("🎯 Grid layer activation check:", {
       isVisible,
