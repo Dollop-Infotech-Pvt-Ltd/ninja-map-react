@@ -1585,7 +1585,7 @@ button:active {
 
 .dark .grid-hover-tooltip .maplibregl-popup-tip {
   border-top-color: hsl(var(--background)) !important;
-  border-bottom-color: hsl(var(--background)) !important;
+  border-bottom-color: #000 !important;
 }
 
 /* Animation for smooth tooltip appearance */

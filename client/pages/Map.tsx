@@ -482,7 +482,7 @@ function MapLibreMap({
       try {
         // Always keep proper maxZoom per layer
         if (mapLayer === 'satellite' || mapLayer === 'satelliteGrid') {
-          map.current.setMaxZoom(18);
+          map.current.setMaxZoom(20);
         } else {
           map.current.setMaxZoom(20);
         }
@@ -624,7 +624,7 @@ function MapLibreMap({
       const img = document.createElement('img');
       img.src = '/mappin/map-pin.png';
       img.alt = 'Location pin';
-      img.style.height = '72px';
+      img.style.height = '100px';
       img.style.width = 'auto';
       img.style.display = 'block';
       img.style.objectFit = 'contain';

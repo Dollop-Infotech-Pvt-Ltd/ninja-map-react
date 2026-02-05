@@ -103,8 +103,8 @@ export default function Header({ showBackButton = true }: HeaderProps) {
               alt="NINja Map"
               loading="eager"
               decoding="sync"
-              className="w-[96px] h-[56px] object-contain -ml-[10px] md:w-[146px] md:h-[76px] md:-ml-[20px] relative"
-              style={{ top: '50%', transform: 'translateY(calc(-50% + 20px))' }}
+              className="w-[180px] h-[56px] object-contain -ml-[10px] md:w-[246px] md:h-[76px] md:-ml-[20px] relative"
+              // style={{ top: '50%', transform: 'translateY(calc(-50% + 20px))' }}
             />
           </Link>
 

@@ -38,9 +38,11 @@ export function GridOverlay({
       isLayerMode,
       gridOpacity,
       gridColor,
-      mode: isSatelliteMode ? "🛰️ SATELLITE" : "🗺️ OSM"
+      mode: isSatelliteMode ? "🛰️ SATELLITE" : "🗺️ OSM",
+      currentZoom: map?.getZoom()?.toFixed(1) || 'N/A',
+      shouldShow: map ? shouldShowGrid() : 'N/A'
     });
-  }, [isVisible, isSatelliteMode, isLayerMode, gridOpacity, gridColor]);
+  }, [isVisible, isSatelliteMode, isLayerMode, gridOpacity, gridColor, map]);
 
   const gridSourceId = "grid-source";
   const gridLayerId = "grid-layer";
@@ -52,10 +54,10 @@ export function GridOverlay({
     const currentZoom = map.getZoom();
     
     // Show grid only at maximum zoom levels:
-    // - Satellite: zoom 18 (max zoom)
+    // - Satellite: zoom 20 (max zoom)
     // - OSM: zoom 20 (max zoom)
     if (isSatelliteMode) {
-      return currentZoom >= 18; // Satellite max zoom is 18
+      return currentZoom >= 20; // Satellite max zoom is 20
     } else {
       return currentZoom >= 20; // OSM max zoom is 20 (full zoom)
     }
@@ -75,7 +77,7 @@ export function GridOverlay({
 
     // Only show grid when at FULL ZOOM level
     if (!shouldShowGrid()) {
-      const requiredZoom = isSatelliteMode ? 18 : 20;
+      const requiredZoom = isSatelliteMode ? 20 : 20;
       console.log(`🚫 Not showing grid - zoom level too low (need FULL ZOOM ${requiredZoom}+, current: ${map.getZoom().toFixed(1)}) - ${isSatelliteMode ? 'Satellite' : 'OSM'} mode`);
       return;
     }
@@ -211,8 +213,8 @@ export function GridOverlay({
               className: 'grid-tooltip',
               closeButton: false,
               closeOnClick: true,
-              anchor: 'bottom',
-              offset: [0, -10]
+              anchor: 'top',
+              offset: [0, 10]
             })
               .setLngLat(centerCoords)
               .setHTML(
@@ -315,32 +317,39 @@ export function GridOverlay({
     };
   }, [map, isVisible, gridData, isSatelliteMode, isLayerMode]);
 
-  // Remove grid from map when not visible
+  // Remove grid from map when not visible OR when zoom level is too low
   useEffect(() => {
-    if (!map || isVisible) return;
+    if (!map) return;
 
-    try {
-      // Remove layers
-      [gridLayerId, `${gridLayerId}-fill`].forEach(
-        (layerId) => {
-          if (map.getLayer(layerId)) {
-            map.removeLayer(layerId);
+    // Remove grid if not visible OR if zoom level is below required threshold
+    const shouldRemoveGrid = !isVisible || (isVisible && !shouldShowGrid());
+
+    if (shouldRemoveGrid) {
+      try {
+        // Remove layers
+        [gridLayerId, `${gridLayerId}-fill`].forEach(
+          (layerId) => {
+            if (map.getLayer(layerId)) {
+              map.removeLayer(layerId);
+              console.log(`🗑️ Removed grid layer: ${layerId}`);
+            }
+          },
+        );
+
+        // Remove sources
+        [gridSourceId].forEach((sourceId) => {
+          if (map.getSource(sourceId)) {
+            map.removeSource(sourceId);
+            console.log(`🗑️ Removed grid source: ${sourceId}`);
           }
-        },
-      );
+        });
 
-      // Remove sources
-      [gridSourceId].forEach((sourceId) => {
-        if (map.getSource(sourceId)) {
-          map.removeSource(sourceId);
-        }
-      });
-
-      gridSourceAdded.current = false;
-    } catch (error) {
-      console.warn("Error removing grid from map:", error);
+        gridSourceAdded.current = false;
+      } catch (error) {
+        console.warn("Error removing grid from map:", error);
+      }
     }
-  }, [map, isVisible]);
+  }, [map, isVisible, gridData]);
 
   // Auto-load grid when layer is selected or when fully zoomed in and map is moved
   useEffect(() => {
@@ -348,7 +357,7 @@ export function GridOverlay({
 
     const handleMapMove = () => {
       const currentZoom = map.getZoom();
-      const requiredZoom = isSatelliteMode ? 18 : 20; // Full zoom for each mode
+      const requiredZoom = isSatelliteMode ? 20 : 20; // Full zoom for each mode
       
       // Only proceed if we're at full zoom level
       if (currentZoom >= requiredZoom && autoGridEnabled) {
@@ -376,6 +385,29 @@ export function GridOverlay({
           setGridData(null);
           lastGridBoundsRef.current = null;
           
+          // Immediately remove grid layers from map
+          try {
+            [gridLayerId, `${gridLayerId}-fill`].forEach(
+              (layerId) => {
+                if (map.getLayer(layerId)) {
+                  map.removeLayer(layerId);
+                  console.log(`🗑️ Removed grid layer on move: ${layerId}`);
+                }
+              },
+            );
+
+            [gridSourceId].forEach((sourceId) => {
+              if (map.getSource(sourceId)) {
+                map.removeSource(sourceId);
+                console.log(`🗑️ Removed grid source on move: ${sourceId}`);
+              }
+            });
+
+            gridSourceAdded.current = false;
+          } catch (error) {
+            console.warn("Error removing grid on move:", error);
+          }
+          
           // Clear any pending throttled calls
           if (throttleTimeoutRef.current) {
             clearTimeout(throttleTimeoutRef.current);
@@ -387,7 +419,7 @@ export function GridOverlay({
 
     const handleZoomEnd = () => {
       const currentZoom = map.getZoom();
-      const requiredZoom = isSatelliteMode ? 18 : 20; // Full zoom for each mode
+      const requiredZoom = isSatelliteMode ? 20 : 20; // Full zoom for each mode
       console.log(`🔍 Zoom ended at level: ${currentZoom.toFixed(1)} (FULL ZOOM: ${requiredZoom}) - ${isSatelliteMode ? 'Satellite' : 'OSM'} mode`);
       
       // When reaching FULL ZOOM, load grid immediately if we don't have data
@@ -401,6 +433,29 @@ export function GridOverlay({
         console.log(`🧹 Clearing grid data - zoomed out below FULL ZOOM (${requiredZoom})`);
         setGridData(null);
         lastGridBoundsRef.current = null;
+        
+        // Immediately remove grid layers from map
+        try {
+          [gridLayerId, `${gridLayerId}-fill`].forEach(
+            (layerId) => {
+              if (map.getLayer(layerId)) {
+                map.removeLayer(layerId);
+                console.log(`🗑️ Removed grid layer on zoom out: ${layerId}`);
+              }
+            },
+          );
+
+          [gridSourceId].forEach((sourceId) => {
+            if (map.getSource(sourceId)) {
+              map.removeSource(sourceId);
+              console.log(`🗑️ Removed grid source on zoom out: ${sourceId}`);
+            }
+          });
+
+          gridSourceAdded.current = false;
+        } catch (error) {
+          console.warn("Error removing grid on zoom out:", error);
+        }
         
         if (throttleTimeoutRef.current) {
           clearTimeout(throttleTimeoutRef.current);
@@ -430,7 +485,7 @@ export function GridOverlay({
     if (!map || !isVisible || !autoGridEnabled) return;
     
     const currentZoom = map.getZoom();
-    const requiredZoom = isSatelliteMode ? 18 : 20; // Full zoom for each mode
+    const requiredZoom = isSatelliteMode ? 20 : 20; // Full zoom for each mode
     
     console.log("🎯 Grid layer activation check:", {
       isVisible,
